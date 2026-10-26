@@ -9,6 +9,7 @@
 </div>
 
 <p align="center"><strong>Language:</strong> <a href="README.md">English</a> · <a href="README_zh-TW.md">繁體中文</a></p>
+<p align="center"><a href="LICENSE">Apache-2.0</a></p>
 
 <p align="center">
   <img src="bus_tracker/static/BANNER.jpeg" alt="AheadWay — Taipei city, buses, and arrival information" width="100%" />
@@ -94,3 +95,7 @@ The optional Hugging Face [`speech-to-speech`](https://github.com/huggingface/sp
 ## Credits
 
 Built by Jordan, with design and implementation assistance from GPT-6-Sol in [Codex](https://openai.com/codex/). Data is provided by Taipei and New Taipei public bus information feeds. See the [technical report](bus_tracker/static/technical-report.md) for source references and implementation notes.
+
+## License
+
+Unless otherwise noted, this project is licensed under the [Apache License 2.0](LICENSE). Third-party data and services remain subject to their own terms.

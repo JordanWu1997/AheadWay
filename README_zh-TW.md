@@ -9,6 +9,8 @@
   </p>
 </div>
 
+<p align="center"><a href="LICENSE">Apache-2.0 授權</a></p>
+
 <p align="center">
   <img src="bus_tracker/static/BANNER.jpeg" alt="AheadWay 臺北城市、公車與到站資訊" width="100%" />
 </p>
@@ -93,3 +95,7 @@ python3 -m bus_tracker.server 8000
 ## 致謝
 
 由 Jordan 開發，並在 [Codex](https://openai.com/codex/) 中獲 GPT-6-Sol 協助設計與實作。資料來自臺北市與新北市公車公開資訊。資料來源與實作細節請見[技術報告](bus_tracker/static/technical-report.md)。
+
+## 授權條款
+
+除另有註明外，本專案採用 [Apache License 2.0](LICENSE)。第三方資料與服務仍適用各自的授權及使用條款。
