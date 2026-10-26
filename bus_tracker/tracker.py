@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import gzip
 import json
 import math
 import statistics
@@ -11,43 +10,82 @@ import time
 from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from urllib.request import Request, urlopen
 
 from .calibration import DATABASE, CalibrationStore, prediction_window
+from .feeds import FEED_BASES, fetch_feed
 
-BASE = "https://tcgbusfs.blob.core.windows.net/ntpcbus/Get%s.gz"
 ROUTE_ID = 16405
 TURNAROUND_STOP_NAME = "捷運景安站(景平路)"
 ROUTES = {
     16405: {"name": "橘5", "name_en": "Orange Five", "source": 16405,
             "heads": ("往捷運景安站", "往板橋"),
             "heads_en": ("toward Jingan MRT Station", "toward Banqiao"),
-            "terminal_direction": 1},
+            "terminal_direction": 1, "turnaround_stop": TURNAROUND_STOP_NAME,
+            "feed": "new-taipei"},
     16585: {"name": "908", "name_en": "Route 908", "source": 16585,
             "heads": ("往捷運景安站", "往三峽"),
             "heads_en": ("toward Jingan MRT Station", "toward Sanxia"),
-            "terminal_direction": 0},
+            "terminal_direction": 0, "turnaround_stop": TURNAROUND_STOP_NAME,
+            "feed": "new-taipei"},
     16664: {"name": "921", "name_en": "Route 921", "source": 16664,
             "heads": ("往捷運景安站", "往三峽"),
             "heads_en": ("toward Jingan MRT Station", "toward Sanxia"),
-            "terminal_direction": 0},
+            "terminal_direction": 0, "turnaround_stop": TURNAROUND_STOP_NAME,
+            "feed": "new-taipei"},
 }
 TAIPEI = timezone(timedelta(hours=8))
+_catalog_lock = threading.Lock()
+_catalog_expires = 0.0
+
+
+def refresh_route_catalog(force=False):
+    """Discover city routes from both official feeds, retaining known route overrides."""
+    global _catalog_expires
+    with _catalog_lock:
+        if not force and time.monotonic() < _catalog_expires:
+            return ROUTES
+        succeeded = False
+        for feed in FEED_BASES:
+            try:
+                rows = fetch_feed("Route", feed)["BusInfo"]
+            except (OSError, ValueError, KeyError, json.JSONDecodeError):
+                continue
+            succeeded = True
+            for row in rows:
+                try:
+                    route_id = int(row["Id"])
+                except (KeyError, TypeError, ValueError):
+                    continue
+                if route_id in ROUTES:
+                    continue
+                name = (row.get("nameZh") or "").strip()
+                if not name:
+                    continue
+                departure = (row.get("departureZh") or "").strip()
+                destination = (row.get("destinationZh") or "").strip()
+                departure_en = (row.get("departureEn") or departure).strip()
+                destination_en = (row.get("destinationEn") or destination).strip()
+                ROUTES[route_id] = {
+                    "name": name, "name_en": (row.get("nameEn") or f"Route {name}").strip(),
+                    "source": route_id, "feed": feed,
+                    "heads": (f"往{destination}" if destination else "去程",
+                              f"往{departure}" if departure else "返程"),
+                    "heads_en": (f"toward {destination_en}" if destination_en else "outbound",
+                                 f"toward {departure_en}" if departure_en else "inbound"),
+                    "terminal_direction": None, "turnaround_stop": None,
+                }
+        if succeeded:
+            _catalog_expires = time.monotonic() + 3600
+        return ROUTES
 
 
 def route_info(route_id: int) -> dict:
+    if route_id not in ROUTES:
+        refresh_route_catalog()
     try:
         return ROUTES[route_id]
     except KeyError as exc:
         raise ValueError("Unsupported bus route") from exc
-
-
-def fetch_feed(name: str) -> dict:
-    if name not in {"Route", "Stop", "BusData", "BusEvent", "EstimateTime"}:
-        raise ValueError("Unknown feed")
-    request = Request(BASE % name, headers={"User-Agent": "BusTracker/0.1"})
-    with urlopen(request, timeout=15) as response:
-        return json.loads(gzip.decompress(response.read()))
 
 
 def age_seconds(value: str, now: datetime) -> float:
@@ -98,8 +136,8 @@ def ordered_stops(stops: list[dict], direction: int, route_id: int = ROUTE_ID) -
     route_stops = [s for s in stops if s.get("routeId") == route_id]
     ordered = sorted((s for s in route_stops if str(s.get("goBack")) == str(direction)),
                      key=lambda s: int(s["seqNo"]))
-    if direction != info["terminal_direction"]:
-        turnaround = next((s for s in route_stops if s.get("nameZh") == TURNAROUND_STOP_NAME
+    if info.get("turnaround_stop") and direction != info["terminal_direction"]:
+        turnaround = next((s for s in route_stops if s.get("nameZh") == info["turnaround_stop"]
                            and str(s.get("goBack")) == str(info["terminal_direction"])), None)
         if turnaround:
             if direction == 0 and (not ordered or int(turnaround["seqNo"]) > int(ordered[-1]["seqNo"])):
@@ -445,42 +483,55 @@ class FeedCache:
         self._fetched_at: dict[str, str] = {}
         self._locks = {name: threading.Lock() for name in
                        ("Route", "Stop", "BusData", "BusEvent", "EstimateTime")}
+        self._locks.update({f"{feed}:{name}": threading.Lock() for feed in FEED_BASES
+                            if feed != "new-taipei" for name in
+                            ("Route", "Stop", "BusData", "BusEvent", "EstimateTime")})
+        self._route_lock = threading.Lock()
         self.history = {route_id: SegmentHistory(route_id) for route_id in ROUTES}
         self.calibration = {route_id: CalibrationStore(
             DATABASE if route_id == ROUTE_ID else
             Path(__file__).with_name(f"arrival_history_{route_id}.sqlite3"))
             for route_id in ROUTES}
 
-    def get(self, name: str, ttl: int, refresh: bool = False) -> dict:
+    def get(self, name: str, ttl: int, refresh: bool = False,
+            feed: str = "new-taipei") -> dict:
+        if feed not in FEED_BASES:
+            raise ValueError("Unknown bus feed")
+        key = name if feed == "new-taipei" else f"{feed}:{name}"
         max_age = min(ttl, 5) if refresh else ttl
-        cached = self._data.get(name)
+        cached = self._data.get(key)
         if cached and time.monotonic() - cached[0] < max_age:
             return cached[1]
-        with self._locks[name]:
-            cached = self._data.get(name)
+        with self._locks[key]:
+            cached = self._data.get(key)
             if cached and time.monotonic() - cached[0] < max_age:
                 return cached[1]
-            result = fetch_feed(name)
-            self._data[name] = (time.monotonic(), result)
-            self._fetched_at[name] = datetime.now(TAIPEI).isoformat()
+            result = fetch_feed(name) if feed == "new-taipei" else fetch_feed(name, feed)
+            self._data[key] = (time.monotonic(), result)
+            self._fetched_at[key] = datetime.now(TAIPEI).isoformat()
             return result
 
     def stops(self, route_id: int = ROUTE_ID) -> list[dict]:
-        route_info(route_id)
-        return sorted((s for s in self.get("Stop", 3600)["BusInfo"] if
+        feed = route_info(route_id)["feed"]
+        return sorted((s for s in self.get("Stop", 3600, feed=feed)["BusInfo"] if
                        s.get("routeId") == route_id),
                       key=lambda s: (int(s["goBack"]), int(s["seqNo"])))
 
     def snapshot(self, stop_id: int, direction: int, closed_loop: bool = True,
                  route_id: int = ROUTE_ID, refresh: bool = False) -> dict:
-        route_info(route_id)
-        routes = self.get("Route", 3600)["BusInfo"]
+        feed = route_info(route_id)["feed"]
+        routes = self.get("Route", 3600, feed=feed)["BusInfo"]
         stops = self.stops(route_id)
-        positions = self.get("BusData", 30, refresh)["BusInfo"]
-        estimates = self.get("EstimateTime", 30, refresh)["BusInfo"]
-        events = self.get("BusEvent", 30, refresh)["BusInfo"]
+        positions = self.get("BusData", 30, refresh, feed)["BusInfo"]
+        estimates = self.get("EstimateTime", 30, refresh, feed)["BusInfo"]
+        events = self.get("BusEvent", 30, refresh, feed)["BusInfo"]
         now = datetime.now(TAIPEI)
         path_ids = {str(r["pathAttributeId"]) for r in routes if r.get("Id") == route_id}
+        with self._route_lock:
+            if route_id not in self.history:
+                self.history[route_id] = SegmentHistory(route_id)
+                self.calibration[route_id] = CalibrationStore(
+                    Path(__file__).with_name(f"arrival_history_{route_id}.sqlite3"))
         self.history[route_id].observe(events, stops, path_ids, now)
         route_events = [event for event in events if str(event.get("RouteID")) in path_ids]
         self.calibration[route_id].observe_arrivals(route_events, now)
@@ -488,7 +539,8 @@ class FeedCache:
                                   now=now, events=events, closed_loop=closed_loop,
                                   observed_segments=self.history[route_id].medians(now),
                                   calibration=self.calibration[route_id], route_id=route_id)
-        snapshot["feedFetchedAt"] = {name: self._fetched_at.get(name) for name in
+        snapshot["feedFetchedAt"] = {name: self._fetched_at.get(
+            name if feed == "new-taipei" else f"{feed}:{name}") for name in
                                      ("BusData", "EstimateTime", "BusEvent")}
         self.calibration[route_id].record_forecasts(snapshot)
         return snapshot

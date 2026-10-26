@@ -1,1 +1,1 @@
-{"name":"公車追蹤","short_name":"公車追蹤","description":"橘5、908、921 即時到站與出發提醒","start_url":"./","scope":"./","display":"standalone","background_color":"#f7f7f3","theme_color":"#173d32","icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]}
+{"name":"AheadWay","short_name":"AheadWay","description":"臺北與新北公車後續班次、出發建議與手機提醒","start_url":"./","scope":"./","display":"standalone","background_color":"#f7f7f3","theme_color":"#173d32","icons":[{"src":"LOGO.jpeg?v=1fa489af","sizes":"2048x2048","type":"image/jpeg","purpose":"any"}]}

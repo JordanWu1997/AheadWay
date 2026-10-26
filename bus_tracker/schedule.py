@@ -61,7 +61,7 @@ def validate(data):
     if voice_format not in ("short", "verbose"):
         raise ValueError("Voice format must be short or verbose")
     model = data.get("voice_model", "tts-1")
-    name = data.get("voice_name", "alloy" if engine == "api" else "en" if language == "en" else "cmn")
+    name = data.get("voice_name", "anne" if engine == "api" else "en" if language == "en" else "cmn")
     if engine == "espeak" and name not in ESPEAK_VOICES:
         raise ValueError("Unknown eSpeak voice")
     if engine == "espeak" and not name.startswith("cmn" if language == "zh" else "en"):

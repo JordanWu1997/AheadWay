@@ -39,6 +39,17 @@ class PublicServerTests(unittest.TestCase):
                 self.assertIn(b'src="app.js"', body)
                 self.assertIn("text/html", content_type)
 
+    def test_brand_images_are_served_from_public_bus_path(self):
+        for name in ("LOGO.jpeg", "BANNER.jpeg"):
+            with self.subTest(name=name):
+                handler = self.handler(f"/bus/{name}")
+                handler.do_GET()
+                status, body, content_type = handler.reply.call_args.args
+                self.assertEqual((status, content_type), (200, "image/jpeg"))
+                self.assertTrue(body.startswith(b"\xff\xd8"))
+                self.assertEqual(handler.reply.call_args.kwargs["cache_control"],
+                                 "public, max-age=86400")
+
     def test_route_catalog_and_route_specific_arrivals(self):
         handler = self.handler("/bus/api/routes")
         handler.do_GET()
@@ -54,6 +65,13 @@ class PublicServerTests(unittest.TestCase):
             handler.do_GET()
             self.assertEqual(handler.reply.call_args.args, (200, {"routeId": 16585}))
             snapshot.assert_called_once_with(138594, 0, True, 16585, refresh=True)
+
+    def test_public_route_search_accepts_an_official_link(self):
+        with patch.object(server_module, "search_routes", return_value=[{"id": 10841}]) as search:
+            handler = self.handler("/bus/api/catalog?q=https%3A%2F%2Fpda5284.gov.taipei%2FMQS%2Froute.jsp%3Frid%3D10841")
+            handler.do_GET()
+            self.assertEqual(handler.reply.call_args.args, (200, [{"id": 10841}]))
+            search.assert_called_once_with("https://pda5284.gov.taipei/MQS/route.jsp?rid=10841")
 
     def test_route_stops_mark_virtual_stops_unselectable(self):
         fake = [{"Id": 1, "routeId": 16585, "goBack": "0", "seqNo": 0,
@@ -79,6 +97,12 @@ class PublicServerTests(unittest.TestCase):
         self.assertEqual(handler.reply.call_args.args[0], 403)
 
     def test_public_voice_can_use_api_or_espeak(self):
+        with patch.object(server_module, "render_api_wav", return_value=b"anne-wav") as anne:
+            handler = self.speech_request({"text": "橘五公車", "engine": "api",
+                                           "model": "tts-1", "voice": "anne"})
+            handler.do_POST()
+            self.assertEqual(handler.reply.call_args.args, (200, b"anne-wav", "audio/wav"))
+            anne.assert_called_once_with("橘五公車", "tts-1", "anne")
         with patch.object(server_module, "render_api_wav", return_value=b"api-wav") as api:
             handler = self.speech_request({"text": "橘五公車", "engine": "api",
                                            "model": "tts-1", "voice": "alloy"})
@@ -126,6 +150,35 @@ class PublicServerTests(unittest.TestCase):
         handler = self.handler("/", public=False)
         handler.do_GET()
         self.assertNotIn(b"BUS_TRACKER_PUBLIC = true", handler.reply.call_args.args[1])
+
+    def test_push_changes_forward_revision_to_subscription_store(self):
+        service = Mock()
+        service.save.return_value = True
+        service.remove.return_value = True
+        endpoint = "https://fcm.googleapis.com/fcm/send/test"
+        payloads = [
+            {"action": "save", "subscription": {"endpoint": endpoint}, "route_id": 16405,
+             "direction": 0, "stop_id": 2, "walk_minutes": 5, "revision": 11},
+            {"action": "remove", "subscription": {"endpoint": endpoint}, "revision": 12},
+        ]
+        for payload in payloads:
+            with self.subTest(action=payload["action"]):
+                handler = self.handler("/bus/api/push-subscription")
+                handler.server.push_service = service
+                body = json.dumps(payload).encode()
+                handler.headers.update({"Content-Length": str(len(body)),
+                                        "Origin": "https://pop-os.tail443eb6.ts.net"})
+                handler.rfile = io.BytesIO(body)
+                with patch.object(server_module.PUBLIC_PUSH_GATE, "acquire", return_value=True), \
+                        patch.object(server_module.PUBLIC_PUSH_GATE, "release"), \
+                        patch.object(server_module, "route_info"), \
+                        patch.object(server_module.CACHE, "stops", return_value=[
+                            {"Id": 2, "routeId": 16405, "goBack": "0", "seqNo": 1,
+                             "nameZh": "測試站", "latitude": "25", "longitude": "121"}]):
+                    handler.do_POST()
+                self.assertEqual(handler.reply.call_args.args, (200, {"ok": True, "applied": True}))
+        service.save.assert_called_once_with(payloads[0])
+        service.remove.assert_called_once_with(endpoint, 12)
 
 
 if __name__ == "__main__":

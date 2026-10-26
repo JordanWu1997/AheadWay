@@ -20,16 +20,43 @@ const apiModelEl = document.querySelector('#api-model');
 const apiVoiceEl = document.querySelector('#api-voice');
 const apiVoiceSettingsEl = document.querySelector('#api-voice-settings');
 const walkMinutesEl = document.querySelector('#walk-minutes');
+const useLocationEl = document.querySelector('#use-location');
+const walkSourceEl = document.querySelector('#walk-source');
+const walkSettingsEl = document.querySelector('.walk-settings');
 const leaveAdviceEl = document.querySelector('#leave-advice');
 const locationStateEl = document.querySelector('#location-state');
+const locationRefreshEl = document.querySelector('#location-refresh');
 const dataFreshnessEl = document.querySelector('#data-freshness');
 const savedTripsEl = document.querySelector('#saved-trips');
+const tripsMoreEl = document.querySelector('#trips-more');
+let tripsExpanded = false;
 const pushStateEl = document.querySelector('#push-state');
+const pushPanelEl = document.querySelector('#mobile-reminder');
+const mobileModeSummaryEl = document.querySelector('#mobile-mode-summary');
+const mobilePlanEl = document.querySelector('#mobile-plan');
+const mobileTravelEl = document.querySelector('#mobile-travel');
+const planPanelEl = document.querySelector('#plan-panel');
+const travelPanelEl = document.querySelector('#travel-panel');
+const travelResultEl = document.querySelector('#travel-result');
+const travelHeadEl = document.querySelector('#travel-head');
+const travelDetailEl = document.querySelector('#travel-detail');
+const travelActionEl = document.querySelector('#travel-action');
+const travelFloatEl = document.querySelector('#travel-float');
+let mobileMode = 'plan';
+let travelWatchId = null;
+let travelWatchVersion = 0;
+let travelActive = false;
+let lastTravelPosition = null;
+let lastTravelPositionAt = 0;
+let lastTravelAlertKey = '';
 const scheduleTimeEl = document.querySelector('#schedule-time');
 const scheduleDurationEl = document.querySelector('#schedule-duration');
 const scheduleEnabledEl = document.querySelector('#schedule-enabled');
 const scheduleStateEl = document.querySelector('#schedule-state');
 const closedEl = document.querySelector('#closed-loop');
+const scopePanelEl = document.querySelector('.arrival-scope');
+const scopeEffectEl = document.querySelector('#scope-effect');
+const trackingContextEl = document.querySelector('#tracking-context');
 const routeColumnsEl = document.querySelector('#route-columns');
 const mobileLegButtons = [...document.querySelectorAll('[data-mobile-leg]')];
 const routePanelEl = document.querySelector('.route-panel');
@@ -45,17 +72,41 @@ const mapZoomInEl = document.querySelector('#map-zoom-in');
 const mapZoomOutEl = document.querySelector('#map-zoom-out');
 const mapZoomResetEl = document.querySelector('#map-zoom-reset');
 const publicMode = window.BUS_TRACKER_PUBLIC === true;
+const defaultRouteIds = [16405, 16585, 16664];
 const routes = {
-  16405: {name: '橘5', spoken: '橘五', english: 'Orange Five', heads: ['往捷運景安站', '往板橋'], headsEn: ['toward Jingan MRT Station', 'toward Banqiao'], terminalDirection: 1},
-  16585: {name: '908', spoken: '九零八', english: 'Route 908', heads: ['往捷運景安站', '往三峽'], headsEn: ['toward Jingan MRT Station', 'toward Sanxia'], terminalDirection: 0},
-  16664: {name: '921', spoken: '九二一', english: 'Route 921', heads: ['往捷運景安站', '往三峽'], headsEn: ['toward Jingan MRT Station', 'toward Sanxia'], terminalDirection: 0}
+  16405: {name: '橘5', spoken: '橘五', english: 'Orange Five', heads: ['往捷運景安站', '往板橋'], headsEn: ['toward Jingan MRT Station', 'toward Banqiao'], terminalDirection: 1, turnaroundStop: '捷運景安站(景平路)', source: 'new-taipei'},
+  16585: {name: '908', spoken: '九零八', english: 'Route 908', heads: ['往捷運景安站', '往三峽'], headsEn: ['toward Jingan MRT Station', 'toward Sanxia'], terminalDirection: 0, turnaroundStop: '捷運景安站(景平路)', source: 'new-taipei'},
+  16664: {name: '921', spoken: '九二一', english: 'Route 921', heads: ['往捷運景安站', '往三峽'], headsEn: ['toward Jingan MRT Station', 'toward Sanxia'], terminalDirection: 0, turnaroundStop: '捷運景安站(景平路)', source: 'new-taipei'}
 };
+let addedRouteIds = [];
+try {
+  const stored = JSON.parse(localStorage.getItem('bus-tracker-added-routes') || '[]');
+  if (Array.isArray(stored)) addedRouteIds = [...new Set(stored.filter(id => Number.isInteger(id) && id > 0))].slice(0, 20);
+} catch (_) { /* Ignore damaged browser storage. */ }
 let activeRoute = Number(localStorage.getItem('bus-tracker-route'));
+const requestedRoute = activeRoute;
 if (!routes[activeRoute]) activeRoute = 16405;
-const routeTabs = [...document.querySelectorAll('.route-tabs [role="tab"]')];
+let routeTabs = [...document.querySelectorAll('.route-tabs [role="tab"]')];
+const routeTabsEl = document.querySelector('.route-tabs');
+const routeMoreEl = document.querySelector('#route-more');
+let catalogSearchVersion = 0;
+const routePickerEl = document.querySelector('#route-picker');
+const routeAddEl = document.querySelector('#route-add');
+const routeQueryEl = document.querySelector('#route-query');
+const routeResultsEl = document.querySelector('#route-results');
+const routePickerStatusEl = document.querySelector('#route-picker-status');
+const routeRemoveEl = document.querySelector('#route-remove');
+routeAddEl.addEventListener('click', () => {
+  routePickerEl.open = !routePickerEl.open;
+  routeAddEl.setAttribute('aria-expanded', String(routePickerEl.open));
+  if (routePickerEl.open) routeQueryEl.focus();
+});
+routePickerEl.addEventListener('toggle', () =>
+  routeAddEl.setAttribute('aria-expanded', String(routePickerEl.open)));
 const routeStorage = suffix => `bus-tracker-${activeRoute}-${suffix}`;
 closedEl.checked = (localStorage.getItem(routeStorage('closed-loop')) ??
-  (activeRoute === 16405 ? localStorage.getItem('orange5-closed-loop') : null)) !== '0';
+  (activeRoute === 16405 ? localStorage.getItem('orange5-closed-loop') : null) ??
+  (defaultRouteIds.includes(activeRoute) ? '1' : '0')) === '1';
 voiceModeEl.value = localStorage.getItem('orange5-voice-mode') === 'briefing' ? 'briefing' : 'alert';
 voiceFormatEl.value = localStorage.getItem('orange5-voice-format') === 'verbose' ? 'verbose' : 'short';
 const storedThreshold = Number(localStorage.getItem('orange5-alert-threshold'));
@@ -67,8 +118,11 @@ customThresholdWrapEl.hidden = thresholdEl.value !== 'custom';
 voiceLanguageEl.value = localStorage.getItem('orange5-voice-language') === 'en' ? 'en' : 'zh';
 briefingIntervalEl.value = localStorage.getItem('orange5-briefing-interval') || '5';
 walkMinutesEl.value = localStorage.getItem('orange5-walk-minutes') || '5';
+let manualWalkMinutes = walkMinutesEl.value;
 apiModelEl.value = localStorage.getItem('orange5-api-model') || 'tts-1';
-apiVoiceEl.value = localStorage.getItem('orange5-api-voice') || 'alloy';
+const storedApiVoice = localStorage.getItem('orange5-api-voice');
+apiVoiceEl.value = storedApiVoice && storedApiVoice !== 'alloy' ? storedApiVoice : 'anne';
+if (storedApiVoice === 'alloy') localStorage.setItem('orange5-api-voice', 'anne');
 let stops = [];
 let voiceEnabled = false;
 let latestSnapshot = null;
@@ -93,10 +147,13 @@ let lastA11yKey = '';
 let locationWalkMinutes = null;
 let locationStopKey = '';
 let locationRequestKey = '';
+let locationRequestVersion = 0;
 let savedTrips = [];
 try {
   const storedTrips = JSON.parse(localStorage.getItem('bus-tracker-saved-trips') || '[]');
-  if (Array.isArray(storedTrips)) savedTrips = storedTrips.filter(trip => routes[trip.routeId]);
+  if (Array.isArray(storedTrips)) savedTrips = storedTrips.filter(trip => trip &&
+    Number.isInteger(trip.routeId) && trip.routeId > 0 && Number.isInteger(trip.stopId) &&
+    [0, 1].includes(trip.direction)).slice(0, 8);
 } catch (_) { /* Ignore damaged browser storage. */ }
 let preferredVoiceModel = localStorage.getItem(`orange5-voice-model-${voiceLanguageEl.value}`) ||
   (voiceLanguageEl.value === 'zh' ? localStorage.getItem('orange5-voice-model') : null) || 'api';
@@ -104,19 +161,38 @@ if (preferredVoiceModel === 'local') preferredVoiceModel = 'espeak:cmn';
 if (publicMode) {
   document.querySelector('.schedule-settings').hidden = true;
   apiModelEl.value = 'tts-1';
-  apiVoiceEl.value = 'alloy';
+  apiVoiceEl.value = 'anne';
   apiModelEl.readOnly = true;
   apiVoiceEl.readOnly = true;
   document.querySelector('#api-voice-settings small').textContent =
-    '公共版使用本機 TTS 伺服器 tts-1 / alloy；也可選 eSpeak 或瀏覽器語音。';
+    '公共版使用本機 TTS 伺服器 tts-1 / anne；也可選 eSpeak 或瀏覽器語音。';
 }
-document.querySelector('.push-card').hidden = !publicMode;
+const phoneViewport = window.matchMedia?.('(max-width:650px)');
+pushPanelEl.hidden = !publicMode || !phoneViewport?.matches;
 const pushToggleEl = document.querySelector('#push-toggle');
+const pushRetryEl = document.querySelector('#push-retry');
+const pushTargetEl = document.querySelector('#push-target');
+const pushTargetSwitchEl = document.querySelector('#push-target-switch');
 let pushRegistration = null;
 let pushApplicationKey = null;
 const pushEnabledKey = 'bus-tracker-push-enabled';
 const pushEndpointKey = 'bus-tracker-push-endpoint';
 const pushPendingRemoveKey = 'bus-tracker-push-pending-remove';
+const pushRevisionKey = 'bus-tracker-push-revision';
+const pushTargetKey = 'bus-tracker-push-target';
+let pushTarget = null;
+try {
+  const saved = JSON.parse(localStorage.getItem(pushTargetKey) || 'null');
+  if (saved && Number.isInteger(saved.routeId) && saved.routeId > 0 &&
+      [0, 1].includes(saved.direction) && Number.isInteger(saved.stopId) && saved.stopId > 0 &&
+      Number.isInteger(saved.walkMinutes) && saved.walkMinutes >= 0 && saved.walkMinutes <= 60)
+    pushTarget = saved;
+} catch (_) { /* Ignore damaged browser storage. */ }
+function nextPushRevision() {
+  const next = Math.max(Date.now() * 1000, (Number(localStorage.getItem(pushRevisionKey)) || 0) + 1);
+  localStorage.setItem(pushRevisionKey, String(next));
+  return next;
+}
 function pushNeedsRemoval() {
   return localStorage.getItem(pushEnabledKey) === '1' || localStorage.getItem(pushPendingRemoveKey) === '1';
 }
@@ -151,8 +227,10 @@ function withPushTimeout(promise, milliseconds, message) {
 async function postPush(payload, controller = new AbortController()) {
   const timer = setTimeout(() => controller.abort(), 8000);
   try {
-    return await request('api/push-subscription', {method: 'POST', headers: {'Content-Type': 'application/json'},
+    const response = await request('api/push-subscription', {method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(payload), signal: controller.signal});
+    if (response.applied === false) throw new Error('此裝置已有更新的提醒設定，請重試');
+    return response;
   } finally { clearTimeout(timer); }
 }
 
@@ -165,16 +243,60 @@ async function currentPushSubscription() {
 
 function currentStopKey() { return `${activeRoute}:${directionEl.value}:${stopEl.value}`; }
 function currentWalkMinutes() {
-  return Math.max(0, Math.min(60, Math.round((locationWalkMinutes ?? Number(walkMinutesEl.value)) || 0)));
+  return Math.max(0, Math.min(60, Math.round((locationWalkMinutes ?? Number(manualWalkMinutes)) || 0)));
 }
-function pushPayload(subscription) {
-  return {action: 'save', subscription: subscription.toJSON(), route_id: activeRoute,
-    direction: Number(directionEl.value), stop_id: Number(stopEl.value),
-    closed_loop: closedEl.checked, walk_minutes: currentWalkMinutes()};
+function selectedPushTarget() {
+  const station = stops.find(item => item.direction === Number(directionEl.value) &&
+    String(item.id) === String(stopEl.value));
+  if (!station) return null;
+  return {routeId: activeRoute, routeName: routes[activeRoute]?.name || String(activeRoute),
+    direction: Number(station.direction), stopId: Number(station.id), stopName: station.name,
+    closedLoop: closedEl.checked, walkMinutes: currentWalkMinutes()};
 }
-function syncPushSettings() {
-  if (!publicMode || localStorage.getItem('bus-tracker-push-enabled') !== '1' || !stopEl.value) return;
+function pushTargetMatchesSelection() {
+  return pushTarget && pushTarget.routeId === activeRoute &&
+    pushTarget.direction === Number(directionEl.value) &&
+    String(pushTarget.stopId) === String(stopEl.value);
+}
+function savePushTarget(target) {
+  pushTarget = target;
+  localStorage.setItem(pushTargetKey, JSON.stringify(target));
+  renderPushTarget();
+}
+function renderPushTarget() {
+  pushTargetEl.textContent = pushTarget
+    ? `提醒目標：${pushTarget.routeName || pushTarget.routeId}・${pushTarget.stopName || `站牌 ${pushTarget.stopId}`} · 步行 ${pushTarget.walkMinutes} 分鐘` +
+      (!defaultRouteIds.includes(pushTarget.routeId) && !addedRouteIds.includes(pushTarget.routeId)
+        ? '（此路線分頁已移除，通知仍會發送）' : '')
+    : '尚未啟用；啟用後會固定目前選擇的站牌。';
+  pushTargetSwitchEl.hidden = !pushTarget || !selectedPushTarget() || Boolean(pushTargetMatchesSelection()) ||
+    localStorage.getItem(pushEnabledKey) !== '1';
+}
+function pushPayload(subscription, revision, target = pushTarget) {
+  return {action: 'save', subscription: subscription.toJSON(), route_id: target.routeId,
+    direction: target.direction, stop_id: target.stopId,
+    closed_loop: target.closedLoop, walk_minutes: target.walkMinutes, revision};
+}
+function syncPushSettings(force = false) {
+  if (!publicMode || localStorage.getItem(pushEnabledKey) !== '1') return;
+  if (!pushTarget) {
+    const selected = selectedPushTarget();
+    if (!selected) return;
+    savePushTarget(selected); // Migrate an existing subscription to an explicit target.
+  }
+  if (pushTargetMatchesSelection()) {
+    const walkMinutes = currentWalkMinutes();
+    if (pushTarget.walkMinutes !== walkMinutes || pushTarget.closedLoop !== closedEl.checked)
+      savePushTarget({...pushTarget, walkMinutes, closedLoop: closedEl.checked});
+  } else if (!force) {
+    renderPushTarget();
+    return;
+  }
   const revision = ++pushSyncRevision;
+  const serverRevision = nextPushRevision();
+  pushSyncAbort?.abort();
+  pushRetryEl.hidden = true;
+  pushStateEl.textContent = '正在同步固定站牌的手機提醒…';
   pushSyncChain = withPushTimeout(pushSyncChain.catch(() => {}), 6000, '通知同步逾時')
     .catch(() => {}).then(async () => {
     if (revision !== pushSyncRevision) return;
@@ -185,20 +307,35 @@ function syncPushSettings() {
       localStorage.removeItem(pushEnabledKey);
       pushStateEl.textContent = '通知訂閱已失效，請重新啟用。';
       pushToggleEl.textContent = '啟用手機通知';
+      pushTarget = null;
+      localStorage.removeItem(pushTargetKey);
+      renderPushTarget();
       return;
     }
     localStorage.setItem(pushEndpointKey, subscription.endpoint);
     const controller = new AbortController();
     pushSyncAbort = controller;
-    await postPush(pushPayload(subscription), controller);
+    await postPush(pushPayload(subscription, serverRevision), controller);
     if (revision !== pushSyncRevision) return;
-    pushStateEl.textContent = `已設定 ${routes[activeRoute].name} ${stopEl.selectedOptions?.[0]?.textContent || ''} · 步行 ${currentWalkMinutes()} 分鐘；關閉頁面仍可通知。`;
+    pushStateEl.textContent = `已固定 ${pushTarget.routeName || pushTarget.routeId} ${pushTarget.stopName || ''} · 步行 ${pushTarget.walkMinutes} 分鐘；關閉頁面仍可通知。`;
+    pushRetryEl.hidden = true;
     pushToggleEl.textContent = '關閉手機通知';
-    } catch (error) { if (revision === pushSyncRevision) pushStateEl.textContent = `通知設定未儲存：${error.message}`; }
+    } catch (error) { if (revision === pushSyncRevision) {
+      pushStateEl.textContent = `同步失敗：${error.message}。手機可能仍追蹤上次成功設定的站牌。`;
+      pushRetryEl.hidden = false;
+    } }
     finally { if (revision === pushSyncRevision) pushSyncAbort = null; }
   });
   return pushSyncChain;
 }
+pushRetryEl.addEventListener('click', () => syncPushSettings(true));
+pushTargetSwitchEl.addEventListener('click', () => {
+  const target = selectedPushTarget();
+  if (!target || localStorage.getItem(pushEnabledKey) !== '1') return;
+  savePushTarget(target);
+  return syncPushSettings();
+});
+renderPushTarget();
 
 document.querySelector('#push-toggle').addEventListener('click', async () => {
   const button = document.querySelector('#push-toggle');
@@ -211,15 +348,20 @@ document.querySelector('#push-toggle').addEventListener('click', async () => {
       pushSyncAbort = null;
       localStorage.removeItem(pushEnabledKey);
       localStorage.setItem(pushPendingRemoveKey, '1');
+      pushRetryEl.hidden = true;
       pushStateEl.textContent = '正在關閉手機通知…';
       const endpoint = localStorage.getItem(pushEndpointKey);
       const subscription = endpoint ? null : await currentPushSubscription();
       const removeEndpoint = endpoint || subscription?.endpoint;
       if (removeEndpoint) {
-        await postPush({action: 'remove', subscription: {endpoint: removeEndpoint}});
+        await postPush({action: 'remove', subscription: {endpoint: removeEndpoint},
+          revision: nextPushRevision()});
       }
       localStorage.removeItem(pushPendingRemoveKey);
       localStorage.removeItem(pushEndpointKey);
+      localStorage.removeItem(pushTargetKey);
+      pushTarget = null;
+      renderPushTarget();
       button.textContent = '啟用手機通知';
       pushStateEl.textContent = '已關閉手機通知';
       const finishLocal = localSubscription => {
@@ -230,15 +372,21 @@ document.querySelector('#push-toggle').addEventListener('click', async () => {
       return;
     }
     if (!pushRegistration || !pushApplicationKey) throw new Error('通知服務尚未準備好');
+    const target = selectedPushTarget();
+    if (!target) throw new Error('請先選擇可追蹤站牌');
     // Begin subscription in the click's user gesture, as required by iOS web apps.
     const subscriptionPromise = pushRegistration.pushManager.subscribe({userVisibleOnly: true,
       applicationServerKey: pushApplicationKey});
     const subscription = await subscriptionPromise;
-    await postPush(pushPayload(subscription));
+    const payload = pushPayload(subscription, nextPushRevision(), target);
+    await postPush(payload);
     localStorage.setItem(pushEndpointKey, subscription.endpoint);
     localStorage.setItem(pushEnabledKey, '1');
+    savePushTarget(target);
     button.textContent = '關閉手機通知';
-    pushStateEl.textContent = `已設定 ${routes[activeRoute].name} ${stopEl.selectedOptions?.[0]?.textContent || ''} · 步行 ${currentWalkMinutes()} 分鐘。`;
+    pushStateEl.textContent = `已固定 ${target.routeName} ${target.stopName} · 步行 ${target.walkMinutes} 分鐘。`;
+    if (pushTargetMatchesSelection() && (target.walkMinutes !== currentWalkMinutes() ||
+        target.closedLoop !== closedEl.checked)) syncPushSettings();
   } catch (error) {
     if (localStorage.getItem(pushPendingRemoveKey) === '1') {
       button.textContent = '重試關閉手機通知';
@@ -293,6 +441,127 @@ async function request(url, options = {}) {
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || '資料無法取得');
   return data;
+}
+
+function rememberRoute(meta) {
+  routes[meta.id] = {name: meta.name, spoken: meta.spoken || meta.name,
+    english: meta.nameEn || `Route ${meta.name}`, heads: meta.heads,
+    headsEn: meta.headsEn, source: meta.source,
+    terminalDirection: meta.terminalDirection, turnaroundStop: meta.turnaroundStop};
+}
+
+function bindRouteTab(tab) {
+  tab.addEventListener('click', () => switchRoute(Number(tab.dataset.route)));
+  tab.addEventListener('keydown', event => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const index = routeTabs.indexOf(tab);
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? routeTabs.length - 1
+      : (index + (event.key === 'ArrowRight' ? 1 : -1) + routeTabs.length) % routeTabs.length;
+    routeTabs[next].focus();
+    routeTabs[next].click();
+  });
+}
+
+function updateRouteOverflow() {
+  if (!routeTabsEl.clientWidth) return;
+  const overflow = routeTabsEl.scrollWidth > routeTabsEl.clientWidth + 2;
+  routeMoreEl.hidden = !overflow;
+  if (!overflow) return;
+  const atEnd = routeTabsEl.scrollLeft + routeTabsEl.clientWidth >= routeTabsEl.scrollWidth - 3;
+  routeMoreEl.textContent = atEnd ? '← 前面路線' : '更多路線 →';
+  routeMoreEl.setAttribute('aria-label', atEnd ? '顯示前面的公車路線' : '顯示更多公車路線');
+  routeMoreEl.dataset.direction = atEnd ? 'back' : 'forward';
+}
+routeTabsEl.addEventListener('scroll', updateRouteOverflow);
+routeMoreEl.addEventListener('click', () => {
+  routeTabsEl.scrollBy({left: (routeMoreEl.dataset.direction === 'back' ? -1 : 1) *
+    Math.max(180, routeTabsEl.clientWidth * .7), behavior: 'smooth'});
+});
+if (window.addEventListener) window.addEventListener('resize', updateRouteOverflow);
+
+function renderRouteTabs() {
+  const tablist = document.querySelector('.route-tabs');
+  const ids = [...defaultRouteIds, ...addedRouteIds.filter(id => !defaultRouteIds.includes(id) && routes[id])];
+  for (const id of ids) {
+    if (routeTabs.some(tab => Number(tab.dataset.route) === id)) continue;
+    const tab = document.createElement('button');
+    tab.type = 'button';
+    tab.setAttribute('role', 'tab');
+    tab.dataset.route = String(id);
+    tab.textContent = routes[id].name;
+    tablist.append(tab);
+    routeTabs.push(tab);
+    bindRouteTab(tab);
+  }
+  for (const tab of [...routeTabs]) {
+    if (ids.includes(Number(tab.dataset.route))) {
+      tab.textContent = routes[Number(tab.dataset.route)]?.name || tab.textContent;
+    } else {
+      tab.remove();
+      routeTabs.splice(routeTabs.indexOf(tab), 1);
+    }
+  }
+  routeRemoveEl.hidden = defaultRouteIds.includes(activeRoute);
+  routeRemoveEl.textContent = `移除 ${routes[activeRoute]?.name || activeRoute} 分頁`;
+  updateRouteOverflow();
+}
+
+async function hydrateRoutes() {
+  const ids = [...new Set([...defaultRouteIds, ...addedRouteIds, ...savedTrips.map(trip => trip.routeId)])];
+  try {
+    const found = await request(`api/routes?ids=${ids.join(',')}`);
+    for (const meta of found) rememberRoute(meta);
+    renderRouteTabs();
+    renderSavedTrips();
+    if (routes[requestedRoute] && requestedRoute !== activeRoute) switchRoute(requestedRoute);
+    else {
+      showRoute();
+      if (requestedRoute !== activeRoute && addedRouteIds.includes(requestedRoute))
+        routePickerStatusEl.textContent = '儲存的路線暫時無法載入；保留偏好，重新開啟頁面可重試。';
+    }
+  } catch (_) {
+    if (requestedRoute !== activeRoute && addedRouteIds.includes(requestedRoute))
+      routePickerStatusEl.textContent = '路線資料暫時無法載入；已保留偏好，重新開啟頁面可重試。';
+  }
+}
+
+async function searchRouteCatalog() {
+  const version = ++catalogSearchVersion;
+  const query = routeQueryEl.value.trim();
+  routeResultsEl.replaceChildren();
+  if (!query) { routePickerStatusEl.textContent = '請輸入路線名稱或貼上官方路線連結。'; return; }
+  routePickerStatusEl.textContent = '正在搜尋可追蹤路線…';
+  try {
+    const results = await request(`api/catalog?q=${encodeURIComponent(query)}`);
+    if (version !== catalogSearchVersion) return;
+    routePickerStatusEl.textContent = results.length ? `找到 ${results.length} 條路線。` :
+      '目前的臺北／新北市即時資料中找不到這條路線；公路客運與特殊路線可能尚未支援。';
+    for (const meta of results) {
+      const button = document.createElement('button'); button.type = 'button';
+      button.textContent = meta.name;
+      const detail = document.createElement('span');
+      detail.textContent = `${meta.heads.join(' · ')} · ${meta.source === 'taipei' ? '臺北市' : '新北市'}資料`;
+      button.append(detail);
+      button.addEventListener('click', () => {
+        rememberRoute(meta);
+        if (!defaultRouteIds.includes(meta.id) && !addedRouteIds.includes(meta.id)) {
+          if (addedRouteIds.length >= 20) {
+            routePickerStatusEl.textContent = '最多可加入 20 條路線；請先移除一條已加入的路線。';
+            return;
+          }
+          addedRouteIds.push(meta.id);
+          localStorage.setItem('bus-tracker-added-routes', JSON.stringify(addedRouteIds));
+        }
+        renderRouteTabs();
+        routePickerEl.open = false;
+        switchRoute(meta.id);
+      });
+      routeResultsEl.append(button);
+    }
+  } catch (error) {
+    if (version === catalogSearchVersion) routePickerStatusEl.textContent = `搜尋失敗：${error.message}`;
+  }
 }
 
 function selectRouteStop(direction, id) {
@@ -411,7 +680,7 @@ function renderRouteMap(snapshot) {
     routeMapEl.append(line);
     leg.forEach(station => {
       const p = point(station);
-      const terminal = station.name === '捷運景安站(景平路)';
+      const terminal = station.name === routes[activeRoute]?.turnaroundStop;
       const dot = svgElement('circle', {
         class: 'map-stop',
         cx: p.x, cy: p.y, r: terminal && closedEl.checked ? 6 : 3,
@@ -428,7 +697,7 @@ function renderRouteMap(snapshot) {
   });
   const labels = [
     [legs[0][0], legs[0][0]?.name, -4, -13],
-    [legs[0][legs[0].length - 1], '景安站 ↪', 12, -13],
+    [legs[0][legs[0].length - 1], legs[0][legs[0].length - 1]?.name, 12, -13],
     [legs[1][legs[1].length - 1], legs[1][legs[1].length - 1]?.name, 10, 20]
   ];
   for (const [station, text, dx, dy] of labels) {
@@ -602,7 +871,13 @@ function setStops(shouldUpdate = true) {
     option.textContent = s.name;
     return option;
   }));
+  renderScope();
+  if (!available.length) {
+    showError('這個方向目前沒有可上車的站牌資料。請選另一方向或稍後重試。');
+    return;
+  }
   if (available.some(s => String(s.id) === previous)) stopEl.value = previous;
+  renderScope();
   resetAlertState();
   lastBriefingAt = 0;
   renderRoute();
@@ -616,9 +891,9 @@ function showRoute() {
     tab.setAttribute('aria-selected', String(selected));
     tab.tabIndex = selected ? 0 : -1;
   });
-  document.title = `${route.name} · 公車追蹤`;
+  document.title = `${route.name} · AheadWay`;
   document.querySelector('.route-badge').textContent = route.name;
-  document.querySelector('#hero-route-id').textContent = `NEW TAIPEI · ROUTE ${activeRoute}`;
+  document.querySelector('#hero-route-id').textContent = `${route.source === 'taipei' ? 'TAIPEI' : 'NEW TAIPEI'} · ROUTE ${activeRoute}`;
   document.querySelector('#route-heading').textContent = `${route.name} 路線`;
   document.querySelector('#route-map').setAttribute('aria-label', `${route.name}去程與返程站點位置示意圖`);
   const link = document.querySelector('#official-route-link');
@@ -626,10 +901,41 @@ function showRoute() {
   link.textContent = `原始${route.name}路線`;
   directionEl.options[0].textContent = route.heads[0];
   directionEl.options[1].textContent = route.heads[1];
+  routeRemoveEl.hidden = defaultRouteIds.includes(activeRoute);
+  routeRemoveEl.textContent = `移除 ${route.name} 分頁`;
+  renderPushTarget();
+  renderScope();
+}
+
+function renderScope() {
+  const selected = stopEl.selectedOptions?.[0]?.textContent?.trim() || '所選站牌';
+  scopePanelEl.classList.toggle('active', closedEl.checked);
+  scopeEffectEl.textContent = closedEl.checked
+    ? `將估算本方向及另一方向下一輪抵達${selected}的公車。`
+    : `只估算本方向抵達${selected}的公車。`;
+  trackingContextEl.textContent = `${routes[activeRoute]?.name || ''} · ${directionEl.options?.[Number(directionEl.value)]?.textContent || ''} · ${selected} ↑`;
+}
+function syncTrackingContext() {
+  const controls = document.querySelector('.controls');
+  if (!controls.getBoundingClientRect || !window.matchMedia) return;
+  trackingContextEl.hidden = !window.matchMedia('(max-width:650px)').matches ||
+    controls.getBoundingClientRect().bottom > 0;
+}
+trackingContextEl.addEventListener('click', () =>
+  document.querySelector('.controls').scrollIntoView({behavior: 'smooth', block: 'start'}));
+if (window.addEventListener) {
+  window.addEventListener('scroll', syncTrackingContext, {passive: true});
+  window.addEventListener('resize', syncTrackingContext);
 }
 
 function renderSavedTrips() {
   savedTripsEl.replaceChildren();
+  if (!savedTrips.length) {
+    const empty = document.createElement('span');
+    empty.className = 'trips-empty';
+    empty.textContent = '尚無常用行程 · 選站後按「☆ 儲存常用」';
+    savedTripsEl.append(empty);
+  }
   for (const trip of savedTrips) {
     const group = document.createElement('span'); group.className = 'saved-trip';
     const open = document.createElement('button'); open.type = 'button';
@@ -652,8 +958,13 @@ function renderSavedTrips() {
     });
     group.append(open, remove); savedTripsEl.append(group);
   }
-  document.querySelector('.trip-bar').hidden = !savedTrips.length;
+  if (savedTrips.length <= 3) tripsExpanded = false;
+  document.querySelector('.trip-bar').classList.toggle('expanded', tripsExpanded);
+  tripsMoreEl.hidden = savedTrips.length <= 3;
+  tripsMoreEl.setAttribute('aria-expanded', String(tripsExpanded));
+  tripsMoreEl.textContent = tripsExpanded ? '收合其他行程' : `顯示其餘 ${savedTrips.length - 3} 筆`;
 }
+tripsMoreEl.addEventListener('click', () => { tripsExpanded = !tripsExpanded; renderSavedTrips(); });
 
 document.querySelector('#save-trip').addEventListener('click', () => {
   const station = stops.find(s => s.direction === Number(directionEl.value) && String(s.id) === String(stopEl.value));
@@ -683,7 +994,8 @@ async function switchRoute(routeId, trip = null) {
   activeRoute = routeId;
   localStorage.setItem('bus-tracker-route', String(routeId));
   closedEl.checked = (localStorage.getItem(routeStorage('closed-loop')) ??
-    (routeId === 16405 ? localStorage.getItem('orange5-closed-loop') : null)) !== '0';
+    (routeId === 16405 ? localStorage.getItem('orange5-closed-loop') : null) ??
+    (defaultRouteIds.includes(routeId) ? '1' : '0')) === '1';
   if (trip) closedEl.checked = trip.closedLoop;
   directionEl.value = String(trip?.direction ?? localStorage.getItem(routeStorage('direction')) ?? '0');
   stops = [];
@@ -715,6 +1027,11 @@ async function switchRoute(routeId, trip = null) {
     const data = await request(`api/stops?route_id=${routeId}`);
     if (current !== routeGeneration) return;
     stops = data;
+    for (const direction of [0, 1])
+      directionEl.options[direction].disabled = !stops.some(s => s.direction === direction && s.selectable !== false);
+    if (directionEl.options[Number(directionEl.value)].disabled &&
+        !directionEl.options[1 - Number(directionEl.value)].disabled)
+      directionEl.value = String(1 - Number(directionEl.value));
     if (trip) localStorage.setItem(routeStorage('stop-' + trip.direction), String(trip.stopId));
     setStops();
     if (savedSchedule) scheduleStatus();
@@ -823,7 +1140,7 @@ function speak(text) {
     if ('speechSynthesis' in window) speechSynthesis.cancel();
     voicePreviewEl.textContent = `播報內容：${text}`;
     const config = voiceModelEl.value === 'api'
-      ? {engine: 'api', model: apiModelEl.value.trim() || 'tts-1', voice: apiVoiceEl.value.trim() || 'alloy'}
+      ? {engine: 'api', model: apiModelEl.value.trim() || 'tts-1', voice: apiVoiceEl.value.trim() || 'anne'}
       : {engine: 'espeak', voice: voiceModelEl.value.startsWith('espeak:') ? voiceModelEl.value.slice(7) : fallbackVoice};
     playLocalAudio(text, currentGeneration, config);
     return true;
@@ -1003,12 +1320,16 @@ function englishEtaRange(vehicle) {
   return low === high ? `about ${high} minutes` : `about ${low} to ${high} minutes`;
 }
 
+function setLeaveAdvice(message) {
+  leaveAdviceEl.textContent = message;
+}
+
 function renderLeaveAdvice(snapshot) {
-  const walk = locationWalkMinutes ?? Math.max(0, Math.min(60, Number(walkMinutesEl.value) || 0));
+  const walk = currentWalkMinutes();
   const eta = snapshot.officialEtaSeconds;
   const feedAges = Object.values(snapshot.feedFetchedAt || {}).filter(Boolean).map(elapsedSeconds);
   if (elapsedSeconds(snapshot.updatedAt) > 240 || feedAges.some(age => age > 240)) {
-    leaveAdviceEl.textContent = '公車資料已過時；請更新後再查看出發建議。';
+    setLeaveAdvice('公車資料已過時；請更新後再查看出發建議。');
     return;
   }
   const needed = walk * 60 + 120;
@@ -1033,56 +1354,310 @@ function renderLeaveAdvice(snapshot) {
     selected = {remaining: officialRemaining, description: '官方下一班', tentative: true};
   }
   if (!selected) {
-    leaveAdviceEl.textContent = eta === null
+    setLeaveAdvice(eta === null
       ? '目前沒有可確認來得及搭乘的車輛；請查看各車推估範圍。'
-      : '官方下一班可能趕不上；目前沒有可確認來得及搭乘的後續車輛。';
+      : '官方下一班可能趕不上；目前沒有可確認來得及搭乘的後續車輛。');
     return;
   }
   const leaveIn = selected.remaining - needed;
   const clock = new Date(Date.now() + leaveIn * 1000).toLocaleTimeString('zh-TW',
     {hour: '2-digit', minute: '2-digit', hour12: false});
-  leaveAdviceEl.textContent = `${selected.conditional ? '若此車在終點折返續行，可參考 ' : selected.tentative ? '可考慮 ' : ''}` +
+  setLeaveAdvice(`${selected.conditional ? '若此車在終點折返續行，可參考 ' : selected.tentative ? '可考慮 ' : ''}` +
     `${selected.description}：${selected.conditional ? '約' : '建議'} ${clock} 前出發` +
     `${leaveIn < 60 ? '（現在）' : `（約 ${Math.floor(leaveIn / 60)} 分鐘後）`}` +
-    (selected.conditional ? '；可能在終點停駛，請再確認班次。' : '');
+    (selected.conditional ? '；可能在終點停駛，請再確認班次。' : ''));
 }
 
-document.querySelector('#use-location').addEventListener('click', () => {
+function syncLocationUI() {
+  const active = useLocationEl.checked;
+  walkSettingsEl.dataset.mode = active ? (locationWalkMinutes === null ? 'loading' : 'gps') : 'manual';
+  walkMinutesEl.readOnly = active;
+  walkMinutesEl.value = active && locationWalkMinutes !== null ? String(locationWalkMinutes) : manualWalkMinutes;
+  walkSourceEl.textContent = active ? (locationWalkMinutes === null ? '定位中 · 暫用手動' : '依目前位置') : '手動設定';
+  locationRefreshEl.hidden = !active || locationWalkMinutes === null;
+}
+
+function stopUsingLocation(message) {
+  ++locationRequestVersion;
+  useLocationEl.checked = false;
+  locationWalkMinutes = null;
+  locationStopKey = '';
+  locationRequestKey = '';
+  locationStateEl.textContent = message;
+  syncLocationUI();
+  if (latestSnapshot) renderLeaveAdvice(latestSnapshot);
+  syncPushSettings();
+}
+
+function applyLocationPosition(position, station = stops.find(s =>
+  s.direction === Number(directionEl.value) && String(s.id) === String(stopEl.value)), syncPush = true) {
+  if (!station || !Number.isFinite(Number(station.lat)) || !Number.isFinite(Number(station.lon))) return false;
+  const previous = currentWalkMinutes();
+  const p = position.coords;
+  if (!Number.isFinite(p?.latitude) || !Number.isFinite(p?.longitude)) return false;
+  const lat = (station.lat - p.latitude) * Math.PI / 180;
+  const lon = (station.lon - p.longitude) * Math.PI / 180;
+  const a = Math.sin(lat / 2) ** 2 + Math.cos(p.latitude * Math.PI / 180) *
+    Math.cos(station.lat * Math.PI / 180) * Math.sin(lon / 2) ** 2;
+  const metres = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  locationWalkMinutes = Math.min(60, Math.ceil((metres * 1.35 + Math.min(200, p.accuracy || 0)) / 1.2 / 60));
+  locationStopKey = currentStopKey();
+  const acquiredAt = new Date().toLocaleTimeString('zh-TW', {hour: '2-digit', minute: '2-digit'});
+  locationStateEl.textContent = `${acquiredAt} 定位 · 直線約 ${Math.round(metres)} 公尺；含繞路與定位誤差，步行約 ${locationWalkMinutes} 分鐘。非導航路線。`;
+  syncLocationUI();
+  if (latestSnapshot) renderLeaveAdvice(latestSnapshot);
+  renderTravelGuidance();
+  if (syncPush && currentWalkMinutes() !== previous) syncPushSettings();
+  return true;
+}
+
+function requestLocation() {
   if (!navigator.geolocation || !window.isSecureContext) {
-    locationStateEl.textContent = '此瀏覽器需要 HTTPS 與定位功能；目前使用手動步行時間。';
+    stopUsingLocation('此瀏覽器需要安全連線（HTTPS 或 localhost）與定位功能；已改用手動步行時間。');
     return;
   }
   const station = stops.find(s => s.direction === Number(directionEl.value) && String(s.id) === String(stopEl.value));
-  if (!station?.lat || !station?.lon) return;
+  if (station?.lat == null || station?.lon == null ||
+      !Number.isFinite(Number(station.lat)) || !Number.isFinite(Number(station.lon))) {
+    stopUsingLocation('此站缺少座標；已改用手動步行時間。');
+    return;
+  }
   const requestedStop = currentStopKey();
+  const version = ++locationRequestVersion;
   locationRequestKey = requestedStop;
+  locationWalkMinutes = null;
   locationStateEl.textContent = '正在取得位置…';
-  navigator.geolocation.getCurrentPosition(position => {
-    if (currentStopKey() !== requestedStop) return;
+  syncLocationUI();
+  try { navigator.geolocation.getCurrentPosition(position => {
+    if (!useLocationEl.checked || version !== locationRequestVersion || currentStopKey() !== requestedStop) return;
     locationRequestKey = '';
-    const p = position.coords;
-    const lat = (station.lat - p.latitude) * Math.PI / 180;
-    const lon = (station.lon - p.longitude) * Math.PI / 180;
-    const a = Math.sin(lat / 2) ** 2 + Math.cos(p.latitude * Math.PI / 180) *
-      Math.cos(station.lat * Math.PI / 180) * Math.sin(lon / 2) ** 2;
-    const metres = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    locationWalkMinutes = Math.min(60, Math.ceil((metres * 1.35 + Math.min(200, p.accuracy || 0)) / 1.2 / 60));
-    locationStopKey = currentStopKey();
-    locationStateEl.textContent = `直線約 ${Math.round(metres)} 公尺；含繞路與定位誤差，步行約 ${locationWalkMinutes} 分鐘。非導航路線。`;
-    if (latestSnapshot) renderLeaveAdvice(latestSnapshot);
-    syncPushSettings();
+    if (!applyLocationPosition(position, station)) stopUsingLocation('位置資料無效；已改用手動步行時間。');
   }, () => {
-    if (currentStopKey() === requestedStop) locationStateEl.textContent = '無法取得位置；仍使用手動步行時間。';
-    locationRequestKey = '';
+    if (useLocationEl.checked && version === locationRequestVersion && currentStopKey() === requestedStop)
+      stopUsingLocation('無法取得位置；已改用手動步行時間。請檢查定位權限。');
   },
-  {enableHighAccuracy: false, timeout: 10000, maximumAge: 60000});
+  {enableHighAccuracy: false, timeout: 10000, maximumAge: 60000}); }
+  catch (_) { stopUsingLocation('無法取得位置；已改用手動步行時間。'); }
+}
+
+useLocationEl.addEventListener('change', () => {
+  if (useLocationEl.checked) requestLocation();
+  else {
+    if (mobileMode === 'travel') setMobileMode('plan');
+    stopUsingLocation('已改用手動步行時間。');
+  }
+});
+locationRefreshEl.addEventListener('click', () => {
+  if (mobileMode === 'travel' && travelActive) refreshTravelPosition();
+  else if (useLocationEl.checked) requestLocation();
+});
+syncLocationUI();
+
+function stopTravelTracking() {
+  ++travelWatchVersion;
+  if (travelWatchId !== null) navigator.geolocation?.clearWatch?.(travelWatchId);
+  travelWatchId = null;
+  travelActive = false;
+}
+
+function setTravelResult(level, heading, detail, targetKey = '') {
+  travelResultEl.dataset.level = level;
+  travelHeadEl.textContent = heading;
+  travelDetailEl.textContent = detail;
+  travelFloatEl.hidden = mobileMode !== 'travel' || !['hurry', 'miss'].includes(level);
+  travelFloatEl.dataset.level = level;
+  travelFloatEl.textContent = `${heading} · 點此查看行程`;
+  if (!travelActive || !['hurry', 'miss'].includes(level)) {
+    lastTravelAlertKey = '';
+    return;
+  }
+  const alertKey = `${currentStopKey()}:${targetKey}:${level}`;
+  if (alertKey === lastTravelAlertKey) return;
+  lastTravelAlertKey = alertKey;
+  navigator.vibrate?.(level === 'miss' ? [220, 100, 220] : [160]);
+  if (window.Notification?.permission === 'granted' && navigator.serviceWorker?.ready) {
+    navigator.serviceWorker.ready.then(registration => registration.showNotification(
+      `${routes[activeRoute]?.name || '公車'} · ${heading}`, {body: detail,
+        icon: new URL('icon.svg', registration.scope).href, tag: 'bus-travel-alert',
+        data: {url: registration.scope}})).catch(() => {});
+  }
+}
+
+function travelCandidates(snapshot) {
+  const candidates = [];
+  const officialAge = elapsedSeconds(snapshot.feedFetchedAt?.EstimateTime || snapshot.updatedAt);
+  if (Number.isFinite(snapshot.officialEtaSeconds)) {
+    const seconds = Math.max(0, snapshot.officialEtaSeconds - officialAge);
+    if (seconds > 0) candidates.push({seconds, label: '官方下一班', key: 'official'});
+  }
+  for (const bus of snapshot.vehicles || []) {
+    if (bus.atStop || bus.crossDirection || bus.confidence === 'low' ||
+        elapsedSeconds(bus.lastSeen) > 90) continue;
+    const seconds = remainingVehicleWindow(bus)[0];
+    if (seconds > 0) candidates.push({seconds, label: `${bus.id} 逐車推估`, key: bus.id});
+  }
+  return candidates.sort((a, b) => a.seconds - b.seconds);
+}
+
+function renderTravelGuidance() {
+  if (mobileMode !== 'travel' || !travelActive) return;
+  if (!lastTravelPosition || locationWalkMinutes === null) {
+    setTravelResult('waiting', '正在取得目前位置…', '取得位置後會比較步行與公車到站時間。');
+    return;
+  }
+  if (Date.now() - lastTravelPositionAt > 90_000) {
+    setTravelResult('waiting', '位置已過時', '請按「重新定位」或確認手機定位權限；暫不判斷能否趕上。');
+    return;
+  }
+  const snapshot = latestSnapshot;
+  if (!snapshot || snapshot.routeId !== activeRoute || snapshot.direction !== Number(directionEl.value) ||
+      String(snapshot.stop.id) !== String(stopEl.value)) {
+    setTravelResult('waiting', '正在更新所選站牌…', '取得這一站的最新公車資料後會重新判斷。');
+    return;
+  }
+  const feedTimes = Object.values(snapshot.feedFetchedAt || {}).filter(Boolean);
+  if (!feedTimes.length || elapsedSeconds(snapshot.updatedAt) > 120 ||
+      feedTimes.some(stamp => elapsedSeconds(stamp) > 120)) {
+    setTravelResult('waiting', '公車資料過時', '目前不顯示趕車警告；請等資料更新或參考官方站牌資訊。');
+    return;
+  }
+  const candidates = travelCandidates(snapshot);
+  if (!candidates.length) {
+    setTravelResult('waiting', '暫無可靠的本方向來車', '持續追蹤位置與公車資料；另一方向下一輪公車不作為趕車警告依據。');
+    return;
+  }
+  // The official next ETA and a vehicle estimate may describe the same bus.
+  // Use the official value as the next arrival when it is available.
+  const target = candidates.find(item => item.key === 'official') || candidates[0];
+  const walkSeconds = currentWalkMinutes() * 60;
+  const slack = target.seconds - walkSeconds - 120;
+  const basics = `步行約 ${currentWalkMinutes()} 分鐘；${target.label}約 ${Math.max(1, Math.ceil(target.seconds / 60))} 分鐘後到站；預留 2 分鐘緩衝。`;
+  if (target.seconds <= walkSeconds) {
+    const following = candidates.find(item => item.key !== 'official' &&
+      item.seconds > Math.max(walkSeconds + 120, target.seconds + 180));
+    setTravelResult('miss', '這班可能趕不上', basics +
+      (following ? `較晚的 ${following.label} 約 ${Math.ceil(following.seconds / 60)} 分鐘後到站，請確認是否為另一班車。` :
+        '請查看後續車或官方最新狀態。'), target.key);
+  } else if (slack < 120) {
+    setTravelResult('hurry', '請加快腳步', basics +
+      `目前緩衝只剩約 ${Math.max(0, Math.floor((target.seconds - walkSeconds) / 60))} 分鐘。`, target.key);
+  } else {
+    setTravelResult('ok', '依估算步行時間可趕上', basics +
+      `扣除緩衝後，尚有約 ${Math.floor(slack / 60)} 分鐘餘裕。`, target.key);
+  }
+}
+
+function refreshTravelPosition() {
+  if (!travelActive || !navigator.geolocation?.getCurrentPosition) return;
+  const version = travelWatchVersion;
+  navigator.geolocation.getCurrentPosition(position => {
+    if (version !== travelWatchVersion || mobileMode !== 'travel') return;
+    if ((position.coords?.accuracy || 0) > 250) {
+      lastTravelPosition = null;
+      setTravelResult('waiting', '定位精度不足', '請移到較開闊處後重新定位；暫不判斷能否趕上。');
+      return;
+    }
+    lastTravelPosition = position;
+    lastTravelPositionAt = Date.now();
+    applyLocationPosition(position);
+  }, () => {
+    if (version === travelWatchVersion)
+      setTravelResult('waiting', '重新定位失敗', '持續定位仍在運作；請檢查權限或稍後重試。');
+  }, {enableHighAccuracy: true, timeout: 15000, maximumAge: 0});
+}
+
+function startTravelTracking() {
+  stopTravelTracking();
+  if (!window.isSecureContext || !navigator.geolocation?.watchPosition) {
+    travelActionEl.textContent = '重試定位';
+    setTravelResult('waiting', '此裝置無法持續定位', '請使用安全連線與支援定位的手機。');
+    return;
+  }
+  travelActive = true;
+  lastTravelPosition = null;
+  lastTravelPositionAt = 0;
+  lastTravelAlertKey = '';
+  ++locationRequestVersion;
+  locationRequestKey = '';
+  locationWalkMinutes = null;
+  useLocationEl.checked = true;
+  locationStateEl.textContent = '前往站牌模式正在持續定位…';
+  syncLocationUI();
+  travelActionEl.textContent = '停止前往模式';
+  setTravelResult('waiting', '正在取得目前位置…', '請允許定位，並保持此頁開啟。');
+  const version = ++travelWatchVersion;
+  try {
+    travelWatchId = navigator.geolocation.watchPosition(position => {
+      if (version !== travelWatchVersion || mobileMode !== 'travel') return;
+      if ((position.coords?.accuracy || 0) > 250) {
+        lastTravelPosition = null;
+        setTravelResult('waiting', '定位精度不足', '請移到較開闊處；暫不判斷能否趕上。');
+        return;
+      }
+      lastTravelPosition = position;
+      lastTravelPositionAt = Date.now();
+      if (!applyLocationPosition(position))
+        setTravelResult('waiting', '站牌座標不可用', '此站目前無法估算步行時間；請選其他站牌。');
+    }, error => {
+      if (version !== travelWatchVersion) return;
+      stopTravelTracking();
+      stopUsingLocation('持續定位已停止；已改用手動步行時間。');
+      travelActionEl.textContent = '重試定位';
+      setTravelResult('waiting', '定位已中斷',
+        `${error?.message || '無法取得位置'}。請檢查定位權限後按「重試定位」。`);
+    }, {enableHighAccuracy: true, timeout: 20000, maximumAge: 15000});
+  } catch (error) {
+    stopTravelTracking();
+    stopUsingLocation('持續定位無法啟動；已改用手動步行時間。');
+    travelActionEl.textContent = '重試定位';
+    setTravelResult('waiting', '無法啟動定位', error.message || '請檢查定位權限。');
+  }
+}
+
+function setMobileMode(mode) {
+  if (mode === 'plan' && mobileMode === 'travel') {
+    stopTravelTracking();
+    travelFloatEl.hidden = true;
+    if (lastTravelPosition && useLocationEl.checked)
+      locationStateEl.textContent = '已停止持續定位；保留最後步行估算。可按「重新定位」更新。';
+  }
+  mobileMode = mode;
+  mobilePlanEl.setAttribute('aria-pressed', String(mode === 'plan'));
+  mobileTravelEl.setAttribute('aria-pressed', String(mode === 'travel'));
+  planPanelEl.hidden = mode !== 'plan';
+  travelPanelEl.hidden = mode !== 'travel';
+  mobileModeSummaryEl.textContent = mode === 'plan' ? '計畫模式 · 出發建議' :
+    '前往站牌模式 · 即時步速警告';
+  if (mode === 'travel') startTravelTracking();
+}
+mobilePlanEl.addEventListener('click', () => setMobileMode('plan'));
+mobileTravelEl.addEventListener('click', () => setMobileMode('travel'));
+function syncPhoneReminderViewport() {
+  if (!phoneViewport?.matches && mobileMode === 'travel') setMobileMode('plan');
+  pushPanelEl.hidden = !publicMode || !phoneViewport?.matches;
+}
+phoneViewport?.addEventListener?.('change', syncPhoneReminderViewport);
+window.addEventListener?.('resize', syncPhoneReminderViewport);
+travelActionEl.addEventListener('click', () => {
+  if (travelActive) setMobileMode('plan');
+  else startTravelTracking();
+});
+document.querySelector('#travel-refresh').addEventListener('click', refreshTravelPosition);
+travelFloatEl.addEventListener('click', () => {
+  travelPanelEl.scrollIntoView?.({behavior: 'smooth', block: 'center'});
+});
+if (window.addEventListener) window.addEventListener('pagehide', () => {
+  if (mobileMode !== 'travel') return;
+  stopTravelTracking();
+  travelActionEl.textContent = '重新開始定位';
+  setTravelResult('waiting', '定位已暫停', '返回頁面後請按「重新開始定位」，才能繼續取得前往警告。');
 });
 
 function scheduleStatus() {
   const routeId = savedSchedule?.route_id || 16405;
   const stop = savedSchedule && activeRoute === routeId && stops.find(s => s.direction === savedSchedule.direction && s.id === savedSchedule.stop_id);
   const voice = savedSchedule?.voice_engine === 'api'
-    ? `${savedSchedule.voice_model || 'tts-1'} / ${savedSchedule.voice_name || 'alloy'}`
+    ? `${savedSchedule.voice_model || 'tts-1'} / ${savedSchedule.voice_name || 'anne'}`
     : `eSpeak ${savedSchedule?.voice_name || 'cmn'}`;
   const language = savedSchedule?.voice_language === 'en' ? 'English' : '中文';
   const format = savedSchedule?.voice_format === 'verbose' ? '詳細播報' : '簡短播報';
@@ -1174,9 +1749,9 @@ function render(data, {preview = false} = {}) {
   const feedAges = Object.values(fetched).filter(Boolean).map(value => Math.max(0, Math.round((Date.now() - Date.parse(value)) / 1000)));
   const oldestFeed = feedAges.length ? Math.max(...feedAges) : null;
   dataFreshnessEl.classList.toggle('stale', oldestFeed === null || oldestFeed > 90);
-  dataFreshnessEl.textContent = oldestFeed === null ? '尚無資料來源時間；請留意車輛最後回報時間。'
-    : `公車位置、事件與官方預估：最久於 ${oldestFeed} 秒前取得` +
-      (oldestFeed > 90 ? ' · 資料可能過時' : ' · 車輛回報時間見下方');
+  dataFreshnessEl.textContent = oldestFeed === null ? '尚無資料更新時間 · 請留意車輛回報'
+    : `資料源最久 ${oldestFeed} 秒前更新` +
+      (oldestFeed > 90 ? ' · 資料可能過時' : ' · 車輛回報見下方');
   document.querySelector('#stop-title').textContent = data.stop.name;
   document.querySelector('#updated').textContent = preview ? '最近資料 · 正在取得最新資訊…'
     : `查詢於 ${new Date(data.updatedAt).toLocaleTimeString('zh-TW')}`;
@@ -1197,6 +1772,7 @@ function render(data, {preview = false} = {}) {
       : data.officialStatus ? `官方回報「${data.officialStatus}」，目前沒有本站的官方到站時間。`
         : '官方目前未提供本站到站時間。';
   renderLeaveAdvice(data);
+  renderTravelGuidance();
   document.querySelector('#vehicle-count').textContent = `本方向 ${directlyApproaching.length} · 下一輪 ${nextCircuit}`;
   const bucket = statusConflict ? '官方狀態與沿線車輛資料不一致'
     : data.officialEtaSeconds === null ? data.officialStatus || '未知'
@@ -1210,17 +1786,34 @@ function render(data, {preview = false} = {}) {
   document.querySelector('#vehicle-summary').textContent = approaching.length
     ? `本方向 ${directlyApproaching.length} 輛接近本站` +
       (nextCircuit ? `；另有 ${nextCircuit} 輛在另一方向，只有折返續行才可能在下一輪抵達。` : '。') +
-      '下方依推估時間排序；車牌與官方下一班時間不一定能一一對應。'
+      '各組依推估時間排序；車牌與官方下一班時間不一定能一一對應。'
     : '目前沒有可確認位置、正在接近本站的車輛。這不代表沒有班次；仍可參考上方官方下一班狀態。';
   document.querySelector('.approach-board').classList.toggle('is-empty', !approaching.length);
   vehiclesEl.replaceChildren();
-  for (const [index, vehicle] of approaching.entries()) {
+  const groups = new Map();
+  for (const [key, title, hint, buses] of [
+    ['direct', `本方向接近本站 · ${directlyApproaching.length} 輛`, '依推估到站時間排列', directlyApproaching],
+    ['next', `可能折返續行 · ${nextCircuit} 輛`, '另一方向須跑完並接續下一輪；不保證繼續載客',
+      approaching.filter(bus => bus.crossDirection && !bus.atStop)]
+  ]) {
+    if (!buses.length) continue;
+    const section = document.createElement('section'); section.className = `vehicle-group ${key}`;
+    const heading = document.createElement('h4'); heading.textContent = title;
+    const note = document.createElement('p'); note.textContent = hint;
+    section.append(heading, note);
+    vehiclesEl.append(section);
+    groups.set(key, section);
+  }
+  let directIndex = 0, nextIndex = 0;
+  for (const vehicle of approaching) {
+    const nextGroup = vehicle.crossDirection && !vehicle.atStop;
     const row = document.createElement('article'); row.className = 'vehicle';
     row.dataset.busId = vehicle.id;
-    if (index === 0) row.classList.add('first');
+    if (!nextGroup && directIndex === 0) row.classList.add('first');
     const left = document.createElement('div'); left.className = 'vehicle-main';
     const heading = document.createElement('div'); heading.className = 'vehicle-heading';
-    const number = document.createElement('span'); number.className = 'index'; number.textContent = `第 ${index + 1} 輛`;
+    const number = document.createElement('span'); number.className = 'index';
+    number.textContent = `第 ${nextGroup ? ++nextIndex : ++directIndex} 輛`;
     const plate = document.createElement('strong'); plate.textContent = vehicle.id;
     heading.append(number, plate);
     const next = document.createElement('p'); next.className = 'vehicle-location';
@@ -1251,7 +1844,7 @@ function render(data, {preview = false} = {}) {
         (vehicle.calibrationSamples >= 5 ? ` · 參照 ${vehicle.calibrationSamples} 次實際到站` : '') +
         ` · 推估信心${{high: '較高', medium: '中等', low: '較低'}[vehicle.confidence] || '未知'}`);
     details.append(summary, detailText);
-    row.append(left, away, details); vehiclesEl.append(row);
+    row.append(left, away, details); groups.get(nextGroup ? 'next' : 'direct').append(row);
   }
   if (!activeUtterance && !activeAudio && !pendingAudio) voicePreviewEl.textContent = `播報內容：${briefingText(data)}`;
   if (!preview) announce(data);
@@ -1262,14 +1855,18 @@ function beginSelection() {
   const station = stops.find(s => s.direction === Number(directionEl.value) &&
     String(s.id) === String(stopEl.value));
   const name = station?.name || '所選站牌';
+  renderScope();
+  latestSnapshot = null;
   if ((locationStopKey && locationStopKey !== currentStopKey()) ||
       (locationRequestKey && locationRequestKey !== currentStopKey())) {
     locationWalkMinutes = null;
     locationStopKey = '';
     locationRequestKey = '';
-    locationStateEl.textContent = '站牌已變更；請重新取得位置，或使用手動步行時間。';
+    ++locationRequestVersion;
+    if (travelActive && lastTravelPosition && Date.now() - lastTravelPositionAt < 90_000)
+      applyLocationPosition(lastTravelPosition, station, false);
+    else if (useLocationEl.checked && !travelActive) requestLocation();
   }
-  latestSnapshot = null;
   lastA11yKey = '';
   resetAlertState();
   lastBriefingAt = 0;
@@ -1285,7 +1882,8 @@ function beginSelection() {
   document.querySelector('#vehicle-count').textContent = '更新中…';
   document.querySelector('#vehicle-summary').textContent = '正在確認沿線公車…';
   document.querySelector('.approach-board').classList.add('is-empty');
-  leaveAdviceEl.textContent = '正在計算建議出發時間…';
+  setLeaveAdvice('正在計算建議出發時間…');
+  renderTravelGuidance();
   dataFreshnessEl.textContent = '正在讀取資料時間…';
   vehiclesEl.replaceChildren();
   messageEl.hidden = false;
@@ -1382,6 +1980,7 @@ document.querySelector('#jump-to-stop').addEventListener('click', () => {
 stopEl.addEventListener('change', () => update({selected: true, fresh: true}));
 closedEl.addEventListener('change', () => {
   localStorage.setItem(routeStorage('closed-loop'), closedEl.checked ? '1' : '0');
+  renderScope();
   lastBriefingAt = 0;
   resetAlertState();
   update({selected: true, fresh: true});
@@ -1432,11 +2031,11 @@ briefingIntervalEl.addEventListener('change', () => {
   if (voiceEnabled && voiceModeEl.value === 'briefing') { speakCurrentMode(); update(); }
 });
 walkMinutesEl.addEventListener('change', () => {
+  if (useLocationEl.checked) return;
   const minutes = Math.max(0, Math.min(60, Math.round(Number(walkMinutesEl.value) || 0)));
   walkMinutesEl.value = String(minutes);
+  manualWalkMinutes = String(minutes);
   localStorage.setItem('orange5-walk-minutes', String(minutes));
-  locationWalkMinutes = null;
-  locationStopKey = '';
   locationStateEl.textContent = '使用手動步行時間。';
   if (latestSnapshot) renderLeaveAdvice(latestSnapshot);
   syncPushSettings();
@@ -1449,7 +2048,7 @@ voiceModelEl.addEventListener('change', () => {
   syncVoiceMode();
 });
 apiModelEl.addEventListener('change', () => localStorage.setItem('orange5-api-model', apiModelEl.value.trim() || 'tts-1'));
-apiVoiceEl.addEventListener('change', () => localStorage.setItem('orange5-api-voice', apiVoiceEl.value.trim() || 'alloy'));
+apiVoiceEl.addEventListener('change', () => localStorage.setItem('orange5-api-voice', apiVoiceEl.value.trim() || 'anne'));
 if (!publicMode) document.querySelector('#schedule-save').addEventListener('click', async () => {
   const selected = voiceModelEl.value;
   const payload = {enabled: scheduleEnabledEl.checked, time: scheduleTimeEl.value, route_id: activeRoute,
@@ -1461,7 +2060,7 @@ if (!publicMode) document.querySelector('#schedule-save').addEventListener('clic
     voice_language: voiceLanguageEl.value,
     voice_engine: selected === 'api' ? 'api' : 'espeak',
     voice_model: apiModelEl.value.trim() || 'tts-1',
-    voice_name: selected === 'api' ? (apiVoiceEl.value.trim() || 'alloy')
+    voice_name: selected === 'api' ? (apiVoiceEl.value.trim() || 'anne')
       : selected.startsWith('espeak:') ? selected.slice(7) : fallbackEspeakVoice()};
   scheduleStateEl.textContent = '正在儲存排程…';
   try {
@@ -1493,7 +2092,12 @@ function applyScreenSize(compact) {
 compactScreen?.addEventListener?.('change', event => applyScreenSize(event.matches));
 window.addEventListener?.('resize', () => applyScreenSize(Boolean(compactScreen?.matches)));
 routeToggleEl.addEventListener('click', () => setRouteExpanded(routeBodyEl.hidden));
-document.addEventListener?.('visibilitychange', () => { if (!document.hidden) update(); });
+document.addEventListener?.('visibilitychange', () => {
+  if (document.hidden) return;
+  update();
+  if (mobileMode === 'travel' && travelActive && Date.now() - lastTravelPositionAt > 30_000)
+    refreshTravelPosition();
+});
 voiceTestEl.addEventListener('click', () => {
   speak(latestSnapshot ? briefingText(latestSnapshot)
     : voiceLanguageEl.value === 'en' ? `${routes[activeRoute].english} voice test.` : `${routes[activeRoute].spoken}語音測試。`);
@@ -1522,23 +2126,28 @@ if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) {
   speechSynthesis.addEventListener('voiceschanged', populateVoices);
 }
 populateVoices();
-for (const tab of routeTabs) {
-  tab.addEventListener('click', () => switchRoute(Number(tab.dataset.route)));
-  tab.addEventListener('keydown', event => {
-    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-    event.preventDefault();
-    const index = routeTabs.indexOf(tab);
-    const next = event.key === 'Home' ? 0 : event.key === 'End' ? routeTabs.length - 1
-      : (index + (event.key === 'ArrowRight' ? 1 : -1) + routeTabs.length) % routeTabs.length;
-    routeTabs[next].focus();
-    routeTabs[next].click();
-  });
-}
+for (const tab of routeTabs) bindRouteTab(tab);
+document.querySelector('#route-find').addEventListener('click', searchRouteCatalog);
+routeQueryEl.addEventListener('keydown', event => {
+  if (event.key === 'Enter') { event.preventDefault(); searchRouteCatalog(); }
+});
+routeRemoveEl.addEventListener('click', () => {
+  if (defaultRouteIds.includes(activeRoute)) return;
+  addedRouteIds = addedRouteIds.filter(id => id !== activeRoute);
+  localStorage.setItem('bus-tracker-added-routes', JSON.stringify(addedRouteIds));
+  renderRouteTabs();
+  switchRoute(defaultRouteIds[0]);
+});
 switchRoute(activeRoute);
+if (requestedRoute !== activeRoute && addedRouteIds.includes(requestedRoute))
+  localStorage.setItem('bus-tracker-route', String(requestedRoute));
+hydrateRoutes();
 if (publicMode && pushNeedsRemoval()) {
   pushToggleEl.textContent = localStorage.getItem(pushPendingRemoveKey) === '1' ? '重試關閉手機通知' : '關閉手機通知';
   pushStateEl.textContent = localStorage.getItem(pushPendingRemoveKey) === '1'
-    ? '上次關閉尚未完成；可重試。' : '正在同步手機通知設定…';
+    ? '上次關閉尚未完成；可重試。'
+    : pushTarget ? `已固定 ${pushTarget.routeName || pushTarget.routeId} ${pushTarget.stopName || ''}；瀏覽其他路線不會改變提醒。`
+      : '正在確認手機通知目標…';
 }
 if (!publicMode) request('api/schedule').then(data => {
   savedSchedule = data;
@@ -1551,6 +2160,7 @@ setInterval(update, 30_000);
 setInterval(() => {
   if (!latestSnapshot) return;
   renderLeaveAdvice(latestSnapshot);
+  renderTravelGuidance();
   const buses = new Map(latestSnapshot.vehicles.map(bus => [bus.id, bus]));
   for (const row of vehiclesEl.querySelectorAll('.vehicle')) {
     const bus = buses.get(row.dataset.busId);

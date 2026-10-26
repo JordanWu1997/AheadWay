@@ -2,18 +2,18 @@
 
 import asyncio
 
-from .tracker import ROUTE_ID, ROUTES, FeedCache, ordered_stops
+from .tracker import ROUTE_ID, FeedCache, ordered_stops, route_info
 
 TOOLS = [{
     "type": "function",
     "name": "get_bus_arrivals",
-    "description": "Get current 橘5, 908, or 921 bus information for a named stop. Use whenever the user asks about current bus arrivals.",
+    "description": "Get current Taipei or New Taipei bus information for a named stop. Use whenever the user asks about current bus arrivals.",
     "parameters": {
         "type": "object",
         "properties": {
             "stop_name": {"type": "string", "description": "Exact or partial Chinese stop name"},
-            "route_id": {"type": "integer", "enum": [16405, 16585, 16664], "description": "16405=橘5; 16585=908; 16664=921"},
-            "direction": {"type": "integer", "enum": [0, 1], "description": "0 toward 捷運景安站; 1 toward 板橋 for 橘5 or 三峽 for 908/921"},
+            "route_id": {"type": "integer", "description": "Numeric rid from the official Taipei route page"},
+            "direction": {"type": "integer", "enum": [0, 1], "description": "0 outbound; 1 inbound"},
         },
         "required": ["route_id", "stop_name", "direction"],
         "additionalProperties": False,
@@ -24,8 +24,10 @@ _cache = FeedCache()
 
 
 def _lookup(stop_name: str, direction: int, route_id: int = ROUTE_ID) -> dict:
-    if route_id not in ROUTES:
-        return {"error": "Route must be 橘5, 908, or 921"}
+    try:
+        info = route_info(route_id)
+    except ValueError:
+        return {"error": "Route is unavailable in the Taipei or New Taipei live feeds"}
     if direction not in (0, 1):
         return {"error": "Direction must be 0 or 1"}
     name = stop_name.strip()
@@ -36,7 +38,7 @@ def _lookup(stop_name: str, direction: int, route_id: int = ROUTE_ID) -> dict:
     exact = [s for s in stops if s["nameZh"] == name]
     matches = exact or [s for s in stops if name in s["nameZh"]]
     if not matches:
-        return {"error": f"Stop not found on {ROUTES[route_id]['name']} in this direction"}
+        return {"error": f"Stop not found on {info['name']} in this direction"}
     if len(matches) > 1:
         return {"error": "Several stops match. Ask the user to choose one.",
                 "matches": [{"name": s["nameZh"], "id": s["Id"]} for s in matches]}

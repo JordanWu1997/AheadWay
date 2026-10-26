@@ -90,7 +90,7 @@ def render_wav(text, voice="cmn"):
         return output.getvalue()
 
 
-def render_api_wav(text, model="tts-1", voice="alloy"):
+def render_api_wav(text, model="tts-1", voice="anne"):
     if not isinstance(text, str) or not text.strip() or len(text) > 1500:
         raise ValueError("Speech text must contain 1–1500 characters")
     for value, name in ((model, "model"), (voice, "voice")):

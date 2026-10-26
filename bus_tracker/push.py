@@ -79,6 +79,8 @@ class PushService:
                 route_id INTEGER NOT NULL, direction INTEGER NOT NULL, stop_id INTEGER NOT NULL,
                 closed_loop INTEGER NOT NULL, walk_minutes INTEGER NOT NULL,
                 last_key TEXT NOT NULL DEFAULT '', last_sent INTEGER NOT NULL DEFAULT 0)""")
+            db.execute("""CREATE TABLE IF NOT EXISTS subscription_versions (
+                endpoint TEXT PRIMARY KEY, revision INTEGER NOT NULL, updated_at INTEGER NOT NULL)""")
         os.chmod(self.db_path, 0o600)
 
     def connect(self):
@@ -111,14 +113,17 @@ class PushService:
         walk = int(data["walk_minutes"])
         if direction not in (0, 1) or not 0 <= walk <= 60:
             raise ValueError("Invalid push settings")
+        revision = self._revision(data.get("revision", 0))
         with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            if not self._accept_revision(db, endpoint, revision):
+                return False
             count = db.execute("SELECT COUNT(*) FROM subscriptions").fetchone()[0]
             exists = db.execute("SELECT * FROM subscriptions WHERE endpoint=?", (endpoint,)).fetchone()
             if count >= 64 and not exists:
                 raise ValueError("Notification capacity reached")
-            same = exists and (exists["route_id"], exists["direction"], exists["stop_id"],
-                               exists["closed_loop"], exists["walk_minutes"]) == (
-                                   route_id, direction, stop_id, int(bool(data.get("closed_loop", True))), walk)
+            same = exists and (exists["route_id"], exists["direction"], exists["stop_id"]) == (
+                route_id, direction, stop_id)
             last_key = exists["last_key"] if same else ""
             last_sent = exists["last_sent"] if same else 0
             db.execute("""INSERT INTO subscriptions
@@ -130,14 +135,55 @@ class PushService:
                 last_key=excluded.last_key,last_sent=excluded.last_sent""",
                 (endpoint, p256dh, auth, route_id, direction, stop_id,
                  int(bool(data.get("closed_loop", True))), walk, last_key, last_sent))
+            self._record_revision(db, endpoint, revision)
+        return True
 
-    def remove(self, endpoint):
+    @staticmethod
+    def _revision(value):
+        if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 2**53 - 1:
+            raise ValueError("Invalid notification revision")
+        return value
+
+    @staticmethod
+    def _accept_revision(db, endpoint, revision):
+        row = db.execute("SELECT revision FROM subscription_versions WHERE endpoint=?", (endpoint,)).fetchone()
+        return not row or revision > row["revision"] or (revision == row["revision"] == 0)
+
+    @staticmethod
+    def _record_revision(db, endpoint, revision):
+        db.execute("""INSERT INTO subscription_versions (endpoint,revision,updated_at)
+            VALUES (?,?,?) ON CONFLICT(endpoint) DO UPDATE SET
+            revision=excluded.revision,updated_at=excluded.updated_at""",
+            (endpoint, revision, int(time.time())))
+        db.execute("""DELETE FROM subscription_versions WHERE endpoint IN (
+            SELECT endpoint FROM subscription_versions
+            WHERE endpoint NOT IN (SELECT endpoint FROM subscriptions)
+            ORDER BY updated_at DESC, revision DESC LIMIT -1 OFFSET 256)""")
+
+    def remove(self, endpoint, revision=None):
+        if not valid_endpoint(endpoint):
+            raise ValueError("Unsupported push endpoint")
         with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            if revision is not None:
+                revision = self._revision(revision)
+                if not self._accept_revision(db, endpoint, revision):
+                    return False
             db.execute("DELETE FROM subscriptions WHERE endpoint=?", (endpoint,))
+            if revision is not None:
+                self._record_revision(db, endpoint, revision)
+        return True
 
     def rows(self):
         with self.connect() as db:
             return [dict(row) for row in db.execute("SELECT * FROM subscriptions")]
+
+    def is_current(self, row):
+        with self.connect() as db:
+            current = db.execute("SELECT * FROM subscriptions WHERE endpoint=?",
+                                 (row["endpoint"],)).fetchone()
+        return bool(current) and all(current[key] == row[key] for key in
+                                     ("route_id", "direction", "stop_id", "closed_loop", "walk_minutes"))
 
     def state(self, endpoint, key, sent=None):
         with self.connect() as db:
@@ -194,24 +240,37 @@ class PushService:
         return True
 
 
-def alert_candidate(snapshot, walk):
+def alert_candidate(snapshot, walk, now=None):
     """Return the approaching bus to notify for, or None when there is time."""
-    now = time.time()
+    now = time.time() if now is None else now
     fetched = snapshot.get("feedFetchedAt") or {}
     if any(not fetched.get(name) for name in ("BusData", "EstimateTime", "BusEvent")) or \
             any(now - datetime.fromisoformat(stamp).timestamp() > 90 for stamp in fetched.values() if stamp):
         return None
     needed = walk * 60 + 120
     eta = snapshot.get("officialEtaSeconds")
+    def remaining_window(bus):
+        lower, upper = bus.get("estimatedEtaWindowSeconds", (0, 0))
+        age = max(0, bus.get("dataAgeSeconds", 999))
+        return max(0, lower - age), max(0, upper - age)
+
     candidates = [v for v in snapshot.get("vehicles", []) if not v.get("atStop") and
                   not v.get("crossDirection") and
                   v.get("dataAgeSeconds", 999) <= 90 and v.get("confidence") != "low" and
-                  walk * 60 < v.get("estimatedEtaWindowSeconds", [0])[0] <= needed]
+                  remaining_window(v)[0] <= needed and remaining_window(v)[1] > walk * 60]
     if candidates:
-        bus = min(candidates, key=lambda v: v["estimatedEtaSeconds"])
-        return bus["id"], f"{bus['id']} 推估接近 {snapshot['stop']['name']}，建議現在出發。"
-    if eta is not None and walk * 60 < eta <= needed:
-        return "official", f"{snapshot['stop']['name']} 官方預估約 {max(1, eta // 60)} 分鐘後到站，建議現在出發。"
+        bus = min(candidates, key=lambda v: remaining_window(v)[0])
+        late = remaining_window(bus)[0] <= walk * 60
+        advice = "部分推估可能已來不及，請確認即時到站狀態。" if late else "建議現在出發。"
+        return bus["id"], f"{bus['id']} 推估接近 {snapshot['stop']['name']}，{advice}"
+    if eta is not None:
+        fetched_at = datetime.fromisoformat(fetched["EstimateTime"]).timestamp()
+        remaining = max(0, eta - max(0, now - fetched_at))
+        if 0 < remaining <= needed:
+            advice = "可能已來不及，請確認即時到站狀態。" if remaining <= walk * 60 else "建議現在出發。"
+            arrival_key = round((fetched_at + eta) / 180)
+            return f"official:{arrival_key}", (f"{snapshot['stop']['name']} 官方預估約 "
+                f"{max(1, int(remaining // 60))} 分鐘後到站，{advice}")
     return None
 
 
@@ -231,7 +290,9 @@ def push_loop(service, snapshot_for):
                 bus_key, body = candidate
                 if bus_key == row["last_key"] and time.time() - row["last_sent"] < 900:
                     continue
-                if service.send(row, f"{snapshot['route']} · 該出發了", body):
+                if not service.is_current(row):
+                    continue
+                if service.send(row, f"AheadWay · {snapshot['route']} 該出發了", body):
                     service.state(row["endpoint"], bus_key, int(time.time()))
             except Exception as exc:
                 print(f"Push update failed: {exc}", flush=True)

@@ -140,7 +140,7 @@ def report_text(snapshot, language="zh", voice_format="verbose"):
 
 def play_report(text, settings):
     if settings.get("voice_engine") == "api":
-        audio = render_api_wav(text, settings.get("voice_model", "tts-1"), settings.get("voice_name", "alloy"))
+        audio = render_api_wav(text, settings.get("voice_model", "tts-1"), settings.get("voice_name", "anne"))
     else:
         audio = render_wav(text, settings.get("voice_name", "cmn"))
     with tempfile.TemporaryDirectory(prefix="bus-tracker-voice-") as directory:

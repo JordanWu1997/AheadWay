@@ -10,6 +10,7 @@ function harness(error = null, publicMode = false, mobile = false) {
   const voiceRequests = [];
   const pageRequests = [];
   const pageResponses = [];
+  let createdNode = 0;
   const tabs = [16405, 16585, 16664].map(id => ({dataset: {route: String(id)},
     events: {}, setAttribute() {}, addEventListener(name, fn) {this.events[name] = fn;}, focus() {}, click() {this.events.click();}}));
   function svgNode(tagName) {
@@ -23,7 +24,7 @@ function harness(error = null, publicMode = false, mobile = false) {
       value: '', checked: false, textContent: '', disabled: false, hidden: false, options: [{textContent: ''}, {textContent: ''}],
       events: {}, dataset: {}, classList: {add() {}, remove() {}, toggle() {}},
       children: [], attributes: {},
-      addEventListener(name, fn) {this.events[name] = fn;},
+      addEventListener(name, fn) {this.events[name] = fn;}, focus() {},
       setAttribute(name, value) {this.attributes[name] = value;},
       replaceChildren(...children) {this.children = children;},
       append(...children) {this.children.push(...children);}, querySelectorAll() {return [];}
@@ -64,7 +65,7 @@ function harness(error = null, publicMode = false, mobile = false) {
   const context = vm.createContext({
     document: {querySelector: element, querySelectorAll: selector => selector === '.route-tabs [role="tab"]' ? tabs :
       selector === '[data-mobile-leg]' ? mobileButtons : [],
-      createElement: () => element('created'), createElementNS: (_namespace, tag) => svgNode(tag)},
+      createElement: () => element(`created-${++createdNode}`), createElementNS: (_namespace, tag) => svgNode(tag)},
     window: {speechSynthesis: synth, SpeechSynthesisUtterance: Utterance, BUS_TRACKER_PUBLIC: publicMode,
       matchMedia: () => ({matches: mobile})},
     speechSynthesis: synth, SpeechSynthesisUtterance: Utterance,
@@ -95,6 +96,135 @@ function harness(error = null, publicMode = false, mobile = false) {
   assert.match(html, /<details id="api-voice-settings"/);
   assert.match(html, /id="route-search"/);
   assert.match(html, /id="jump-to-stop"/);
+  assert.ok(html.indexOf('class="arrival-scope"') > html.indexOf('class="controls"') &&
+    html.indexOf('class="arrival-scope"') < html.indexOf('class="results"'),
+  'arrival scope is visible before the arrival estimates');
+  const ordered = ['class="route-tabs"', 'class="route-picker"', 'class="trip-bar"',
+    'class="controls"', 'class="arrival-scope"'];
+  assert.ok(ordered.every((part, index) => index === 0 || html.indexOf(ordered[index - 1]) < html.indexOf(part)),
+    'route tabs, route picker, saved trips, stop selector, and arrival scope appear in order');
+  assert.equal((html.match(/id="closed-loop"/g) || []).length, 1);
+  assert.match(h.element('#saved-trips').children[0].textContent, /尚無常用行程/);
+}
+
+{
+  const h = harness();
+  const requests = [];
+  h.context.navigator = {geolocation: {getCurrentPosition(success, failure) {requests.push({success, failure});}}};
+  h.context.window.isSecureContext = true;
+  h.element('#direction').value = '0';
+  h.element('#stop').value = '2';
+  vm.runInContext("renderRouteMap = () => {}; stops = [{id: 2, direction: 0, name: '測試站', lat: 25, lon: 121}, {id: 3, direction: 0, name: '下一站', lat: 25.01, lon: 121.01}]", h.context);
+  const toggle = h.element('#use-location');
+  toggle.checked = true;
+  toggle.events.change();
+  assert.equal(h.element('#walk-minutes').readOnly, true);
+  assert.equal(h.element('#walk-source').textContent, '定位中 · 暫用手動');
+  requests[0].success({coords: {latitude: 25, longitude: 121, accuracy: 10}});
+  assert.equal(h.element('#walk-source').textContent, '依目前位置');
+  assert.equal(h.element('#walk-minutes').value, '1');
+  assert.equal(h.element('#location-refresh').hidden, false);
+  h.element('#location-refresh').events.click();
+  assert.equal(requests.length, 2, 'reposition requests a fresh browser location');
+  requests[1].success({coords: {latitude: 25, longitude: 121, accuracy: 10}});
+  h.element('#stop').value = '3';
+  vm.runInContext('beginSelection()', h.context);
+  assert.equal(requests.length, 3, 'changing stops requests a fresh location');
+  toggle.checked = false;
+  toggle.events.change();
+  requests[2].success({coords: {latitude: 25.01, longitude: 121.01, accuracy: 10}});
+  assert.equal(h.element('#walk-minutes').readOnly, false);
+  assert.equal(h.element('#walk-minutes').value, '5', 'switching off restores the saved manual time');
+  assert.equal(h.element('#walk-source').textContent, '手動設定');
+  toggle.checked = true;
+  toggle.events.change();
+  requests[3].failure();
+  assert.equal(toggle.checked, false, 'a denied location request returns to manual mode');
+  assert.equal(h.element('#walk-minutes').readOnly, false);
+  assert.match(h.element('#location-state').textContent, /檢查定位權限/);
+}
+
+{
+  const desktop = harness(null, true, false);
+  const phone = harness(null, true, true);
+  assert.equal(desktop.element('#mobile-reminder').hidden, true,
+    'phone-only reminder controls are hidden on a desktop viewport');
+  assert.equal(phone.element('#mobile-reminder').hidden, false,
+    'phone reminder controls are visible on a narrow viewport');
+  const watches = [];
+  const cleared = [];
+  phone.context.navigator = {geolocation: {
+    watchPosition(success, failure) {watches.push({success, failure}); return 7;},
+    clearWatch(id) {cleared.push(id);},
+    getCurrentPosition() {}
+  }, vibrate() {}};
+  phone.context.window.isSecureContext = true;
+  phone.element('#direction').value = '0';
+  phone.element('#stop').value = '122402';
+  vm.runInContext(`stops = [{id:122402,direction:0,name:'測試站',lat:25,lon:121}];
+    latestSnapshot.routeId=16405;
+    latestSnapshot.updatedAt=new Date().toISOString();
+    latestSnapshot.feedFetchedAt={BusData:new Date().toISOString(),
+      BusEvent:new Date().toISOString(),EstimateTime:new Date().toISOString()};
+    latestSnapshot.vehicles=[];
+    latestSnapshot.officialEtaSeconds=900;
+    renderLeaveAdvice(latestSnapshot)`, phone.context);
+  assert.match(phone.element('#leave-advice').textContent, /建議/);
+  phone.element('#mobile-travel').events.click();
+  assert.equal(watches.length, 1);
+  watches[0].success({coords: {latitude: 25.0025, longitude: 121, accuracy: 10}});
+  assert.equal(phone.element('#travel-result').dataset.level, 'ok');
+  vm.runInContext(`latestSnapshot.vehicles=[{id:'same-possible-bus',confidence:'high',
+    lastSeen:new Date().toISOString(),estimatedEtaWindowSeconds:[120,600]}];
+    renderTravelGuidance()`, phone.context);
+  assert.equal(phone.element('#travel-result').dataset.level, 'ok',
+    'an early vehicle bound must not override the official next ETA for the same possible bus');
+  vm.runInContext('latestSnapshot.officialEtaSeconds=450; renderTravelGuidance()', phone.context);
+  assert.equal(phone.element('#travel-result').dataset.level, 'hurry');
+  assert.equal(phone.element('#travel-float').hidden, false);
+  vm.runInContext('latestSnapshot.officialEtaSeconds=240; renderTravelGuidance()', phone.context);
+  assert.equal(phone.element('#travel-result').dataset.level, 'miss');
+  vm.runInContext(`renderRouteMap=()=>{};
+    stops.push({id:122403,direction:0,name:'下一站',lat:25.001,lon:121})`, phone.context);
+  phone.element('#stop').value = '122403';
+  vm.runInContext('beginSelection()', phone.context);
+  assert.equal(watches.length, 1, 'the active location watch follows the new stop');
+  assert.equal(phone.element('#travel-result').dataset.level, 'waiting',
+    'travel guidance waits for fresh bus data at the new stop');
+  phone.element('#mobile-plan').events.click();
+  assert.equal(phone.element('#travel-float').hidden, true);
+  assert.equal(phone.element('#travel-panel').hidden, true);
+  assert.deepEqual(cleared, [7], 'leaving travel mode stops continuous location tracking');
+  phone.element('#mobile-travel').events.click();
+  watches[1].failure({message: 'permission denied'});
+  assert.equal(phone.element('#travel-result').dataset.level, 'waiting');
+  assert.equal(phone.element('#travel-action').textContent, '重試定位');
+  assert.match(phone.element('#travel-detail').textContent, /permission denied/);
+}
+
+{
+  const routeTools = harness();
+  routeTools.element('#route-add').events.click();
+  assert.equal(routeTools.element('#route-picker').open, true);
+  assert.equal(routeTools.element('#route-add').attributes['aria-expanded'], 'true');
+  vm.runInContext(`routes[10841]={name:'0東',source:'taipei',heads:['去程','返程']};
+    addedRouteIds=[10841]; activeRoute=10841; renderRouteTabs()`, routeTools.context);
+  assert.equal(routeTools.element('#route-remove').hidden, false,
+    'selected added route has a remove action beside the tabs');
+  assert.equal(routeTools.element('#route-remove').textContent, '移除 0東 分頁');
+}
+
+{
+  const h = harness();
+  h.element('#stop').value = '122402';
+  const control = h.element('#closed-loop');
+  control.checked = false;
+  control.events.change();
+  assert.match(h.element('#scope-effect').textContent, /只估算本方向/);
+  control.checked = true;
+  control.events.change();
+  assert.match(h.element('#scope-effect').textContent, /本方向及另一方向下一輪/);
+  assert.match(h.pageRequests.at(-1), /closed_loop=1.*fresh=1/);
 }
 
 {
@@ -168,6 +298,24 @@ function harness(error = null, publicMode = false, mobile = false) {
   assert.match(h.element('#leave-advice').textContent, /若此車在終點折返續行/);
   assert.match(h.element('#leave-advice').textContent, /NEXT-CIRCUIT/);
   assert.match(vm.runInContext('briefingText(latestSnapshot)', h.context), /若在終點折返續行，下一輪推估/);
+}
+
+{
+  const h = harness();
+  vm.runInContext(`latestSnapshot.updatedAt = new Date().toISOString();
+    latestSnapshot.vehicles.push({id:'NEXT-TRIP',crossDirection:true,atStop:false,
+      originDirection:1,estimatedEtaSeconds:1500,estimatedEtaWindowSeconds:[1200,1800],
+      stopsAway:12,nextStop:'返程站',lastSeen:new Date().toISOString(),dataAgeSeconds:15,
+      etaBasis:{distance:2},confidence:'low'}); render(latestSnapshot)`, h.context);
+  const groups = h.element('#vehicles').children;
+  assert.equal(groups.length, 2, 'direct and conditional buses have separate sections');
+  assert.match(groups[0].children[0].textContent, /本方向接近本站/);
+  assert.match(groups[1].children[0].textContent, /可能折返續行/);
+  vm.runInContext(`savedTrips = Array.from({length:5}, (_, index) => ({routeId:16405,
+    direction:0,stopId:index+1,stopName:'測試'+index,closedLoop:true})); renderSavedTrips()`, h.context);
+  assert.equal(h.element('#trips-more').hidden, false);
+  h.element('#trips-more').events.click();
+  assert.equal(h.element('#trips-more').attributes['aria-expanded'], 'true');
 }
 
 {
@@ -310,6 +458,33 @@ function harness(error = null, publicMode = false, mobile = false) {
 }
 
 (async () => {
+  const catalog = harness();
+  catalog.element('#route-query').value = '908';
+  const olderSearch = catalog.element('#route-find').events.click();
+  catalog.element('#route-query').value = '0東';
+  const newerSearch = catalog.element('#route-find').events.click();
+  const searches = catalog.pageResponses.filter(item => item.url.startsWith('api/catalog?'));
+  searches[1].resolve({ok: true, json: async () => [{id: 10841, name: '0東',
+    nameEn: '0East', heads: ['往臺北車站', '往內湖'], source: 'taipei'}]});
+  await newerSearch;
+  searches[0].resolve({ok: true, json: async () => [{id: 16585, name: '908',
+    heads: ['往捷運景安站', '往三峽'], source: 'new-taipei'}]});
+  await olderSearch;
+  assert.equal(catalog.element('#route-results').children.length, 1,
+    'an older catalog response cannot append stale routes');
+  assert.match(catalog.element('#route-picker-status').textContent, /找到 1 條/);
+  const addedRoute = harness();
+  vm.runInContext(`routes[10841] = {name:'0東',spoken:'0東',english:'0East',
+    heads:['往臺北車站','往內湖'],headsEn:['toward Taipei Main Station','toward Neihu'],
+    source:'taipei'}; renderRouteMap = () => {};`, addedRoute.context);
+  const switching = vm.runInContext('switchRoute(10841)', addedRoute.context);
+  const stopRequest = addedRoute.pageResponses.find(item => item.url === 'api/stops?route_id=10841');
+  stopRequest.resolve({ok: true, json: async () => [
+    {id: 1, direction: 0, name: '瑞湖街口', selectable: true, lat: 25, lon: 121},
+    {id: 2, direction: 1, name: '臺北車站', selectable: true, lat: 25.1, lon: 121.1}]});
+  await switching;
+  assert.equal(addedRoute.element('#stop').children.length, 1,
+    'an added route loads selectable stops without a hard-coded tab');
   const tracking = harness();
   vm.runInContext(`renderRouteMap = () => {};
     stops = [{id: 2, direction: 0, name: '新站', selectable: true}];`, tracking.context);
@@ -351,6 +526,7 @@ function harness(error = null, publicMode = false, mobile = false) {
   assert.equal(local.audioPlayed.length, 1);
   assert.equal(local.voiceRequests[0].voice, 'cmn+f2');
   const api = harness();
+  assert.equal(api.element('#api-voice').value, 'anne', 'new local TTS default is anne');
   api.element('#voice-model').value = 'api';
   api.element('#api-model').value = 'tts-1';
   api.element('#api-voice').value = 'alloy';
@@ -375,6 +551,53 @@ function harness(error = null, publicMode = false, mobile = false) {
   englishEspeak.element('#voice-test').events.click();
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(englishEspeak.voiceRequests[0].voice, 'en');
+  const livePush = harness(null, true);
+  const liveStored = new Map([['bus-tracker-push-enabled', '1']]);
+  livePush.context.localStorage = {getItem: key => liveStored.get(key) ?? null,
+    setItem: (key, value) => liveStored.set(key, value), removeItem: key => liveStored.delete(key)};
+  livePush.context.navigator = {serviceWorker: {getRegistration: () => Promise.resolve({pushManager: {
+    getSubscription: () => Promise.resolve({endpoint: 'https://fcm.googleapis.com/fcm/send/live',
+      toJSON: () => ({endpoint: 'https://fcm.googleapis.com/fcm/send/live', keys: {}})})}})}};
+  livePush.context.AbortController = AbortController;
+  livePush.context.setTimeout = setTimeout;
+  livePush.context.clearTimeout = clearTimeout;
+  livePush.element('#direction').value = '0';
+  vm.runInContext(`stops = [101,102,103].map(id => ({id,direction:0,name:'站牌 '+id}))`, livePush.context);
+  livePush.element('#stop').value = '101';
+  const firstSync = vm.runInContext('syncPushSettings()', livePush.context);
+  await new Promise(resolve => setImmediate(resolve));
+  const firstPost = livePush.pageResponses.find(item => item.url === 'api/push-subscription');
+  assert.equal(JSON.parse(firstPost.options.body).stop_id, 101);
+  livePush.element('#stop').value = '102';
+  vm.runInContext('syncPushSettings()', livePush.context);
+  assert.equal(livePush.pageResponses.filter(item => item.url === 'api/push-subscription').length, 1,
+    'browsing a different stop leaves the pinned notification target unchanged');
+  assert.equal(livePush.element('#push-target-switch').hidden, false);
+  const secondSync = livePush.element('#push-target-switch').events.click();
+  firstPost.resolve({ok: true, json: async () => ({ok: true})});
+  await firstSync;
+  await new Promise(resolve => setImmediate(resolve));
+  const secondPost = livePush.pageResponses.filter(item => item.url === 'api/push-subscription')[1];
+  assert.equal(JSON.parse(secondPost.options.body).stop_id, 102);
+  assert.ok(JSON.parse(secondPost.options.body).revision > JSON.parse(firstPost.options.body).revision);
+  secondPost.resolve({ok: true, json: async () => ({ok: true})});
+  await secondSync;
+  assert.match(livePush.element('#push-state').textContent, /已固定/);
+  livePush.element('#stop').value = '103';
+  const rejectedSync = livePush.element('#push-target-switch').events.click();
+  await new Promise(resolve => setImmediate(resolve));
+  livePush.pageResponses.at(-1).resolve({ok: true, json: async () => ({ok: true, applied: false})});
+  await rejectedSync;
+  assert.equal(livePush.element('#push-retry').hidden, false);
+  assert.match(livePush.element('#push-state').textContent, /可能仍追蹤上次成功設定的站牌/);
+  livePush.element('#stop').value = '101';
+  const retrySync = livePush.element('#push-retry').events.click();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(JSON.parse(livePush.pageResponses.at(-1).options.body).stop_id, 103,
+    'retry resends the pinned target even while another stop is being viewed');
+  livePush.pageResponses.at(-1).resolve({ok: true, json: async () => ({ok: true, applied: true})});
+  await retrySync;
+  assert.equal(livePush.element('#push-retry').hidden, true);
   const waiting = harness();
   waiting.element('#voice-state').textContent = '正在向本機 TTS 伺服器取得語音…';
   vm.runInContext('pendingAudio = true; syncVoiceMode()', waiting.context);
@@ -384,9 +607,11 @@ function harness(error = null, publicMode = false, mobile = false) {
   vm.runInContext('latestSnapshot.updatedAt = new Date().toISOString(); renderLeaveAdvice(latestSnapshot)', advice.context);
   assert.match(advice.element('#leave-advice').textContent, /EAA-121/);
   advice.element('#walk-minutes').value = '7';
+  advice.element('#walk-minutes').events.change();
   vm.runInContext('renderLeaveAdvice(latestSnapshot)', advice.context);
   assert.match(advice.element('#leave-advice').textContent, /EAA-121/);
   advice.element('#walk-minutes').value = '15';
+  advice.element('#walk-minutes').events.change();
   vm.runInContext('renderLeaveAdvice(latestSnapshot)', advice.context);
   assert.match(advice.element('#leave-advice').textContent, /沒有可確認來得及搭乘的後續車輛/);
   const nextAdvice = harness();
@@ -436,7 +661,7 @@ function harness(error = null, publicMode = false, mobile = false) {
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(publicView.voiceRequests[0].engine, 'api');
   assert.equal(publicView.voiceRequests[0].model, 'tts-1');
-  assert.equal(publicView.voiceRequests[0].voice, 'alloy');
+  assert.equal(publicView.voiceRequests[0].voice, 'anne');
   const publicFailure = harness('synthesis-failed', true);
   publicFailure.element('#voice-model').value = 'auto';
   publicFailure.element('#voice-test').events.click();

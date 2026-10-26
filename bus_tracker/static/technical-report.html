@@ -4,8 +4,9 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Jordan (jordankhwu@gmail.com)" />
   <meta name="dcterms.date" content="2026-10-26" />
-  <title>公車追蹤系統：設計與技術報告</title>
+  <title>AheadWay：設計與技術報告</title>
   <style>
     code{white-space: pre-wrap;}
     span.smallcaps{font-variant: small-caps;}
@@ -15,20 +16,23 @@
     ul.task-list{list-style: none;}
   </style>
   <link rel="stylesheet" href="technical-report.css" />
-  <link rel="icon" href="icon.svg">
+  <link rel="icon" type="image/jpeg" href="LOGO.jpeg?v=1fa489af">
 </head>
 <body>
 <header id="title-block-header">
-<h1 class="title">公車追蹤系統：設計與技術報告</h1>
-<p class="subtitle">橘5、908、921｜網頁、到站推估、語音與公開部署</p>
+<h1 class="title">AheadWay：設計與技術報告</h1>
+<p class="subtitle">大臺北公車｜網頁、到站推估、語音與公開部署</p>
+<p class="author">Jordan (jordankhwu@gmail.com)</p>
 <p class="date">2026-10-26</p>
 </header>
 <nav>
-<a href="./">← 返回公車追蹤</a> · <a href="technical-report.pdf">下載 PDF</a> · <a href="technical-report.md">閱讀 Markdown</a>
+<a href="./">← 返回 AheadWay</a> · <a href="technical-report.pdf">下載 PDF</a> · <a href="technical-report.md">閱讀 Markdown</a>
 </nav>
 <h1 id="系統目標與閱讀方式">1. 系統目標與閱讀方式</h1>
-<p>本系統讓乘客選擇路線、方向和站牌，同時查看<strong>官方下一班預估</strong>及<strong>目前可辨識的後續公車</strong>。例如，選「橘5／往捷運景安站／捷運景安站(景平路)」，畫面上方顯示官方預估，下方逐車列出沿線接近的車、下一站及推估到站範圍。官方資料沒有提供每輛後續車的獨立 ETA，因此逐車時間由本系統推估，兩種數字分開標示。</p>
+<p>本系統讓乘客選擇路線、方向和站牌，同時查看<strong>官方下一班預估</strong>及<strong>目前可辨識的後續公車</strong>。例如，選「橘5／往捷運景安站／捷運景安站(景平路)」，畫面上方顯示官方預估，下方逐車列出沿線接近的車、下一站及推估到站範圍。官方資料沒有提供每輛後續車的獨立 ETA，因此逐車時間由本系統推估，兩種數字分開標示。除了初始三條路線，乘客也能搜尋臺北／新北路線名稱，或貼上官方 <code>route.jsp?rid=...</code> 連結加入分頁。例如 <code>rid=10841</code> 可加入 0東，站牌與動態改由臺北市資料提供；分頁偏好只存於該瀏覽器。</p>
 <p>這份報告描述目前程式的實際行為。介面上的「即時」表示定期取得上游資料，並非車輛每秒傳送位置。例如乘客在 07:30 開啟頁面，可能看到 07:29:40 的車輛回報；頁面會顯示資料時間，而不會把它說成 07:30 的精確位置。</p>
+<p>網站由 Jordan 維護，可透過 <a href="mailto:jordankhwu@gmail.com">Gmail 郵件連結</a> 或 <a href="https://github.com/JordanWu1997">GitHub</a> 聯絡；兩者在頁首與頁尾都以圖示和文字呈現。Gmail 圖示連到 <code>mailto:</code>，不要求使用者安裝 Gmail；頁首與頁尾都顯示簡短的「Gmail」文字，完整郵件地址仍在連結說明中。GitHub 圖示連到作者個人頁面。例如手機乘客點頁首的 Gmail 圖示會開啟其預設郵件程式，捲到頁尾仍可看到完整地址。</p>
+<p><strong>致謝：</strong>本網站由 Jordan 開發，並在 <a href="https://openai.com/codex/">Codex</a> 中獲 GPT-6-Sol 協助設計與實作。例如這次把到站標頭與官方 ETA 合成同一張卡片的版面調整，即在此協作中完成。</p>
 <h2 id="使用者旅程範例">使用者旅程範例</h2>
 <table>
 <thead>
@@ -64,6 +68,11 @@
 <td>訂閱本站的 Web Push</td>
 <td>關掉頁面仍可能收到文字通知；不會在背景自動朗讀</td>
 </tr>
+<tr class="even">
+<td>手機切到「前往站牌模式」</td>
+<td>持續取得位置，隨位置與公車資料重算趕車餘裕</td>
+<td>頁面開啟時可提示加快腳步；頁面關閉後持續定位會停止</td>
+</tr>
 </tbody>
 </table>
 <h1 id="系統全貌與技術堆疊">2. 系統全貌與技術堆疊</h1>
@@ -71,12 +80,13 @@
     │  GET 路線、站牌、到站快照；POST 語音／通知
     ▼
 Python 標準函式庫 HTTP 伺服器（server.py）
+    ├── feeds.py + catalog.py：臺北／新北資料來源、路線搜尋與連結驗證
     ├── FeedCache + tracker.py：官方 gzip/JSON 資料、逐車位置與 ETA
     ├── calibration.py：SQLite 到站誤差樣本
     ├── speech_audio.py：eSpeak NG 或本機 OpenAI 相容 TTS → WAV
     ├── push.py：Web Push 訂閱、VAPID 與送訊
     └── schedule.py + scheduled_voice.py：擁有者的 cron 定時語音</code></pre>
-<p>前端沒有 React 或打包流程：<code>static/index.html</code> 提供結構，<code>static/style.css</code> 負責外觀與響應式配置，<code>static/app.js</code> 負責資料請求、狀態、互動、地圖及語音。例如切換「921」分頁時，JavaScript 改變目前路線、載入 921 站牌，並用該路線的狀態重新畫到站卡與路線圖。</p>
+<p>前端沒有 React 或打包流程：<code>static/index.html</code> 提供結構，<code>static/style.css</code> 負責外觀與響應式配置，<code>static/app.js</code> 負責資料請求、狀態、互動、地圖及語音。例如切換「921」分頁時，JavaScript 改變目前路線、載入 921 站牌，並用該路線的狀態重新畫到站卡與路線圖。加入新路線時，前端透過 <code>/api/catalog</code> 搜尋、取得方向與來源資訊，再將路線 ID 存在瀏覽器；公開訪客不會因此改動其他人的分頁。</p>
 <p>後端使用 Python 的 <code>ThreadingHTTPServer</code>，並非 Flask 或資料庫驅動的全站框架。它將資料整理成 JSON 給瀏覽器，亦提供靜態頁面、語音 WAV 及技術報告。例如 <code>GET /api/arrivals?route_id=16405&amp;direction=0&amp;stop_id=...</code> 會回傳所選站牌的官方狀態、逐車清單、路線狀態與資料擷取時間；<code>POST /api/voice</code> 回傳 <code>audio/wav</code>。</p>
 <table>
 <thead>
@@ -90,7 +100,7 @@ Python 標準函式庫 HTTP 伺服器（server.py）
 <tr class="odd">
 <td>HTML / CSS / 原生 JS</td>
 <td>頁面與互動</td>
-<td>站牌下拉選單、橘5／908／921 分頁、語音設定</td>
+<td>站牌下拉選單、可新增的路線分頁、語音設定</td>
 </tr>
 <tr class="even">
 <td>Python 標準函式庫</td>
@@ -98,14 +108,14 @@ Python 標準函式庫 HTTP 伺服器（server.py）
 <td><code>server.py</code>、<code>tracker.py</code></td>
 </tr>
 <tr class="odd">
-<td>官方新北市公車 feed</td>
+<td>官方臺北／新北市公車 feed</td>
 <td>路線、站序、車輛、事件、官方 ETA</td>
-<td><code>GetBusData.gz</code> 提供車輛座標</td>
+<td>各來源的 <code>GetBusData.gz</code> 提供車輛座標</td>
 </tr>
 <tr class="even">
 <td>SQLite</td>
 <td>校正預測誤差、儲存推播訂閱</td>
-<td>三條路線各有到站歷史檔</td>
+<td>使用過的路線各有到站歷史檔</td>
 </tr>
 <tr class="odd">
 <td>eSpeak NG / 本機 TTS</td>
@@ -129,14 +139,99 @@ Python 標準函式庫 HTTP 伺服器（server.py）
 </tr>
 </tbody>
 </table>
+<h2 id="如何新增路線以及資料儲存在哪裡">如何新增路線，以及資料儲存在哪裡</h2>
+<p>乘客按路線分頁右側的「＋」展開「加入其他路線」，搜尋路線名稱，或從<a href="https://pda5284.gov.taipei/MQS/routelist.jsp">官方路線清單</a>複製路線連結貼上。例如貼上 <code>https://pda5284.gov.taipei/MQS/route.jsp?rid=10841</code>，瀏覽器向 <code>/api/catalog?q=...</code> 查詢。後端只接受該官方網域與 <code>/MQS/route.jsp</code> 路徑，取出數字 <code>rid=10841</code>，再從臺北、新北兩個官方 Route feed 找到 0東、方向與資料來源。搜尋「0東」則以官方 feed 內的名稱查找，最多回傳 25 筆。貼入的網頁本身不被下載來計算到站；若路線不在這兩個 feed 中，頁面會顯示目前無法追蹤。</p>
+<p>乘客點選結果後，瀏覽器把路線 ID 加入分頁並請求 <code>/api/stops?route_id=10841</code> 與 <code>/api/arrivals?...</code>；後端依路線資料來源選臺北或新北的 Stop、BusData、BusEvent、EstimateTime feed，交給同一套到站計算。重新開啟頁面時，瀏覽器用 <code>/api/routes?ids=...</code> 重新取得名稱與方向。原始三條路線仍在，另外最多可加入 20 條；選中自己新增的路線時，分頁下方會直接顯示「移除 ○○ 分頁」；移除只修改該瀏覽器的清單。</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>位置</th>
+<th>保存內容與期限</th>
+<th>0東的例子</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>此網站的瀏覽器 <code>localStorage</code></td>
+<td>新增路線 ID <code>bus-tracker-added-routes</code>、目前路線 <code>bus-tracker-route</code>、每條路線的方向／站牌／跨方向選擇、最多八筆常用行程。持續到使用者清除該網站資料。</td>
+<td>只保存數字 <code>10841</code> 與站牌選擇；不保存完整官方站牌與車輛表。</td>
+</tr>
+<tr class="even">
+<td>每個伺服器程序的記憶體</td>
+<td>約每小時檢查官方 Route feed 是否有新 ID；已載入路線的名稱與方向保留到伺服器重啟。Route／Stop feed 約快取一小時，車輛／事件／ETA 約快取 30 秒；近期站間實測存在記憶體。</td>
+<td>網頁重開後由伺服器再次提供 0東名稱、方向與站牌，不靠瀏覽器內的舊資料。</td>
+</tr>
+<tr class="odd">
+<td>伺服器 SQLite</td>
+<td>第一次追蹤某路線時建立該路線的到站預測與誤差檔；啟用手機推播才儲存訂閱與選定路線、站牌。資料不因關閉分頁而刪除。</td>
+<td>0東會使用 <code>arrival_history_10841.sqlite3</code>；手機通知另存於 <code>push_subscriptions.sqlite3</code>。</td>
+</tr>
+<tr class="even">
+<td>擁有者的排程檔</td>
+<td>只有擁有者儲存每日語音排程時才更新 <code>schedule.json</code>；公開訪客無編輯權限。</td>
+<td>設定「每天 07:30 朗讀 0東某站」才會把路線 ID 與站牌寫入排程。</td>
+</tr>
+</tbody>
+</table>
+<p>瀏覽器資料以<strong>來源網址</strong>區分。例如同一人在手機 <code>https://pop-os.tail443eb6.ts.net/bus/</code> 新增 0東，電腦或 <code>http://127.0.0.1:8000/</code> 不會自動出現該分頁。清除手機瀏覽器的網站資料會移除其分頁與常用行程，但不會刪掉伺服器的 ETA 校正紀錄；其他乘客也不會看到這部手機新增的分頁。公開版與擁有者版是不同程序，各自維持記憶體快取，但使用同一組官方資料端點。</p>
 <h1 id="uiux-與手機電腦的-rwd">3. UI／UX 與手機、電腦的 RWD</h1>
-<p>頁面依乘客決策順序排列：先選路線與站牌，再看官方下一班，再看所有接近的車與出發建議，接著才是完整路線和語音設定。例如乘客只想知道能否趕上車，先讀上方卡片即可；想查是哪輛車，就展開逐車詳情。這讓主要任務保持靠前，較複雜的控制留在後方。</p>
-<p>三個路線以分頁切換，方向與站牌另行選擇。選中站牌在路線圖上以<strong>藍色箭頭及站名</strong>指出；去程／返程線與公車數標記有各自顏色。這避免把所選站牌誤認為橘色去程點。例如橘5在景安站有轉向，藍色選取箭頭仍只表示「你選的站」，不表示車輛方向。地圖可拖曳、滾輪縮放或按按鈕縮放；停靠點用座標直線連接，並非道路導航圖。</p>
-<p>路線列表可搜尋站名、跳到選中站牌，列出官方各站狀態和近期公車進出站標記。到站卡只列仍可能接近所選站牌的車，路線列表則能顯示整條路上的車。例如車已經過了中興街口並抵達景安站，列表能呈現站點事件，接近清單則依是否還能抵達所選站牌來篩選。</p>
-<p>畫面以 <strong>650px</strong> 為主要斷點。電腦版約 1020px 的內容寬度，路線兩方向並排、路線圖直接展開、語音設定採兩欄；標題在 651px 以上保持一行。手機版將控制項、路線方向、語音欄位改為單欄；先顯示站牌列表，路線圖以可展開區塊提供；語音詳細選項預設收合，標題分兩行。例如 390px 手機上，可先點「返程」查看那一列站牌，再點「顯示路線圖與公車位置」，不必在很小的圖上辨認所有文字。</p>
+<p>頁面依乘客決策順序排列：<strong>路線分頁與加入「＋」 → 常用行程 → 行車方向／上車站牌 → 計算哪些來車？ → 到站與出發資訊 → 路線圖及語音</strong>。例如初次追蹤 0東，可按分頁旁的「＋」搜尋；下次選擇已存的通勤行程時，「常用行程」會出現在站牌欄位之前。尚未儲存時，這一列以簡短文字提示使用「☆ 儲存常用」，保持入口可見。</p>
+<p>選好站牌後，「計算哪些來車？」立即指出「只估算本方向」或「也估算另一方向下一輪」。例如在景安站等橘5，開啟後逐車時間、出發建議與定時語音會納入可能折返續行的車；官方下一班數字仍由官方 feed 決定。路線圖下方仍有折返說明，但切換開關已在到站卡前，乘客不用先滑到路線圖。手機頁首較精簡，390px 寬時，路線分頁、加入路線、選站欄位及此開關依序出現；常用行程越多，後方資訊會相應往下移。手機只先列出三筆常用行程，其餘可展開；桌面仍顯示全部。例如存八筆後，選站欄不必先跨過八個站牌按鈕。</p>
+<p>路線以分頁切換，方向與站牌另行選擇；分頁右側固定的「＋」開啟路線搜尋，選中新增路線時，分頁下方直接出現具名的移除按鈕。超過容器寬度時分頁列可橫向捲動，右側「更多路線 →」可移到後面的分頁，到末端則改為「← 前面路線」。例如加入 0東、908延後，手機會明示右側還有分頁。選中站牌在路線圖上以<strong>藍色箭頭及站名</strong>指出；去程／返程線與公車數標記有各自顏色。這避免把所選站牌誤認為橘色去程點。例如橘5在景安站有轉向，藍色選取箭頭仍只表示「你選的站」，不表示車輛方向。地圖可拖曳、滾輪縮放或按按鈕縮放；停靠點用座標直線連接，並非道路導航圖。</p>
+<p>路線列表可搜尋站名、跳到選中站牌，列出官方各站狀態和近期公車進出站標記。到站卡只列仍可能接近所選站牌的車，並分為「本方向接近本站」和「可能折返續行」兩組，各組依時間排序。例如本方向有兩輛、另一方向有一輛可能下一輪抵達時，三輛不再混成一個確定性相同的清單。路線列表仍能顯示整條路上的車；即使車已經過中興街口，列表仍可呈現相關站點事件。</p>
+<p>品牌只稱 <strong>AheadWay</strong>，頁首將 Ahead 設為深綠、Way 設為珊瑚橘，呼應新版圖像。頁首把整張 <code>static/LOGO.jpeg</code> 等比縮入方形標誌，不再只截取中央公車；<code>static/BANNER.jpeg</code> 放在語音設定之後，讓視覺介紹不擠占站牌與到站資訊的首屏位置。新版橫幅為 3584×1184，手機與電腦都依原始比例完整呈現；例如內容寬約 962px 時圖片高約 318px，390px 手機上內容寬約 343px 時高約 113px。橫幅延遲載入，點擊可放大；兩張原圖都可從橫幅下方開啟。伺服器明確允許這兩個 JPEG 路徑，使用 <code>image/jpeg</code> 與一天快取；圖片網址附上內容版本參數，以便更新圖片後瀏覽器立即取得新版。例如手機乘客滑到頁底才會載入新版橫幅，舊版快取不會蓋掉它。</p>
+<p>畫面以 <strong>650px</strong> 為主要斷點。電腦版約 1020px 的內容寬度，路線兩方向並排、路線圖直接展開、語音設定採兩欄。頁首保留「橘5 下一班，還有下幾班。」的完整標題：下一班為深綠色，還有下幾班為珊瑚橘；橘色路線方塊與下方橘5分頁的左邊緣對齊，方塊略大於分頁。手機版隱藏技術性的路線 ID，將常用操作提前；較長的自訂路線名稱可自然換行。例如 390px 手機上，橘5方塊與綠色橘5分頁都從內容左緣內縮 5px 開始，方塊約 70×44px，分頁約 67×41px。到站資訊改成<strong>一張複合卡片</strong>：白色上半部顯示所選站名、查詢時間、最久資料更新時間及「資料說明」連結，深綠下半部顯示官方下一班預估；逐車清單仍是下一張獨立卡片。例如選環河公園時，站名不再浮在卡片外，下面直接接官方 ETA；如果官方未提供時間，深綠區仍說明實際狀態與資料限制。出發卡右側把「步行估算方式」與「步行到站」的標籤及操作元件各自對齊在<strong>同一列</strong>，定位狀態則在下一列；中等寬度先讓整組步行設定移到建議文字下方，手機再將兩欄上下排列。例如在 1440px 電腦上，開關與分鐘欄位的起始高度一致；390px 手機上不會出現狹窄的雙欄數字框。手機版把「手機出發提醒」整合進「建議出發時間」卡片，共用同一段出發建議與步行欄位；電腦版只顯示出發建議和步行控制，不顯示手機模式與通知按鈕。例如在 390px 手機上，乘客查看一次出發建議，接著就在同一卡片選「計畫模式」或「前往站牌模式」；1440px 電腦上不會看到無法使用的「啟用手機通知」。手機站牌列表先於可展開的路線圖，語音詳細選項預設收合。手機往下捲過選站欄後，頂端會顯示可點選的「路線・方向・站牌」摘要；點它可回到選站欄。例如在底部調語音時仍看得出目前追蹤的是 908 中華路。</p>
+<h2 id="配色與如何調整">配色與如何調整</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>用途</th>
+<th>目前顏色</th>
+<th>設計理由與例子</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>頁面底色 <code>#f7f7f3</code> 與白色卡片</td>
+<td>暖白底、白色內容區</td>
+<td>在日間閱讀時讓站牌及結果卡片分層；例如 390px 手機上，白色選站卡與背景可清楚區分。</td>
+</tr>
+<tr class="even">
+<td>深綠 <code>#173d32</code>／文字綠 <code>#28594b</code></td>
+<td>Ahead 字樣、主操作、官方到站卡、出發建議</td>
+<td>深色承載需要快速辨識的數字與操作；例如「更新」按鈕與官方 ETA 卡。</td>
+</tr>
+<tr class="odd">
+<td>橘 <code>#ed754d</code>／較深橘 <code>#ae5638</code></td>
+<td>Way 字樣、去程線、路線識別、提醒重點</td>
+<td>與返程色區分，延續橘5的起點識別；例如路線圖去程線與相對應車輛標記。</td>
+</tr>
+<tr class="even">
+<td>綠 <code>#3a9873</code></td>
+<td>返程線與車輛標記</td>
+<td>同圖中與橘色去程成對；例如切到返程時仍可辨認車輛所在方向。</td>
+</tr>
+<tr class="odd">
+<td>藍 <code>#3158a2</code></td>
+<td>選中站牌</td>
+<td>避免把選中的站誤當去程橘色站點；例如藍色箭頭指向景安站，方向線仍保留橘／綠。</td>
+</tr>
+</tbody>
+</table>
+<p>顏色定義在 <code>static/style.css</code>，主要底色、卡片邊框與品牌色另有 <code>--page-surface</code>、<code>--card-stroke</code>、<code>--brand-forest</code>、<code>--brand-coral</code> 變數；頁首字樣分別由 <code>.brand-ahead</code>、<code>.brand-way</code> 使用這兩種品牌色，路線圖的實際線條與箭頭則由 <code>static/app.js</code> 產生。要改主色，可先搜尋 CSS 的 <code>#173d32</code>、<code>#28594b</code> 與這些變數；改方向色搜尋 <code>.legend-line.outbound</code> 與 <code>.legend-line.inbound</code>，再搜尋 JavaScript 中對應的 SVG 色碼。改選站藍色則搜尋 <code>.route-stop.active</code> 與 <code>#3158a2</code>。例如要讓返程改成紫色，除了 CSS 的線條與公車數標記，還需改 <code>app.js</code> 畫地圖時的返程 stroke/fill，最後在 390px 手機和桌面檢查圖例、文字及對比度。手機提醒的主要按鈕同樣使用深綠，藍色留給「目前選擇的站牌」；保留文字「去程／返程／目前選擇」作為非顏色辨識方式。</p>
 <p>介面以文字補足顏色：資料來源、車輛下一站、更新時間和可靠度都可直接讀到，未來車輛的誤差範圍藏在可展開詳情中。例如「推估 6–9 分鐘」與「資料 75 秒前」比單獨一個綠點更能幫乘客判斷。語音模型與聲音名稱放在「進階語音設定」，一般乘客只需選語言、模式和「朗讀語音」。常用行程儲存在本機瀏覽器，最多八筆；換瀏覽器不會自動同步。</p>
 <h1 id="官方資料逐車定位與到站計算">4. 官方資料、逐車定位與到站計算</h1>
-<p>伺服器從新北市公開 feed 讀取 gzip 壓縮 JSON：<code>Route</code>（路線及路徑 ID）、<code>Stop</code>（站牌及方向）、<code>BusData</code>（車輛 GPS）、<code>BusEvent</code>（進出站事件）、<code>EstimateTime</code>（官方站牌 ETA）。例如一筆 BusEvent 指出車牌 ABC-1234 剛離開中興街口，BusData 提供它的座標，EstimateTime 可能同時指出景安站下一班還有 4 分鐘。</p>
+<p>伺服器從臺北市 <code>blobbus</code> 或新北市 <code>ntpcbus</code> 公開 feed 讀取 gzip 壓縮 JSON：<code>Route</code>（路線及路徑 ID）、<code>Stop</code>（站牌及方向）、<code>BusData</code>（車輛 GPS）、<code>BusEvent</code>（進出站事件）、<code>EstimateTime</code>（官方站牌 ETA）。例如一筆 BusEvent 指出車牌 ABC-1234 剛離開中興街口，BusData 提供它的座標，EstimateTime 可能同時指出景安站下一班還有 4 分鐘。<code>feeds.py</code> 選來源，<code>catalog.py</code> 將搜尋詞或官方連結轉成路線 ID；伺服器僅查找固定的兩個資料來源，不依使用者貼上的任意網址抓資料。若官方清單上的路線不在這兩個來源，搜尋會顯示目前不支援。</p>
 <p>逐車定位先檢查路線／路徑 ID、服務狀態、車牌與時間；超過 <strong>4 分鐘</strong>的車輛或事件會略過。GPS 點會投影到相鄰站牌座標所形成的折線，求出「第幾站到第幾站之間」的連續進度及偏離折線的距離；偏離超過 <strong>400 公尺</strong>時不用該 GPS。若進出站事件與 GPS 的進度衝突太大，優先使用有效的事件。例如 GPS 看似已過兩站，但最新事件說剛離開中興街口，系統會避免直接把車顯示在景安站之後。因路線圖是直線示意，彎路、重疊道路或定位誤差仍可能造成錯配。</p>
 <p>每一段相鄰站牌的行車秒數，依序取：(1) 近 3 小時同車通過相鄰站的觀察中位數；(2) 兩站官方 ETA 的合理正差值；(3) 依站距估算的備用值。對長於 2 公里的區間，備用規則容許較長行車時間。例如 A→B 實測 90 秒、B→C 官方差值 120 秒，而一輛車在 A→B 中途約一半位置，目標是 C，基礎推估約 <code>0.5 × 90 + 120 = 165 秒</code>。它是<strong>車輛估計</strong>，不是官方逐車預測。</p>
 <p>系統會儲存預測及實際到站樣本於各路線的 SQLite 檔，用近來誤差調整逐車到站範圍；樣本不足時使用較保守的預設範圍。高／中／低「信心」是依資料年齡、定位偏差、區間來源及校正樣本設計的經驗標籤，並非機率。例如同車 40 秒前回報、路段有實測資料，可信度可能高於一輛 3 分鐘前回報、兩段都只靠站距估算的車。區間觀察值存在伺服器記憶體，重啟會清空；SQLite 的預測誤差樣本會保留。</p>
@@ -146,17 +241,21 @@ Python 標準函式庫 HTTP 伺服器（server.py）
 <p>平時網頁每 <strong>30 秒</strong>輪詢一次。路線／站牌 feed 約快取 1 小時，車輛、事件、官方 ETA 約快取 30 秒。乘客主動換站或按「更新」時，畫面立即清除舊站資訊，同時取最近可用快照與要求較新 feed；伺服器仍設共用<strong>最短 5 秒</strong>擷取間隔，以免頻繁操作壓垮上游。例如連續三次快速切換站牌，頁面會立刻顯示新選擇，並可能先拿到最近快取，稍後再拿到新資料，而不承諾每次按鍵都會讓官方 feed 更新。</p>
 <p>前端用 <code>AbortController</code> 取消過時請求，並以遞增版本號避免舊回應覆蓋新站牌。例如先選 A 再立刻選 B，就算 A 的請求最後才回來，也不能把 A 的公車放到 B 卡片。新資料失敗時，若有最近可用資料，介面會明示目前顯示最近資料；無資料時顯示錯誤。語音與出發建議也根據目前的快照更新。</p>
 <h1 id="gps-步行時間與出發建議">6. GPS 步行時間與出發建議</h1>
-<p>乘客可手動輸入「步行到站」分鐘數，也可按「使用目前位置估算步行」。後者由瀏覽器要求一次定位，將乘客座標與所選站牌座標用球面距離公式估算直線距離，再用 <strong>1.35 倍繞路係數、定位精度補償與 1.2 m/s 步速</strong>換算時間。例如直線距離 400 公尺、定位精度補償 20 公尺，估算約 <code>ceil((400×1.35+20)/1.2/60)=8 分鐘</code>。它不是步行導航，也沒有使用街道、號誌或坡度；換站後會清除該次估算。乘客座標只在瀏覽器計算，傳給伺服器的是結果分鐘數（例如推播設定的 <code>walk_minutes</code>），不是座標。</p>
+<p>乘客可手動輸入「步行到站」分鐘數，也可開啟「使用目前位置」開關。預設為手動，分鐘欄顯示「手動設定」；開啟後，瀏覽器要求<strong>一次</strong>定位，欄位暫時唯讀並顯示「定位中 · 暫用手動」，成功時改顯示「依目前位置」、取得位置的時間及推估分鐘數。手機計畫模式使用同一卡片的「使用目前位置」開關，因此不會出現第二份定位欄位或出發建議。此時可按「重新定位」再量一次；換站且開關仍開啟時也會重新定位。例如 07:30 得到步行 8 分鐘，走了一段路後於 07:33 按「重新定位」，可能變為 5 分鐘，手機提醒門檻也隨之同步。分鐘欄維持唯讀，背景色區分 GPS 與手動狀態；關閉開關就恢復先前儲存的手動值。若權限遭拒、定位逾時、站牌缺座標或瀏覽器無定位能力，開關自動回到關閉狀態，顯示原因並恢復手動分鐘數。計畫模式的定位只在當次網頁工作階段有效，重新開頁預設手動；手動分鐘數則儲存在該瀏覽器。</p>
+<p>計算會將乘客座標與所選站牌座標用球面距離公式估算直線距離，再用 <strong>1.35 倍繞路係數、定位精度補償與 1.2 m/s 步速</strong>換算時間。例如直線距離 400 公尺、定位精度補償 20 公尺，估算約 <code>ceil((400×1.35+20)/1.2/60)=8 分鐘</code>。它不是步行導航，也沒有使用街道、號誌或坡度。乘客座標只在瀏覽器計算，傳給伺服器的是結果分鐘數（例如推播設定的 <code>walk_minutes</code>），不是座標；舊定位回應也不能覆蓋已切換的新站或已關閉的開關。</p>
 <p>出發建議將步行分鐘數再加固定 <strong>2 分鐘</strong>緩衝。若官方下一班的剩餘時間足夠，就根據官方 ETA 建議何時出發；否則依序尋找本方向、另一方向下一輪之中，推估區間下界仍足夠的車。後者明示「若此車在終點折返續行」，不能當成已確認班次。例如步行 5 分鐘、緩衝 2 分鐘、官方車 4 分鐘後到，系統不會建議追這班；如果本方向另一輛車的保守下界還有 12 分鐘，可能建議約 5 分鐘後出發。官方 ETA 依 feed 擷取時間遞減，車輛 ETA 依回報時間遞減；網頁每 10 秒重算建議及逐車時間，資料超過 4 分鐘則暫停建議。這是輔助決策，塞車、臨時改道與定位延遲仍會改變結果。</p>
 <h1 id="電腦與手機的語音選擇">7. 電腦與手機的語音選擇</h1>
 <p>語音有<strong>到站提醒</strong>與<strong>定時播報</strong>兩種模式。到站提醒可選 1／3／5／10 分鐘或自訂 <strong>1–60 分鐘整數</strong>；官方 ETA 首次進入門檻時報出，也對進入門檻的本方向車輛避免重複地通知。例如自訂 12 分鐘，官方預估還有 11 分鐘時可觸發提醒；儲存擁有者排程時也會存入同一門檻。定時播報啟用後立即朗讀一次，之後依使用者設定的 <strong>1–60 分鐘</strong>間隔報出官方狀態與所有已辨識沿線車。例如設每 5 分鐘播報，07:30 開啟後會先聽到當下資訊，再於約 07:35 聽到新資訊。頁面上的手動語音需保持頁面開啟；「試播目前資訊」可直接檢查音效。</p>
 <p>「播報內容」預設<strong>簡短</strong>：有可追蹤車輛時，只朗讀所選路線、方向、站牌，以及每輛公車的編號與推估到站時間；不重複朗讀官方下一班，也不唸車牌或下一站。沒有可追蹤車輛時，會改說官方狀態。選<strong>詳細</strong>則保留原本的官方資訊、車牌、站數與下一站。例如同時有兩輛返程公車可能在下一輪抵達時，先說一次「另一方向公車若在終點折返續行」，再依序報出兩輛車的時間，不重複警語。中文和 English、網站試播與定時排程都使用所選格式；既有未重新儲存的 cron 排程維持原本的詳細播報。</p>
-<p>語言可選中文或 English，內容與對應聲音選項一起切換；網頁的主要視覺標籤仍是中文。聲音來源有三種：(1) 瀏覽器 <code>speechSynthesis</code> 列出的裝置聲音；(2) 伺服器的 eSpeak NG 中／英語各八種變體；(3) 本機 OpenAI 相容 TTS 伺服器。若瀏覽器聲音回報 <code>synthesis-failed</code>，頁面會要求後端 eSpeak 生成 WAV 作為備援。例如手機沒有可用的繁體中文瀏覽器聲音時，仍可選 eSpeak 中文；電腦使用者則可選本機 TTS 的 <code>tts-1 / alloy</code>。實際可用聲音依裝置與本機 TTS 服務而定。</p>
-<p>選本機 TTS 時，瀏覽器向同源 <code>/api/voice</code> 發送文字和 <code>model</code>、<code>voice</code>，<strong>Python 伺服器</strong>再向 <code>http://127.0.0.1:8001/v1/audio/speech</code> 發送 <code>{"model":"tts-1","input":"...","voice":"alloy","response_format":"wav"}</code>，正規化 WAV 標頭後回傳瀏覽器。這樣外部手機不必連進伺服器的 8001 埠。例如手機打開公開網址後選「本機 TTS」，只連公開的 <code>/bus/api/voice</code>；是家中主機去呼叫自己的 8001。公開版只允許 <code>tts-1 / alloy</code> 與列出的 eSpeak 聲音，擁有者本機版可在進階設定輸入本機 TTS 支援的模型與聲音名稱。</p>
+<p>語言可選中文或 English，內容與對應聲音選項一起切換；網頁的主要視覺標籤仍是中文。聲音來源有三種：(1) 瀏覽器 <code>speechSynthesis</code> 列出的裝置聲音；(2) 伺服器的 eSpeak NG 中／英語各八種變體；(3) 本機 OpenAI 相容 TTS 伺服器。若瀏覽器聲音回報 <code>synthesis-failed</code>，頁面會要求後端 eSpeak 生成 WAV 作為備援。例如手機沒有可用的繁體中文瀏覽器聲音時，仍可選 eSpeak 中文；電腦使用者則可選本機 TTS 的 <code>tts-1 / anne</code>。實際可用聲音依裝置與本機 TTS 服務而定。</p>
+<p>選本機 TTS 時，瀏覽器向同源 <code>/api/voice</code> 發送文字和 <code>model</code>、<code>voice</code>，<strong>Python 伺服器</strong>再向 <code>http://127.0.0.1:8001/v1/audio/speech</code> 發送 <code>{"model":"tts-1","input":"...","voice":"anne","response_format":"wav"}</code>，正規化 WAV 標頭後回傳瀏覽器。這樣外部手機不必連進伺服器的 8001 埠。例如手機打開公開網址後選「本機 TTS」，只連公開的 <code>/bus/api/voice</code>；是家中主機去呼叫自己的 8001。公開版預設 <code>tts-1 / anne</code>，為相容舊版也接受 <code>alloy</code>，以及列出的 eSpeak 聲音，擁有者本機版可在進階設定輸入本機 TTS 支援的模型與聲音名稱。</p>
 <p>每天定時語音屬於<strong>擁有者本機版</strong>。儲存排程會把路線、站牌、模式、語言、聲音、開始時間和持續分鐘數寫入 <code>schedule.json</code>，並安裝一筆使用者 <code>cron</code> 工作；排程程序以鎖避免重疊。瀏覽器聲音在無瀏覽器的 cron 中不可用，會改用該語言的標準 eSpeak。例如每天 07:30 開始播報 60 分鐘、間隔 5 分鐘，即使關掉網頁，電腦保持開機、音效工作階段可用且上游可連線，仍可朗讀。公開版不提供排程編輯。</p>
 <h1 id="手機背景通知與語音的界線">8. 手機背景通知與語音的界線</h1>
-<p>公開 HTTPS 頁面可註冊 Service Worker 與 Web Push 訂閱。伺服器保留裝置訂閱，約每 <strong>30 秒</strong>檢查新資料；當新鮮官方 ETA 或符合條件的逐車推估落入「步行時間＋2 分鐘」出發視窗時，推播文字提醒。例如手機訂閱橘5景安站、步行 5 分鐘，一輛符合新鮮度及可靠度要求的車剛進入約 7 分鐘出發視窗，手機可能收到「建議現在出發」。訂閱按裝置分開，改站或改步行時間會同步更新；推播送達仍受手機系統與瀏覽器影響。</p>
+<p>公開 HTTPS 頁面可註冊 Service Worker 與 Web Push 訂閱。伺服器保留裝置訂閱，約每 <strong>30 秒</strong>檢查新資料；當官方 ETA 或符合條件的本方向逐車推估落入「步行時間＋2 分鐘」出發視窗時，推播文字提醒。<strong>跨方向下一輪車不觸發手機通知</strong>。通知只採用三種資料來源皆在 90 秒內取得、車輛回報不超過 90 秒且信心不低的資料；判斷時扣除官方 feed 擷取後及車輛最後回報後已過的時間。例如步行 5 分鐘、緩衝 2 分鐘，官方 ETA 在 feed 擷取時為 8 分鐘、過了 1 分鐘才檢查，實際比較的是約 7 分鐘。若跳過理想出發窗口，通知文字會說「可能已來不及」，讓乘客自行確認。</p>
+<p>手機訂閱有<strong>固定提醒目標</strong>。啟用通知時，網頁把當時路線、方向、站牌與步行分鐘數存於該瀏覽器，伺服器也保存相同目標；之後瀏覽其他路線不會改掉它。通知區明示「提醒目標」，瀏覽不同站牌時顯示「改為提醒目前站牌」，只有按此鈕才切換目標。例如固定橘5中興街口後查看 908，仍提醒橘5；按下切換鈕後才改提醒 908。停留在固定站牌時，手動步行分鐘數或定位估算變動仍會同步更新提醒門檻；查看其他站牌期間不改變已固定的步行分鐘數。同步時畫面顯示「正在同步」，失敗則顯示「重試同步」和可能仍在追蹤上次成功站牌的警語。每次更新附上該瀏覽器持續遞增的版本號；伺服器在 SQLite 記錄各訂閱的最新版本，拒絕後送達的舊選站更新或舊的啟用要求，並在回應標示是否套用。例如明確將提醒目標由 A 切至 B 時，即使 A 的儲存請求較晚到達，B 仍是提醒目標；關閉通知後，晚到的舊儲存請求也不能重新啟用。只改步行分鐘數時保留同輛車 15 分鐘內的去重紀錄，避免 GPS 重算造成重複通知；改站則重置該紀錄。訂閱按裝置分開，推播送達仍受手機系統與瀏覽器影響。</p>
 <p>Web Push 在關閉頁面後可以顯示<strong>文字通知</strong>，但不能保證背景自動播音。iPhone／iPad 使用此功能前需先將公開頁面加入主畫面。例如手機鎖定時可看到出發通知；想聽到中文或英文語音，需開啟網頁並使用語音模式。推播使用 VAPID 私鑰與 SQLite 儲存訂閱；私鑰更換後裝置需重新訂閱。公開服務對訂閱總數及請求頻率設限。</p>
+<p>手機提醒分成兩個工作模式。<strong>計畫模式</strong>用手動步行分鐘數或一次目前位置，直接使用合併後卡片上方的出發建議；切換站牌、修改步行時間、收到新到站資料以及每 10 秒的倒數更新，都會重新計算。背景 Web Push 位於兩種手機模式下方，可在任一模式中獨立啟用或關閉。例如 07:30 步行 5 分鐘、官方車 12 分鐘後到時，卡片可能建議約 5 分鐘後出發；07:33 收到 ETA 更新後會顯示新的時間。<strong>前往站牌模式</strong>則用 <code>watchPosition</code> 持續取得這部手機的位置，每次成功定位都重新估算到所選站牌的步行時間，並與新到站資料比較；換站時也會用最近的位置重算。若 ETA 扣掉步行估算及 2 分鐘緩衝後少於 2 分鐘，畫面提示「請加快腳步」；若 ETA 已短於步行估算，提示「這班可能趕不上」，並顯示頁底浮動警示。例如估算步行 5 分鐘、官方下一班還有 6 分鐘時，僅剩約 1 分鐘緩衝，因此提示加快；ETA 降到 4 分鐘時提示可能趕不上。這是按預設 1.2 m/s 推算的所需時間，<strong>沒有量測使用者實際步速</strong>，也沒有道路導航。</p>
+<p>前往模式只在網頁開啟且手機允許定位時持續運作，離開此模式或頁面卸載會停止追蹤；回到暫停的頁面可重新開始定位。定位超過 90 秒、任何必要的公車資料超過 120 秒、位置精度差於 250 公尺或沒有可信本方向車輛時，會改顯示資料不足，不給確定的趕車判斷；低信心車及可能折返的下一輪車不作為趕車警告依據。官方 ETA 與逐車估算可能指向同一輛車，因此有官方下一班時以官方時間判斷；較晚逐車估算僅提示乘客確認是否真為另一班。例如官方 4 分鐘、另一筆車輛推估 5 分鐘時，不會直接宣稱 5 分鐘那筆是下一班。新警告可在頁面開啟時震動手機，已授權通知且 Service Worker 可用時亦嘗試顯示本機通知；裝置可能限制震動或通知。背景推播若先前已啟用，切到前往模式後仍會運作，但關頁後不能依手機移動位置即時調整步行分鐘數。</p>
 <h1 id="對外-httpstailscale-funnel-與安全邊界">9. 對外 HTTPS、Tailscale Funnel 與安全邊界</h1>
 <p>此部署不需要家用路由器做 port forwarding，也不要求固定外網 IP 或自有網域。主機有兩個只綁在 <code>127.0.0.1</code> 的 Python 程序：擁有者版在 <strong>8000</strong>，公開受限版在 <strong>8765</strong>。Tailscale Funnel 在公網 <strong>443/HTTPS</strong> 接收連線，替 <code>*.ts.net</code> 網址處理憑證，再把 <code>/bus</code> 轉給 <code>http://127.0.0.1:8765</code>。例如外部手機開 <code>https://pop-os.tail443eb6.ts.net/bus/</code>，Funnel 轉到 8765，並非手機直接訪問區網的 8765。未來個人網站可用同一 443 和主機名稱的 <code>/</code> 路徑轉到另一個本機服務，例如 9000。</p>
 <pre><code>外部手機 ── HTTPS :443 ── Tailscale Funnel
@@ -168,7 +267,9 @@ Python 標準函式庫 HTTP 伺服器（server.py）
 <p>兩個程序可由 <code>deploy/bus-tracker-owner.service</code> 和 <code>deploy/bus-tracker-public.service</code> 啟動。公開版、Tailscale、網路、上游 feed 與所選 TTS 服務必須持續工作，對應功能才能運作。例如公開頁能載入但本機 8001 未運作時，官方到站資料仍可查看，選本機 TTS 播音則會失敗。</p>
 <h1 id="限制維護與延伸">10. 限制、維護與延伸</h1>
 <p>到站推估受資料新鮮度、GPS 偏差、閉合路線、車輛折返及道路狀況影響。官方 feed 只提供站牌下一班預估，系統只能列出近期資料中可定位的後續車。例如一輛車未回報 GPS、亦沒有新鮮進出站事件，就不會被「所有接近公車」清單憑空補出來。地圖是停靠站座標示意，不應當作實際道路路徑；GPS 步行時間亦只是粗估。</p>
-<p>未來可擴充真正的步行路網、GPS 持續追蹤及個人化出發緩衝，但目前是一次定位且只在瀏覽器換算分鐘數。例如若未來接入道路導航，就可把「直線 400 公尺推估 8 分鐘」改為「沿人行道 650 公尺約 9 分鐘」；這尚未實作。<code>voice_tools.py</code> 另提供可供 Hugging Face <code>speech-to-speech</code> 使用的唯讀查詢工具，但完整語音對話管線尚未在此專案安裝、執行或驗證。例如日後可問「908 到景安站還有幾班」，目前網站已提供播報，但不等於已有完整語音問答。</p>
+<p>未來可擴充真正的步行路網、個人實際步速估計與個人化出發緩衝；目前只有計畫模式的一次定位和前往模式的頁面內持續定位，都在瀏覽器換算分鐘數。例如若未來接入道路導航，就可把「直線 400 公尺推估 8 分鐘」改為「沿人行道 650 公尺約 9 分鐘」；這尚未實作。<code>voice_tools.py</code> 另提供可供 Hugging Face <code>speech-to-speech</code> 使用的唯讀查詢工具，但完整語音對話管線尚未在此專案安裝、執行或驗證。例如日後可問「908 到景安站還有幾班」，目前網站已提供播報，但不等於已有完整語音問答。</p>
+<h2 id="已完成的-ux-改進與後續注意事項">已完成的 UX 改進與後續注意事項</h2>
+<p>已把<strong>正在查看</strong>和<strong>手機正在提醒</strong>拆開：提醒目標會固定顯示，切換路線只改畫面，按「改為提醒目前站牌」才更新訂閱。若移除已固定提醒的自訂路線分頁，伺服器訂閱仍會追蹤該路線，手機也仍顯示固定目標與「此路線分頁已移除，通知仍會發送」提示；乘客可重新加入路線、改為目前站牌，或關閉通知。例如固定 0東通知後移除 0東分頁，通知不會因分頁消失就自動停用。後續可在被固定路線已從分頁移除時，增加「重新加入該路線」的快捷操作。</p>
 <h2 id="程式與資料索引">程式與資料索引</h2>
 <table>
 <colgroup>
@@ -202,7 +303,7 @@ Python 標準函式庫 HTTP 伺服器（server.py）
 <tr class="even">
 <td><code>speech_audio.py</code></td>
 <td>eSpeak 與本機 TTS 代理</td>
-<td><code>tts-1 / alloy</code> 的 WAV</td>
+<td><code>tts-1 / anne</code> 的 WAV</td>
 </tr>
 <tr class="odd">
 <td><code>schedule.py</code>、<code>scheduled_voice.py</code></td>
@@ -224,7 +325,7 @@ Python 標準函式庫 HTTP 伺服器（server.py）
 <h2 id="資料來源與參考">資料來源與參考</h2>
 <ul>
 <li><a href="https://pda5284.gov.taipei/MQS/route.jsp?rid=16405">台北市公車動態資訊系統：橘5</a>、<a href="https://pda5284.gov.taipei/MQS/route.jsp?rid=16585">908</a>、<a href="https://pda5284.gov.taipei/MQS/route.jsp?rid=16664">921</a>：乘客可比對路線與官方顯示。</li>
-<li><a href="https://tcgbusfs.blob.core.windows.net/ntpcbus/GetRoute.gz">新北市 Route feed</a>、<a href="https://tcgbusfs.blob.core.windows.net/ntpcbus/GetStop.gz">Stop feed</a>、<a href="https://tcgbusfs.blob.core.windows.net/ntpcbus/GetBusData.gz">BusData feed</a>、<a href="https://tcgbusfs.blob.core.windows.net/ntpcbus/GetBusEvent.gz">BusEvent feed</a>、<a href="https://tcgbusfs.blob.core.windows.net/ntpcbus/GetEstimateTime.gz">EstimateTime feed</a>：本系統實際讀取的資料端點。</li>
+<li><a href="https://www-ws.gov.taipei/001/Upload/458/relfile/22545/6554360/a8aabcb9-8dfb-4812-9a37-83fb9a03c471.pdf">臺北市 API 說明文件</a>、<a href="https://www-ws.gov.taipei/001/Upload/458/relfile/22545/6554359/1db1ff8a-6889-44e1-aa57-dda2e6da9daf.pdf">新北市 API 說明文件</a>：本系統讀取兩地的 Route、Stop、BusData、BusEvent、EstimateTime gzip 資料。</li>
 <li><a href="https://github.com/huggingface/speech-to-speech">Hugging Face speech-to-speech</a>：供未來語音問答整合參考；目前網站的播報功能不依賴它。</li>
 </ul>
 </body>

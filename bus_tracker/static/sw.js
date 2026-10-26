@@ -1,9 +1,9 @@
 self.addEventListener('push', event => {
   let data = {};
   try { data = event.data?.json() || {}; } catch (_) { data = {}; }
-  event.waitUntil(self.registration.showNotification(data.title || '公車出發提醒', {
+  event.waitUntil(self.registration.showNotification(data.title || 'AheadWay · 出發提醒', {
     body: data.body || '公車接近所選站牌。',
-    icon: new URL('icon.svg', self.registration.scope).href,
+    icon: new URL('LOGO.jpeg?v=1fa489af', self.registration.scope).href,
     badge: new URL('icon.svg', self.registration.scope).href,
     tag: 'bus-leave-alert',
     data: {url: self.registration.scope}

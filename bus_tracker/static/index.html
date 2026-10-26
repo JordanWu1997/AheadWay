@@ -5,57 +5,101 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#173d32">
   <link rel="manifest" href="manifest.webmanifest">
-  <title>橘5 · 公車追蹤</title>
+  <link rel="icon" type="image/jpeg" href="LOGO.jpeg?v=1fa489af">
+  <title>橘5 · AheadWay</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main>
     <header class="masthead">
-      <div class="brand"><span class="brand-mark">↗</span> 公車追蹤 <span class="brand-sub">BUS WATCH</span></div>
+      <div class="brand-block"><div class="brand"><a class="brand-logo" href="LOGO.jpeg?v=1fa489af" target="_blank" rel="noopener noreferrer" aria-label="查看完整 AheadWay 標誌"><img src="LOGO.jpeg?v=1fa489af" width="2048" height="2048" alt="" decoding="async"></a><span class="brand-ahead">Ahead</span><span class="brand-way">Way</span></div></div>
       <span class="live-pill"><span class="dot"></span> 即時資料</span>
+      <div class="author-line">作者 Jordan · <a class="contact-link" href="mailto:jordankhwu@gmail.com" aria-label="用 Gmail 寄信給 Jordan：jordankhwu@gmail.com" title="jordankhwu@gmail.com"><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7v11h3V9.4" fill="none" stroke="#4285f4" stroke-width="2.4" stroke-linejoin="round"/><path d="M21 7v11h-3V9.4" fill="none" stroke="#34a853" stroke-width="2.4" stroke-linejoin="round"/><path d="M3.8 6.5 12 13l8.2-6.5" fill="none" stroke="#ea4335" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Gmail ↗</a> · <a class="contact-link" href="https://github.com/JordanWu1997" target="_blank" rel="noopener noreferrer" aria-label="Jordan 的 GitHub 個人頁面"><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .8a11.2 11.2 0 0 0-3.54 21.82c.56.1.77-.24.77-.54v-2.08c-3.13.68-3.79-1.33-3.79-1.33-.51-1.3-1.25-1.65-1.25-1.65-1.02-.7.08-.69.08-.69 1.13.08 1.73 1.16 1.73 1.16 1 .1.78.02 2.37-.08.24-.73.39-1.23.72-1.51-2.5-.28-5.13-1.25-5.13-5.56 0-1.23.44-2.23 1.16-3.01-.12-.29-.5-1.43.11-2.98 0 0 .95-.3 3.08 1.15A10.7 10.7 0 0 1 12 6.01c.95 0 1.9.13 2.79.38 2.13-1.45 3.08-1.15 3.08-1.15.61 1.55.23 2.69.11 2.98.72.78 1.16 1.78 1.16 3.01 0 4.32-2.63 5.28-5.14 5.55.4.35.75 1.02.75 2.06v3.24c0 .3.21.65.77.54A11.2 11.2 0 0 0 12 .8Z"/></svg>GitHub ↗</a></div>
     </header>
+    <button id="tracking-context" class="tracking-context" type="button" hidden aria-label="返回目前追蹤站牌選擇"></button>
 
     <section class="hero">
+      <h1><span class="route-badge">橘5</span> 下一班，<em>還有下幾班。</em></h1>
       <div class="eyebrow" id="hero-route-id">NEW TAIPEI · ROUTE 16405</div>
-      <h1><span class="route-badge">橘5</span> 下一班，<br><em>還有下幾班。</em></h1>
-      <p>選擇站牌，查看官方下一班預估與沿線其他公車的位置。</p>
-      <a class="hero-report-link" href="technical-report.html">了解資料如何計算與語音如何運作 →</a>
     </section>
 
-    <nav class="route-tabs" role="tablist" aria-label="公車路線">
+    <div class="route-tabs-shell"><nav class="route-tabs" role="tablist" aria-label="公車路線">
       <button type="button" role="tab" data-route="16405" aria-selected="true" tabindex="0">橘5</button>
       <button type="button" role="tab" data-route="16585" aria-selected="false" tabindex="-1">908</button>
       <button type="button" role="tab" data-route="16664" aria-selected="false" tabindex="-1">921</button>
-    </nav>
+    </nav><button id="route-more" class="route-more" type="button" hidden aria-label="顯示更多公車路線">更多路線 →</button><button id="route-add" class="route-add" type="button" aria-label="加入其他路線" aria-controls="route-picker" aria-expanded="false" title="加入其他路線">＋</button></div>
+    <details class="route-picker" id="route-picker">
+      <summary>加入其他路線 · 點此收合</summary>
+      <div class="route-picker-body">
+        <label for="route-query">搜尋路線名稱，或貼上官方 route.jsp 連結</label>
+        <div class="route-picker-search"><input id="route-query" type="search" autocomplete="off" placeholder="例如 0東、紅2，或 route.jsp?rid=10841"><button id="route-find" type="button">搜尋</button></div>
+        <p id="route-picker-status" role="status">可從臺北公車路線清單選擇路線並貼上連結。</p>
+        <p class="route-picker-storage">新增分頁的路線 ID 儲存於此瀏覽器；重新開啟頁面會依 ID 載入官方資料。不同裝置、網域或連接埠不會自動同步。</p>
+        <div id="route-results" class="route-results"></div>
+        <a href="https://pda5284.gov.taipei/MQS/routelist.jsp" target="_blank" rel="noopener">開啟官方路線清單 ↗</a>
+      </div>
+    </details>
+    <div class="route-current-actions"><button id="route-remove" class="route-remove" type="button" hidden>移除目前路線分頁</button></div>
+
+    <section class="trip-bar" aria-label="常用行程"><strong>常用行程</strong><div id="saved-trips" class="saved-trips"></div><button id="trips-more" type="button" hidden aria-expanded="false">顯示其餘行程</button></section>
 
     <section class="controls" aria-label="選擇站牌">
       <div class="control"><label for="direction">行車方向</label><select id="direction"><option value="0">往捷運景安站</option><option value="1">往板橋</option></select></div>
       <div class="control grow"><div class="stop-label-row"><label for="stop">上車站牌</label><button id="save-trip" type="button" aria-label="儲存目前站牌為常用行程">☆ 儲存常用</button></div><select id="stop"><option>載入站牌中…</option></select></div>
       <button id="refresh" class="refresh" type="button" aria-label="重新整理">↻ <span>更新</span></button>
     </section>
+    <section class="arrival-scope" aria-labelledby="arrival-scope-heading">
+      <div class="arrival-scope-copy"><div class="eyebrow">ARRIVAL SCOPE</div><h2 id="arrival-scope-heading">計算哪些來車？</h2><p id="scope-effect" role="status" aria-live="polite">正在載入所選站牌…</p></div>
+      <label class="loop-control" for="closed-loop"><input id="closed-loop" type="checkbox" checked><span class="switch" aria-hidden="true"></span><span><strong>也估算另一方向的下一輪公車</strong><small>須跑完原方向並折返續行；到站時間較不確定</small></span></label>
+      <p class="arrival-scope-note">影響逐車到站、出發建議與定時語音；官方下一班時間不變。下一輪車不觸發到站提醒或手機通知。</p>
+    </section>
 
-    <section class="trip-bar" aria-label="常用行程" hidden><strong>常用行程</strong><div id="saved-trips" class="saved-trips"></div></section>
-
-    <section class="results">
-      <div class="section-head"><div><div class="eyebrow">LIVE ARRIVALS</div><h2 id="stop-title">選擇站牌</h2></div><div id="updated" class="updated">—</div></div>
-      <p id="results-status" class="sr-only" role="status" aria-atomic="true"></p>
-      <p id="data-freshness" class="data-freshness">正在讀取資料時間…</p>
-      <div id="message" class="message" role="status">正在取得公車資訊…</div>
-      <div id="eta-card" class="eta-card" hidden><div><div class="card-label">官方下一班預估</div><div id="eta" class="eta">—</div><div id="eta-detail" class="eta-detail"></div></div><div class="eta-icon">🚌</div></div>
+    <section class="results" aria-labelledby="stop-title">
+      <div class="arrival-summary">
+        <div class="section-head"><div><div class="eyebrow">到站資訊</div><h2 id="stop-title">選擇站牌</h2></div><div id="updated" class="updated">—</div></div>
+        <p id="results-status" class="sr-only" role="status" aria-atomic="true"></p>
+        <div class="arrival-meta"><p id="data-freshness" class="data-freshness">正在讀取資料時間…</p><a href="technical-report.html">資料說明 ↗</a></div>
+        <div id="message" class="message" role="status">正在取得公車資訊…</div>
+        <div id="eta-card" class="eta-card" hidden><div><div class="card-label">官方下一班預估</div><div id="eta" class="eta">—</div><div id="eta-detail" class="eta-detail"></div></div><div class="eta-icon">🚌</div></div>
+      </div>
       <section class="approach-board" aria-labelledby="approach-heading">
         <div class="list-head"><div><div class="eyebrow">ALL DETECTED BUSES</div><h3 id="approach-heading">本方向來車與後續車</h3></div><span id="vehicle-count">—</span></div>
         <p id="vehicle-summary" class="vehicle-summary">正在確認沿線公車…</p>
         <div id="vehicles" class="vehicles"></div>
         <p class="caveat">官方只提供下一班預估；每輛車的到站範圍由沿線位置推估。另一方向的車須折返續行才會抵達所選站牌，可能在端點停駛；下一輪出發時間僅供參考，不觸發手機或語音到站提醒。</p>
       </section>
-      <div class="leave-card"><div><h3>建議出發時間</h3><p id="leave-advice">載入到站預估後顯示</p><small>依步行時間及 2 分鐘緩衝，優先考慮官方下一班及本方向後續車；另一方向下一輪的建議須以該車繼續行駛為前提。</small><div class="location-actions"><button id="use-location" type="button">📍 使用目前位置估算步行</button><span id="location-state" role="status">位置只在此瀏覽器計算，不傳送座標。</span></div></div><label for="walk-minutes">步行到站（分鐘）<input id="walk-minutes" type="number" min="0" max="60" step="1" value="5"></label></div>
-      <div class="push-card"><div><strong>手機出發提醒</strong><p>所選站牌的公車接近步行時間加 2 分鐘時通知；關閉網頁後仍可收到。每台裝置分別設定。iPhone／iPad 請先將網站加入主畫面。</p><span id="push-state" role="status">尚未啟用</span></div><button id="push-toggle" type="button">啟用手機通知</button></div>
+      <div class="leave-card" id="departure-card">
+        <div class="leave-summary"><div class="eyebrow">DEPARTURE ADVICE</div><h3>建議出發時間</h3><p id="leave-advice">載入到站預估後顯示</p><small>預留步行時間與 2 分鐘緩衝；另一方向下一輪僅供參考，須確認仍繼續行駛。</small></div>
+        <div class="walk-settings">
+          <div class="location-field"><span class="walk-caption">步行估算方式</span><label class="location-toggle" for="use-location"><input id="use-location" type="checkbox"><span class="switch" aria-hidden="true"></span><span>使用目前位置</span></label></div>
+          <label class="walk-field" for="walk-minutes"><span>步行到站（分鐘）</span><span id="walk-source" class="walk-source">手動設定</span><input id="walk-minutes" type="number" min="0" max="60" step="1" value="5"></label>
+          <div class="location-status-row"><span id="location-state" class="location-state" role="status">開啟後取得一次位置；換站時重新估算。座標只在此瀏覽器計算。</span><button id="location-refresh" type="button" hidden>重新定位</button></div>
+        </div>
+        <section class="push-card" id="mobile-reminder" aria-label="手機出發提醒" hidden>
+          <div class="mobile-reminder-heading"><strong>手機出發提醒</strong><span id="mobile-mode-summary">計畫模式 · 出發建議</span></div>
+          <div class="mobile-modes" role="group" aria-label="手機出發提醒模式"><button id="mobile-plan" type="button" aria-pressed="true">計畫模式</button><button id="mobile-travel" type="button" aria-pressed="false">前往站牌模式</button></div>
+          <section id="plan-panel" class="mobile-mode-panel" aria-label="計畫模式">
+            <p>上方建議隨公車更新；移動後請按「重新定位」。</p>
+          </section>
+          <section id="travel-panel" class="mobile-mode-panel" aria-label="前往站牌模式" hidden>
+            <p>持續取得此手機位置，比對所選站牌與最新公車時間。請保持此頁開啟；關閉或背景執行時無法保證持續定位與即時警告。</p>
+            <div id="travel-result" class="travel-result" data-level="waiting"><strong id="travel-head">正在取得目前位置…</strong><p id="travel-detail" role="status" aria-live="polite">取得位置後顯示步行時間與可趕上公車的餘裕。</p></div>
+            <div class="travel-actions"><button id="travel-refresh" class="secondary-action" type="button">重新定位</button><button id="travel-action" class="secondary-action" type="button">停止前往模式</button></div>
+            <p class="mobile-limit">前往警告只在此頁運作；下方背景通知仍可獨立使用。</p>
+          </section>
+          <div class="phone-push-controls"><strong>關頁後的出發通知（選用）</strong><p>提醒目標會固定；瀏覽其他路線不會切換。iPhone／iPad 請先加入主畫面。</p>
+            <div class="push-target-row"><span id="push-target">尚未設定提醒目標</span><button id="push-target-switch" type="button" hidden>改為提醒目前站牌</button></div>
+            <span id="push-state" role="status">尚未啟用</span>
+            <div class="push-actions"><button id="push-retry" type="button" hidden>重試同步</button><button id="push-toggle" type="button">啟用手機通知</button></div>
+          </div>
+        </section>
+      </div>
+      <button id="travel-float" class="travel-float" type="button" hidden></button>
     </section>
 
     <section id="route-view" class="route-panel" aria-labelledby="route-heading">
       <div class="route-panel-head">
         <div><div class="eyebrow">ROUTE VIEW</div><h2 id="route-heading">橘5 路線</h2><p>依行駛順序排列。點選站牌即可追蹤。</p><button id="route-toggle" class="route-toggle" type="button" aria-expanded="true" aria-controls="route-body">收合路線</button></div>
-        <label class="loop-control" for="closed-loop"><input id="closed-loop" type="checkbox" checked><span class="switch" aria-hidden="true"></span><span><strong>納入另一方向後續車</strong><small>假設折返續行，推估下一輪抵達</small></span></label>
       </div>
       <div id="route-body">
       <div id="loop-explanation" class="route-connection">↪ 計算另一方向公車折返後抵達所選站牌的時間；這些車可能在終點停駛。</div>
@@ -88,13 +132,14 @@
           <div class="voice-field"><label for="voice-format">播報內容</label><select id="voice-format"><option value="short">簡短 · 只報各車到站時間</option><option value="verbose">詳細 · 車牌與下一站</option></select></div>
           <div class="voice-field"><label for="voice-model">朗讀語音</label><select id="voice-model"><option value="api">本機 TTS 伺服器</option><option value="auto">瀏覽器自動選擇</option><option value="espeak:cmn">eSpeak · 標準中文</option></select></div>
         </div>
-        <details id="api-voice-settings" class="advanced-settings"><summary>進階語音設定</summary><label for="api-model">TTS 模型</label><input id="api-model" type="text" value="tts-1" maxlength="80"><label for="api-voice">聲音名稱</label><input id="api-voice" type="text" value="alloy" maxlength="80"><small>連接 localhost:8001；此伺服器未提供聲音清單，可輸入其支援的名稱。</small></details>
+        <details id="api-voice-settings" class="advanced-settings"><summary>進階語音設定</summary><label for="api-model">TTS 模型</label><input id="api-model" type="text" value="tts-1" maxlength="80"><label for="api-voice">聲音名稱</label><input id="api-voice" type="text" value="anne" maxlength="80"><small>連接 localhost:8001；已測試 anne，可輸入此伺服器支援的其他聲音名稱。</small></details>
         <div class="schedule-settings"><strong>每日語音排程</strong><div class="schedule-fields"><label for="schedule-time">每天啟動時間<input id="schedule-time" type="time" value="07:30"></label><label for="schedule-duration">持續播報（分鐘）<input id="schedule-duration" type="number" min="1" max="720" step="1" value="60"></label></div><label class="schedule-check"><input id="schedule-enabled" type="checkbox"> 每天定時啟動</label><button id="schedule-save" class="voice-test" type="button">儲存排程</button><p id="schedule-state" role="status">尚未設定排程</p><small>儲存時的站牌、模式、間隔或接近門檻、語言與語音會寫入此電腦的 cron。開始後依模式持續播報，即使關閉頁面也會繼續。選瀏覽器語音時，cron 使用對應語言的 eSpeak 標準語音。</small></div>
         <p id="voice-preview" class="voice-preview"></p>
         </details>
       </div>
     </section>
-    <footer>資料：新北市公車開放資料 · <a id="official-route-link" href="https://pda5284.gov.taipei/MQS/route.jsp?rid=16405" target="_blank" rel="noopener">原始橘5路線</a> · <a href="technical-report.html">技術報告／運作說明</a>（<a href="technical-report.pdf">PDF</a>） · 每 30 秒檢查一次</footer>
+    <figure class="brand-banner"><a href="BANNER.jpeg?v=21d9b6aa" target="_blank" rel="noopener noreferrer" aria-label="查看完整 AheadWay 形象橫幅"><img src="BANNER.jpeg?v=21d9b6aa" width="3584" height="1184" loading="lazy" decoding="async" alt="AheadWay 形象圖：臺北城市天際線、沿線公車與到站提醒"></a><figcaption><span>AheadWay · 形象視覺</span><span><a href="LOGO.jpeg?v=1fa489af" target="_blank" rel="noopener noreferrer">完整標誌 ↗</a> · <a href="BANNER.jpeg?v=21d9b6aa" target="_blank" rel="noopener noreferrer">完整橫幅 ↗</a></span></figcaption></figure>
+    <footer>© Jordan · <a class="contact-link" href="mailto:jordankhwu@gmail.com" aria-label="用 Gmail 寄信給 Jordan：jordankhwu@gmail.com"><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7v11h3V9.4" fill="none" stroke="#4285f4" stroke-width="2.4" stroke-linejoin="round"/><path d="M21 7v11h-3V9.4" fill="none" stroke="#34a853" stroke-width="2.4" stroke-linejoin="round"/><path d="M3.8 6.5 12 13l8.2-6.5" fill="none" stroke="#ea4335" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Gmail ↗</a> · <a class="contact-link" href="https://github.com/JordanWu1997" target="_blank" rel="noopener noreferrer" aria-label="Jordan 的 GitHub 個人頁面"><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .8a11.2 11.2 0 0 0-3.54 21.82c.56.1.77-.24.77-.54v-2.08c-3.13.68-3.79-1.33-3.79-1.33-.51-1.3-1.25-1.65-1.25-1.65-1.02-.7.08-.69.08-.69 1.13.08 1.73 1.16 1.73 1.16 1 .1.78.02 2.37-.08.24-.73.39-1.23.72-1.51-2.5-.28-5.13-1.25-5.13-5.56 0-1.23.44-2.23 1.16-3.01-.12-.29-.5-1.43.11-2.98 0 0 .95-.3 3.08 1.15A10.7 10.7 0 0 1 12 6.01c.95 0 1.9.13 2.79.38 2.13-1.45 3.08-1.15 3.08-1.15.61 1.55.23 2.69.11 2.98.72.78 1.16 1.78 1.16 3.01 0 4.32-2.63 5.28-5.14 5.55.4.35.75 1.02.75 2.06v3.24c0 .3.21.65.77.54A11.2 11.2 0 0 0 12 .8Z"/></svg>GitHub ↗</a><br>資料：臺北市／新北市公車開放資料 · <a id="official-route-link" href="https://pda5284.gov.taipei/MQS/route.jsp?rid=16405" target="_blank" rel="noopener">原始橘5路線</a> · <a href="technical-report.html">技術報告／運作說明</a>（<a href="technical-report.pdf">PDF</a>） · 每 30 秒檢查一次<br>致謝：本網站由 Jordan 開發，並在 <a href="https://openai.com/codex/" target="_blank" rel="noopener noreferrer">Codex</a> 中獲 GPT-6-Sol 協助設計與實作。</footer>
   </main>
   <script src="app.js"></script>
 </body>

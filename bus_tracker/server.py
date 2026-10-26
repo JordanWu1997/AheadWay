@@ -9,14 +9,15 @@ import json
 import threading
 import time
 
-from .tracker import ROUTE_ID, ROUTES, FeedCache, ordered_stops, route_info
+from .tracker import ROUTE_ID, FeedCache, ordered_stops, route_info
+from .catalog import search_routes, selected_routes
 from .speech_audio import ESPEAK_VOICES, render_wav, render_api_wav
 from .schedule import read_schedule, save_schedule
 
 STATIC = Path(__file__).parent / "static"
 CACHE = FeedCache()
 PUBLIC_TTS_MODELS = {"tts-1"}
-PUBLIC_TTS_VOICES = {"alloy"}
+PUBLIC_TTS_VOICES = {"anne", "alloy"}
 
 
 class PublicSpeechGate:
@@ -60,12 +61,12 @@ class Handler(BaseHTTPRequestHandler):
             return "/"
         return path[4:] or "/" if path.startswith("/bus/") else path
 
-    def reply(self, status, payload, content_type="application/json; charset=utf-8"):
+    def reply(self, status, payload, content_type="application/json; charset=utf-8", cache_control="no-store"):
         body = json.dumps(payload, ensure_ascii=False).encode() if isinstance(payload, (dict, list)) else payload
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store")
+        self.send_header("Cache-Control", cache_control)
         self.end_headers()
         self.wfile.write(body)
 
@@ -74,9 +75,17 @@ class Handler(BaseHTTPRequestHandler):
         path = self.local_path()
         try:
             if path == "/api/routes":
-                return self.reply(200, [{"id": route_id, "name": info["name"],
-                                         "directions": info["heads"], "source": info["source"]}
-                                        for route_id, info in ROUTES.items()])
+                args = parse_qs(url.query)
+                raw_ids = args.get("ids", [])
+                if raw_ids:
+                    parts = raw_ids[0].split(",")
+                    if len(parts) > 40 or any(not part.isdecimal() for part in parts):
+                        raise ValueError("Invalid route IDs")
+                    return self.reply(200, selected_routes([int(part) for part in parts]))
+                return self.reply(200, selected_routes())
+            if path == "/api/catalog":
+                args = parse_qs(url.query)
+                return self.reply(200, search_routes(args.get("q", [""])[0]))
             if path == "/api/stops":
                 args = parse_qs(url.query)
                 route_id = int(args.get("route_id", [ROUTE_ID])[0])
@@ -113,18 +122,22 @@ class Handler(BaseHTTPRequestHandler):
                                                           route_id, refresh=True))
                 return self.reply(200, CACHE.snapshot(stop_id, direction, loop_value == "1", route_id))
             if path in ("/", "/app.js", "/style.css", "/sw.js", "/manifest.webmanifest", "/icon.svg",
+                        "/LOGO.jpeg", "/BANNER.jpeg",
                         "/technical-report.html", "/technical-report.md", "/technical-report.pdf", "/technical-report.css"):
                 file = STATIC / ("index.html" if path == "/" else path.lstrip("/"))
                 content_type = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
                                 ".css": "text/css; charset=utf-8", ".md": "text/markdown; charset=utf-8",
                                 ".webmanifest": "application/manifest+json; charset=utf-8",
-                                ".svg": "image/svg+xml; charset=utf-8", ".pdf": "application/pdf"}[file.suffix]
+                                ".svg": "image/svg+xml; charset=utf-8", ".pdf": "application/pdf",
+                                ".jpeg": "image/jpeg"}[file.suffix]
                 body = file.read_bytes()
                 if path == "/" and self.public_mode:
                     body = body.replace(b'<head>', b'<head>\n  <base href="/bus/">')
                     body = body.replace(b'<script src="app.js"></script>',
                                         b'<script>window.BUS_TRACKER_PUBLIC = true;</script>\n'
                                         b'  <script src="app.js"></script>')
+                if file.suffix == ".jpeg":
+                    return self.reply(200, body, content_type, cache_control="public, max-age=86400")
                 return self.reply(200, body, content_type)
             self.reply(404, {"error": "Not found"})
         except (KeyError, IndexError, ValueError) as exc:
@@ -165,7 +178,7 @@ class Handler(BaseHTTPRequestHandler):
                         endpoint = (data.get("subscription") or {}).get("endpoint")
                         if not isinstance(endpoint, str) or len(endpoint) > 2048:
                             raise ValueError("Invalid subscription")
-                        service.remove(endpoint)
+                        applied = service.remove(endpoint, data.get("revision", 0))
                     elif data.get("action") == "save":
                         route_id = int(data["route_id"])
                         direction = int(data["direction"])
@@ -175,10 +188,10 @@ class Handler(BaseHTTPRequestHandler):
                                 ordered_stops(CACHE.stops(route_id), direction, route_id)
                                 if not any(tag in s["nameZh"] for tag in ("虛擬站不停靠", "暫時裁撤"))}:
                             raise ValueError("Selected stop is not a boarding stop")
-                        service.save(data)
+                        applied = service.save(data)
                     else:
                         raise ValueError("Unknown subscription action")
-                    return self.reply(200, {"ok": True})
+                    return self.reply(200, {"ok": True, "applied": applied})
                 finally:
                     if self.public_mode:
                         PUBLIC_PUSH_GATE.release()
@@ -197,8 +210,8 @@ class Handler(BaseHTTPRequestHandler):
                 if not isinstance(speech_text, str) or not speech_text.strip() or len(speech_text) > 1000:
                     raise ValueError("Public speech text must contain 1–1000 characters")
                 if engine == "api" and (data.get("model", "tts-1") not in PUBLIC_TTS_MODELS or
-                                        data.get("voice", "alloy") not in PUBLIC_TTS_VOICES):
-                    raise ValueError("Public TTS supports only tts-1 / alloy")
+                                        data.get("voice", "anne") not in PUBLIC_TTS_VOICES):
+                    raise ValueError("Public TTS supports only tts-1 / anne or alloy")
                 if engine == "espeak" and data.get("voice", "cmn") not in ESPEAK_VOICES:
                     raise ValueError("Unknown eSpeak voice")
                 if engine not in ("api", "espeak"):
@@ -207,7 +220,7 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(429, {"error": "Speech service is busy; retry later"})
             try:
                 if engine == "api":
-                    audio = render_api_wav(data["text"], data.get("model", "tts-1"), data.get("voice", "alloy"))
+                    audio = render_api_wav(data["text"], data.get("model", "tts-1"), data.get("voice", "anne"))
                 elif engine == "espeak":
                     audio = render_wav(data["text"], data.get("voice", "cmn"))
                 else:
