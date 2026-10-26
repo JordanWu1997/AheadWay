@@ -8,6 +8,8 @@
   </p>
 </div>
 
+<p align="center"><strong>Language:</strong> <a href="README.md">English</a> · <a href="README_zh-TW.md">繁體中文</a></p>
+
 <p align="center">
   <img src="bus_tracker/static/BANNER.jpeg" alt="AheadWay — Taipei city, buses, and arrival information" width="100%" />
 </p>
