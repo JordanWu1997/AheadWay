@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173d32">
+  <link rel="manifest" href="manifest.webmanifest">
+  <title>橘5 · 公車追蹤</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <header class="masthead">
+      <div class="brand"><span class="brand-mark">↗</span> 公車追蹤 <span class="brand-sub">BUS WATCH</span></div>
+      <span class="live-pill"><span class="dot"></span> 即時資料</span>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow" id="hero-route-id">NEW TAIPEI · ROUTE 16405</div>
+      <h1><span class="route-badge">橘5</span> 下一班，<br><em>還有下幾班。</em></h1>
+      <p>選擇站牌，查看官方下一班預估與沿線其他公車的位置。</p>
+      <a class="hero-report-link" href="technical-report.html">了解資料如何計算與語音如何運作 →</a>
+    </section>
+
+    <nav class="route-tabs" role="tablist" aria-label="公車路線">
+      <button type="button" role="tab" data-route="16405" aria-selected="true" tabindex="0">橘5</button>
+      <button type="button" role="tab" data-route="16585" aria-selected="false" tabindex="-1">908</button>
+      <button type="button" role="tab" data-route="16664" aria-selected="false" tabindex="-1">921</button>
+    </nav>
+
+    <section class="controls" aria-label="選擇站牌">
+      <div class="control"><label for="direction">行車方向</label><select id="direction"><option value="0">往捷運景安站</option><option value="1">往板橋</option></select></div>
+      <div class="control grow"><div class="stop-label-row"><label for="stop">上車站牌</label><button id="save-trip" type="button" aria-label="儲存目前站牌為常用行程">☆ 儲存常用</button></div><select id="stop"><option>載入站牌中…</option></select></div>
+      <button id="refresh" class="refresh" type="button" aria-label="重新整理">↻ <span>更新</span></button>
+    </section>
+
+    <section class="trip-bar" aria-label="常用行程" hidden><strong>常用行程</strong><div id="saved-trips" class="saved-trips"></div></section>
+
+    <section class="results">
+      <div class="section-head"><div><div class="eyebrow">LIVE ARRIVALS</div><h2 id="stop-title">選擇站牌</h2></div><div id="updated" class="updated">—</div></div>
+      <p id="results-status" class="sr-only" role="status" aria-atomic="true"></p>
+      <p id="data-freshness" class="data-freshness">正在讀取資料時間…</p>
+      <div id="message" class="message" role="status">正在取得公車資訊…</div>
+      <div id="eta-card" class="eta-card" hidden><div><div class="card-label">官方下一班預估</div><div id="eta" class="eta">—</div><div id="eta-detail" class="eta-detail"></div></div><div class="eta-icon">🚌</div></div>
+      <section class="approach-board" aria-labelledby="approach-heading">
+        <div class="list-head"><div><div class="eyebrow">ALL DETECTED BUSES</div><h3 id="approach-heading">本方向來車與後續車</h3></div><span id="vehicle-count">—</span></div>
+        <p id="vehicle-summary" class="vehicle-summary">正在確認沿線公車…</p>
+        <div id="vehicles" class="vehicles"></div>
+        <p class="caveat">官方只提供下一班預估；每輛車的到站範圍由沿線位置推估。另一方向的車須折返續行才會抵達所選站牌，可能在端點停駛；下一輪出發時間僅供參考，不觸發手機或語音到站提醒。</p>
+      </section>
+      <div class="leave-card"><div><h3>建議出發時間</h3><p id="leave-advice">載入到站預估後顯示</p><small>依步行時間及 2 分鐘緩衝，優先考慮官方下一班及本方向後續車；另一方向下一輪的建議須以該車繼續行駛為前提。</small><div class="location-actions"><button id="use-location" type="button">📍 使用目前位置估算步行</button><span id="location-state" role="status">位置只在此瀏覽器計算，不傳送座標。</span></div></div><label for="walk-minutes">步行到站（分鐘）<input id="walk-minutes" type="number" min="0" max="60" step="1" value="5"></label></div>
+      <div class="push-card"><div><strong>手機出發提醒</strong><p>所選站牌的公車接近步行時間加 2 分鐘時通知；關閉網頁後仍可收到。每台裝置分別設定。iPhone／iPad 請先將網站加入主畫面。</p><span id="push-state" role="status">尚未啟用</span></div><button id="push-toggle" type="button">啟用手機通知</button></div>
+    </section>
+
+    <section id="route-view" class="route-panel" aria-labelledby="route-heading">
+      <div class="route-panel-head">
+        <div><div class="eyebrow">ROUTE VIEW</div><h2 id="route-heading">橘5 路線</h2><p>依行駛順序排列。點選站牌即可追蹤。</p><button id="route-toggle" class="route-toggle" type="button" aria-expanded="true" aria-controls="route-body">收合路線</button></div>
+        <label class="loop-control" for="closed-loop"><input id="closed-loop" type="checkbox" checked><span class="switch" aria-hidden="true"></span><span><strong>納入另一方向後續車</strong><small>假設折返續行，推估下一輪抵達</small></span></label>
+      </div>
+      <div id="route-body">
+      <div id="loop-explanation" class="route-connection">↪ 計算另一方向公車折返後抵達所選站牌的時間；這些車可能在終點停駛。</div>
+      <div class="route-finder"><label for="route-search">搜尋沿線站牌</label><div class="route-finder-actions"><input id="route-search" type="search" placeholder="輸入站名，例如景安站" autocomplete="off"><button id="jump-to-stop" type="button">跳至所選站牌</button></div><p id="route-search-status" class="sr-only" role="status"></p></div>
+      <div class="mobile-route-directions" role="group" aria-label="查看沿線站牌方向"><button type="button" data-mobile-leg="0" aria-pressed="true">去程</button><button type="button" data-mobile-leg="1" aria-pressed="false">返程</button></div>
+      <div id="route-columns" class="route-columns"><p class="route-loading">正在載入路線…</p></div>
+      <details id="map-detail" class="map-detail" open><summary><span class="map-summary-closed">顯示路線圖與公車位置</span><span class="map-summary-open">收合路線圖</span></summary>
+      <div class="route-map-legend" aria-label="路線圖圖例"><span><i class="legend-line outbound"></i>去程</span><span><i class="legend-line inbound"></i>返程</span><span><i class="legend-stop"></i>藍色箭頭與站名＝目前選擇</span><span><i class="legend-bus outbound">2</i>去程公車數</span><span><i class="legend-bus inbound">2</i>返程公車數</span></div>
+      <div class="route-map-wrap unavailable">
+        <div id="route-map-status" class="route-map-status">正在載入站牌座標，路線圖稍後顯示…</div>
+        <div class="map-zoom-controls" aria-label="路線圖縮放"><button id="map-zoom-in" type="button" aria-label="放大路線圖" title="放大">＋</button><button id="map-zoom-out" type="button" aria-label="縮小路線圖" title="縮小">−</button><button id="map-zoom-reset" type="button" aria-label="重設路線圖縮放" title="重設">重設</button></div>
+        <svg id="route-map" viewBox="0 0 800 390" role="img" aria-label="橘5去程與返程站點位置示意圖"></svg>
+      </div>
+      <p class="map-caption">可拖曳路線圖、用滾輪或上方按鈕縮放。站牌座標連線僅為位置示意，並非實際道路軌跡。</p>
+      </details>
+      <p class="route-help">每站右側為官方到站狀態；車牌標記是最近的進站或離站事件，包含尚未接近所選站牌的沿線公車。點站牌即可切換追蹤。</p>
+      </div>
+    </section>
+
+    <section class="notify">
+      <div><div class="eyebrow">VOICE NOTIFIER · PREVIEW</div><h2>語音提醒</h2><p>可選到站提醒或定時播報；手動播放需保持頁面開啟。</p></div>
+      <div class="notify-controls">
+        <div class="voice-primary"><button id="voice" type="button" aria-pressed="false" disabled>啟用語音</button><button id="voice-test" class="voice-test" type="button">試播目前資訊</button><p id="voice-state" class="voice-state" role="status">尚未啟用</p></div>
+        <details id="voice-settings" class="voice-settings" open><summary>語音設定</summary>
+        <div class="voice-settings-grid">
+          <div class="voice-field"><label for="voice-mode">語音模式</label><select id="voice-mode"><option value="alert">到站提醒</option><option value="briefing">定時播報</option></select></div>
+          <div class="voice-field"><label for="voice-language">播報語言</label><select id="voice-language"><option value="zh">中文</option><option value="en">English</option></select></div>
+          <div id="alert-settings" class="voice-field"><label for="threshold">接近門檻</label><select id="threshold"><option value="5">5 分鐘</option><option value="3">3 分鐘</option><option value="1">1 分鐘</option><option value="10">10 分鐘</option><option value="custom">其他／自訂分鐘</option></select><label class="custom-threshold-label" for="custom-threshold" hidden>自訂接近門檻（1–60 分鐘）<input id="custom-threshold" type="number" min="1" max="60" step="1" value="7" inputmode="numeric"></label></div>
+          <div id="briefing-settings" class="voice-field" hidden><label for="briefing-interval">播報間隔（分鐘）</label><input id="briefing-interval" type="number" min="1" max="60" step="1" value="5"></div>
+          <div class="voice-field"><label for="voice-format">播報內容</label><select id="voice-format"><option value="short">簡短 · 只報各車到站時間</option><option value="verbose">詳細 · 車牌與下一站</option></select></div>
+          <div class="voice-field"><label for="voice-model">朗讀語音</label><select id="voice-model"><option value="api">本機 TTS 伺服器</option><option value="auto">瀏覽器自動選擇</option><option value="espeak:cmn">eSpeak · 標準中文</option></select></div>
+        </div>
+        <details id="api-voice-settings" class="advanced-settings"><summary>進階語音設定</summary><label for="api-model">TTS 模型</label><input id="api-model" type="text" value="tts-1" maxlength="80"><label for="api-voice">聲音名稱</label><input id="api-voice" type="text" value="alloy" maxlength="80"><small>連接 localhost:8001；此伺服器未提供聲音清單，可輸入其支援的名稱。</small></details>
+        <div class="schedule-settings"><strong>每日語音排程</strong><div class="schedule-fields"><label for="schedule-time">每天啟動時間<input id="schedule-time" type="time" value="07:30"></label><label for="schedule-duration">持續播報（分鐘）<input id="schedule-duration" type="number" min="1" max="720" step="1" value="60"></label></div><label class="schedule-check"><input id="schedule-enabled" type="checkbox"> 每天定時啟動</label><button id="schedule-save" class="voice-test" type="button">儲存排程</button><p id="schedule-state" role="status">尚未設定排程</p><small>儲存時的站牌、模式、間隔或接近門檻、語言與語音會寫入此電腦的 cron。開始後依模式持續播報，即使關閉頁面也會繼續。選瀏覽器語音時，cron 使用對應語言的 eSpeak 標準語音。</small></div>
+        <p id="voice-preview" class="voice-preview"></p>
+        </details>
+      </div>
+    </section>
+    <footer>資料：新北市公車開放資料 · <a id="official-route-link" href="https://pda5284.gov.taipei/MQS/route.jsp?rid=16405" target="_blank" rel="noopener">原始橘5路線</a> · <a href="technical-report.html">技術報告／運作說明</a>（<a href="technical-report.pdf">PDF</a>） · 每 30 秒檢查一次</footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+[Unit]
+Description=Read-only Orange 5 bus tracker for Tailscale Funnel
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/jordan/Desktop/Bus_Tracker
+ExecStart=/usr/bin/python -m bus_tracker.server 8765 --public --public-host=pop-os.tail443eb6.ts.net
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

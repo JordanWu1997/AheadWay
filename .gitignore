@@ -1,0 +1,17 @@
+# Local runtime data and credentials
+*.sqlite3*
+bus_tracker/push_vapid.pem
+bus_tracker/schedule.json
+bus_tracker/*.lock
+
+# Python and local environments
+__pycache__/
+*.py[cod]
+.venv/
+
+# Generated analysis and browser artifacts
+graphify-out/
+.playwright-mcp/
+.agents/
+.aws/
+.codex/

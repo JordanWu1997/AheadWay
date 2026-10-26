@@ -1,0 +1,1 @@
+{"name":"公車追蹤","short_name":"公車追蹤","description":"橘5、908、921 即時到站與出發提醒","start_url":"./","scope":"./","display":"standalone","background_color":"#f7f7f3","theme_color":"#173d32","icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]}
