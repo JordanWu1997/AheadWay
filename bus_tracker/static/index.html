@@ -32,7 +32,7 @@
       <small>路線與常用行程只儲存在此瀏覽器。</small>
     </section>
 
-    <div class="route-tabs-shell requires-route"><button id="route-back" class="route-step" type="button" aria-label="顯示前面的公車路線" hidden disabled>←</button><nav class="route-tabs" role="tablist" aria-label="公車路線"></nav><button id="route-more" class="route-step" type="button" aria-label="顯示更多公車路線" hidden disabled>→</button><button id="route-remove" class="route-remove" type="button" aria-label="移除目前路線" title="移除目前路線" aria-controls="route-remove-confirm" aria-expanded="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></svg></button><button id="route-add" class="route-add" type="button" aria-label="加入路線" aria-controls="route-picker" aria-expanded="false"><span class="route-add-mark" aria-hidden="true">＋</span><span class="route-add-label">加入路線</span></button></div>
+    <div class="route-tabs-shell requires-route"><button id="route-back" class="route-step" type="button" aria-label="顯示前面的公車路線" hidden disabled>←</button><nav class="route-tabs" role="tablist" aria-label="公車路線"></nav><button id="route-more" class="route-step" type="button" aria-label="顯示更多公車路線" hidden disabled>→</button><button id="route-remove" class="route-remove" type="button" aria-label="移除目前路線" title="移除目前路線" aria-controls="route-remove-confirm" aria-expanded="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></svg><span class="route-remove-label">移除路線</span></button><button id="route-add" class="route-add" type="button" aria-label="加入路線" aria-controls="route-picker" aria-expanded="false"><span class="route-add-mark" aria-hidden="true">＋</span><span class="route-add-label">加入路線</span></button><button id="disclosure-toggle" class="disclosure-toggle" type="button" aria-label="全部展開" title="全部展開" aria-pressed="false" data-no-i18n><svg class="disclosure-icon-down" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 6 6 6-6M6 12l6 6 6-6"/></svg><svg class="disclosure-icon-up" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 18 6-6 6 6M6 12l6-6 6 6"/></svg><span class="disclosure-toggle-label">全部展開</span></button></div>
     <details class="route-picker" id="route-picker">
       <summary><span>搜尋公車路線</span><span class="disclosure-icon" aria-hidden="true"></span></summary>
       <div class="route-picker-body">
@@ -112,10 +112,10 @@
       <button id="travel-float" class="travel-float" type="button" hidden></button>
     </section>
 
-    <section id="route-view" class="route-panel requires-route" aria-labelledby="route-heading">
-      <div class="route-panel-head">
-        <div><div class="eyebrow">ROUTE VIEW</div><h2 id="route-heading">橘5 路線</h2></div><div class="summary-end"><p>點站牌即可追蹤</p><button id="route-toggle" class="route-toggle" type="button" aria-label="收合路線" aria-expanded="true" aria-controls="route-body"><span class="disclosure-icon" aria-hidden="true"></span></button></div>
-      </div>
+    <details id="route-view" class="route-panel requires-route" aria-labelledby="route-heading" open>
+      <summary id="route-toggle" class="route-panel-head">
+        <div><div class="eyebrow">ROUTE VIEW</div><h2 id="route-heading">橘5 路線</h2></div><div class="summary-end"><p>點站牌即可追蹤</p><span class="disclosure-icon" aria-hidden="true"></span></div>
+      </summary>
       <div id="route-body">
       <div id="loop-explanation" class="route-connection">↪ 計算另一方向公車折返後抵達所選站牌的時間；這些車可能在終點停駛。</div>
       <div class="route-finder"><label for="route-search">搜尋沿線站牌</label><div class="route-finder-actions"><input id="route-search" type="search" placeholder="輸入站名，例如景安站" autocomplete="off"><button id="jump-to-stop" type="button">跳至所選站牌</button></div><p id="route-search-status" class="sr-only" role="status"></p></div>
@@ -132,7 +132,7 @@
       </details>
       <p class="route-help">每站右側為官方到站狀態；車牌標記是最近的進站或離站事件，包含尚未接近所選站牌的沿線公車。點站牌即可切換追蹤。</p>
       </div>
-    </section>
+    </details>
 
     <details class="notify major-card requires-route" open>
       <summary class="notify-heading"><div><div class="eyebrow">VOICE NOTIFIER</div><h2>語音提醒</h2></div><div class="summary-end"><span id="voice-state" class="voice-state" role="status">尚未啟用</span><span class="disclosure-icon" aria-hidden="true"></span></div></summary>

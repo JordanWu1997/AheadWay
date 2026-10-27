@@ -63,8 +63,6 @@ const trackingContextEl = document.querySelector('#tracking-context');
 const routeColumnsEl = document.querySelector('#route-columns');
 const mobileLegButtons = [...document.querySelectorAll('[data-mobile-leg]')];
 const routePanelEl = document.querySelector('.route-panel');
-const routeBodyEl = document.querySelector('#route-body');
-const routeToggleEl = document.querySelector('#route-toggle');
 const routeSearchEl = document.querySelector('#route-search');
 const routeSearchStatusEl = document.querySelector('#route-search-status');
 const mapDetailEl = document.querySelector('#map-detail');
@@ -2329,10 +2327,32 @@ if (!publicMode) document.querySelector('#schedule-save').addEventListener('clic
   } catch (error) { scheduleStateEl.textContent = `排程儲存失敗：${error.message}`; }
 });
 document.querySelector('#refresh').addEventListener('click', () => update({selected: true, fresh: true}));
+const disclosureCards = [...document.querySelectorAll('main details:not(.route-picker):not(.route-picker-help)')];
+const disclosureToggleEl = document.querySelector('#disclosure-toggle');
+function syncDisclosureToggle() {
+  const expanded = disclosureCards.every(card => card.hidden || card.open);
+  const english = uiI18n?.language === 'en';
+  const action = expanded
+    ? (english ? 'Collapse all sections' : '全部收合')
+    : (english ? 'Expand all sections' : '全部展開');
+  disclosureToggleEl.querySelector('.disclosure-toggle-label').textContent = expanded
+    ? (english ? 'Collapse all' : '全部收合')
+    : (english ? 'Expand all' : '全部展開');
+  disclosureToggleEl.setAttribute('aria-label', action);
+  disclosureToggleEl.title = action;
+  disclosureToggleEl.setAttribute('aria-pressed', String(expanded));
+  disclosureToggleEl.dataset.state = expanded ? 'expanded' : 'collapsed';
+}
+disclosureCards.forEach(card => card.addEventListener('toggle', syncDisclosureToggle));
+disclosureToggleEl.addEventListener('click', () => {
+  const expanded = disclosureCards.every(card => card.hidden || card.open);
+  disclosureCards.forEach(card => { if (!card.hidden) card.open = !expanded; });
+  syncDisclosureToggle();
+});
+window.addEventListener('aheadway:languagechange', syncDisclosureToggle);
+syncDisclosureToggle();
 function setRouteExpanded(expanded) {
-  routeBodyEl.hidden = !expanded;
-  routeToggleEl.setAttribute('aria-expanded', String(expanded));
-  routeToggleEl.setAttribute('aria-label', expanded ? '收合路線' : '展開路線與沿線公車');
+  routePanelEl.open = expanded;
 }
 setRouteExpanded(true);
 const compactScreen = window.matchMedia?.('(max-width:650px)');
@@ -2347,7 +2367,6 @@ function applyScreenSize(compact) {
 }
 compactScreen?.addEventListener?.('change', event => applyScreenSize(event.matches));
 window.addEventListener?.('resize', () => applyScreenSize(Boolean(compactScreen?.matches)));
-routeToggleEl.addEventListener('click', () => setRouteExpanded(routeBodyEl.hidden));
 document.addEventListener?.('visibilitychange', () => {
   if (document.hidden) return;
   update();

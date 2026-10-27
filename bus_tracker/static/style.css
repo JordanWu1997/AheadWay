@@ -12,7 +12,7 @@
 .notify-controls .voice-test{display:block;width:100%;margin-top:8px;background:#fff;color:#28594b;border:1px solid #bdd3c5;padding:11px 14px}.notify-controls .voice-test:hover{background:#eff7f1}.notify-controls .voice-preview{font-size:11px;line-height:1.5;color:#728077;margin:8px 0 0;max-width:260px}.notify-controls .voice-state.error{color:#a23d30;font-weight:750}.notify-controls .voice-state.speaking{color:#237851;font-weight:750}
 .leave-card{margin-top:13px;padding:21px 25px;background:#fff;border:1px solid #dce7de;border-radius:15px;display:flex;justify-content:space-between;gap:20px;align-items:center}.leave-card h3{margin:0 0 7px;font-size:17px}.leave-card p{margin:0 0 7px;font-size:18px;font-weight:800;color:#28594b}.leave-card small{color:#7a8980;line-height:1.5}.leave-card label{min-width:150px;margin:0}.leave-card input{display:block;width:100%;margin-top:8px;border:1px solid #dce2de;border-radius:9px;padding:10px;font:inherit}.schedule-settings{border-top:1px solid #e1e7e2;margin-top:15px;padding-top:15px}.schedule-settings .schedule-check{display:flex;align-items:center;gap:8px;margin:3px 0 10px}.schedule-settings .schedule-check input{width:auto;margin:0}.schedule-settings small{display:block;color:#819087;font-size:11px;line-height:1.5;margin-top:6px}.schedule-settings #schedule-state{font-size:11px;color:#28594b;margin:8px 0 0}.notify-controls #voice-model{max-width:300px}@media(max-width:650px){.leave-card{display:block}.leave-card label{margin-top:16px}}
 #api-voice-settings[hidden]{display:none}#api-voice-settings small{display:block;color:#819087;font-size:11px;line-height:1.5;margin:0 0 10px}
-.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.route-toggle{margin-top:11px;border:1px solid #c7dbcd;background:#f5faf6;color:#28594b;border-radius:8px;padding:7px 11px;font:inherit;font-size:12px;font-weight:750;cursor:pointer}.route-toggle:focus-visible{outline:3px solid #f6ac8d}#route-body[hidden]{display:none}@media(max-width:650px){.results{margin-top:26px}.route-panel{margin-top:28px}.vehicle{align-items:flex-start;gap:10px}.vehicle .away{min-width:112px}.vehicle .away strong{white-space:normal}}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}@media(max-width:650px){.results{margin-top:26px}.route-panel{margin-top:28px}.vehicle{align-items:flex-start;gap:10px}.vehicle .away{min-width:112px}.vehicle .away strong{white-space:normal}}
 .route-tabs{display:flex;gap:8px;margin:0 0 14px;padding:5px;background:#e9eee9;border-radius:14px;width:max-content;max-width:100%}.route-tabs button{border:0;border-radius:10px;background:transparent;color:#5a6e61;font:inherit;font-size:15px;font-weight:800;cursor:pointer;min-width:88px;padding:11px 20px}.route-tabs button[aria-selected="true"]{background:#173d32;color:#fff;box-shadow:0 4px 12px #173d3229}.route-tabs button:focus-visible{outline:3px solid #f6ac8d}.route-stop:disabled{cursor:default;opacity:.52}.route-stop:disabled:hover{background:transparent}@media(max-width:650px){.route-tabs{width:100%}.route-tabs button{flex:1;min-width:0}}
 .route-map-legend{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin:18px 0 10px;color:#344c43;font-size:12px;font-weight:750}.route-map-legend span{display:inline-flex;align-items:center;gap:7px}.legend-line{display:inline-block;width:24px;height:0;border-top:4px solid;border-radius:3px}.legend-line.outbound{border-color:#ed754d}.legend-line.inbound{border-color:#3a9873}.legend-stop{display:inline-block;width:14px;height:14px;border:3px solid #f1764b;background:#fff;border-radius:50%;box-shadow:0 0 0 2px #fff}.legend-bus{display:inline-grid;place-items:center;width:25px;height:25px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px #173d3240;color:#173d32;font-style:normal;font-size:12px;font-weight:900}.legend-bus.outbound{background:#ed754d}.legend-bus.inbound{background:#3a9873}.map-zoom-controls{position:absolute;z-index:2;top:10px;right:10px;display:flex;gap:4px;background:#fff;border:1px solid #d9e5dd;border-radius:9px;padding:4px;box-shadow:0 3px 12px #173d321c}.map-zoom-controls button{border:0;border-radius:6px;min-width:30px;height:30px;background:#eef3ef;color:#17395a;font-size:17px;font-weight:800;cursor:pointer}.map-zoom-controls button:last-child{font-size:11px;padding:0 7px}.map-zoom-controls button:hover:not(:disabled){background:#dcece1}.map-zoom-controls button:disabled{opacity:.45;cursor:default}.map-zoom-controls button:focus-visible{outline:3px solid #f6ac8d}.route-map-wrap.unavailable .map-zoom-controls{display:none}#route-map{cursor:grab;touch-action:none}#route-map.panning{cursor:grabbing}.map-stop{cursor:pointer}.map-bus-marker{filter:drop-shadow(0 2px 3px #17395a70);pointer-events:none}@media(max-width:650px){.route-map-legend{gap:8px 12px;font-size:11px}.route-map-status{max-width:55%}.map-zoom-controls{top:8px;right:8px}}
 #route-body{display:flex;flex-direction:column}.route-connection{order:0}.map-detail{order:1}.map-detail summary{display:none}.map-summary-closed{display:none}.route-finder{order:2;margin:16px 0 12px}.route-finder label{margin:0 0 7px}.route-finder-actions{display:flex;gap:9px}.route-finder input{min-width:0;flex:1;border:1px solid #dce2de;background:#fbfcfa;border-radius:9px;color:#26302d;padding:10px 12px;font:inherit;font-size:14px}.route-finder button{border:1px solid #c7dbcd;background:#f5faf6;color:#28594b;border-radius:9px;padding:10px 13px;font:inherit;font-size:13px;font-weight:750;cursor:pointer;white-space:nowrap}.route-finder input:focus-visible,.route-finder button:focus-visible{outline:3px solid #f6ac8d}.route-columns{order:3}.route-help{order:4}.route-search-empty{padding:16px 8px;color:#7b8880;font-size:13px}.advanced-settings{border:1px solid #dce5dd;border-radius:10px;padding:0 12px;margin:2px 0 12px;background:#fafcf9}.advanced-settings summary{cursor:pointer;color:#426b57;font-size:13px;font-weight:750;padding:11px 2px}.advanced-settings summary:focus-visible{outline:3px solid #f6ac8d}.advanced-settings[open] summary{margin-bottom:8px}.eta-detail{max-width:620px;line-height:1.6}@media(max-width:650px){.route-finder{order:1}.route-columns{order:2}.map-detail{order:3;margin-top:14px}.map-detail summary{display:list-item;border:1px solid #dce5dd;border-radius:9px;padding:11px 14px;background:#f5faf6;color:#28594b;font-size:13px;font-weight:800;cursor:pointer}.map-detail summary:focus-visible{outline:3px solid #f6ac8d}.map-detail:not([open]) .map-summary-open{display:none}.map-detail[open] .map-summary-closed{display:none}.map-detail[open] .map-summary-open{display:inline}.map-detail[open] .route-map-legend{margin-top:14px}}
@@ -207,13 +207,13 @@ main>footer{color:#607468;line-height:1.6}main>footer a{color:#28594b}
 .leave-card .push-card[open]>summary{margin-bottom:12px}
 
 /* Shared disclosure language: the whole header is the action, with one chevron on the right. */
-.major-card>summary,.selection-card>summary,.leave-card .push-card>summary{list-style:none;cursor:pointer}
-.major-card>summary::-webkit-details-marker,.selection-card>summary::-webkit-details-marker,.leave-card .push-card>summary::-webkit-details-marker{display:none}
-.major-card>summary:focus-visible,.selection-card>summary:focus-visible,.leave-card .push-card>summary:focus-visible{outline:3px solid var(--focus-ring);outline-offset:-3px;border-radius:12px}
+.major-card>summary,.selection-card>summary,.leave-card .push-card>summary,.route-panel>summary{list-style:none;cursor:pointer}
+.major-card>summary::-webkit-details-marker,.selection-card>summary::-webkit-details-marker,.leave-card .push-card>summary::-webkit-details-marker,.route-panel>summary::-webkit-details-marker{display:none}
+.major-card>summary:focus-visible,.selection-card>summary:focus-visible,.leave-card .push-card>summary:focus-visible,.route-panel>summary:focus-visible{outline:3px solid var(--focus-ring);outline-offset:-3px;border-radius:12px}
 .disclosure-icon{display:inline-grid;place-items:center;flex:none;width:32px;height:32px;border:1px solid #cdded2;border-radius:9px;background:#f5faf6;color:#28594b}
 .disclosure-icon:after{content:"";width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(2px) rotate(225deg);transition:transform .16s ease}
-.major-card:not([open])>summary .disclosure-icon:after,.selection-card:not([open])>summary .disclosure-icon:after,[aria-expanded="false"] .disclosure-icon:after,.leave-card .push-card:not([open])>summary .disclosure-icon:after{transform:translateY(-2px) rotate(45deg)}
-.major-card>summary:hover .disclosure-icon,.selection-card>summary:hover .disclosure-icon,.leave-card .push-card>summary:hover .disclosure-icon,.route-toggle:hover .disclosure-icon{background:#e9f4ed;border-color:#a9cbb2}
+.major-card:not([open])>summary .disclosure-icon:after,.selection-card:not([open])>summary .disclosure-icon:after,.route-panel:not([open])>summary .disclosure-icon:after,[aria-expanded="false"] .disclosure-icon:after,.leave-card .push-card:not([open])>summary .disclosure-icon:after{transform:translateY(-2px) rotate(45deg)}
+.major-card>summary:hover .disclosure-icon,.selection-card>summary:hover .disclosure-icon,.leave-card .push-card>summary:hover .disclosure-icon,.route-panel>summary:hover .disclosure-icon{background:#e9f4ed;border-color:#a9cbb2}
 .summary-end{display:flex;align-items:center;gap:12px;margin-left:auto;flex:none}
 
 .selection-card>summary{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 32px;gap:8px 16px;min-height:72px;padding:15px 20px}
@@ -254,8 +254,6 @@ main>footer{color:#607468;line-height:1.6}main>footer a{color:#28594b}
 .route-panel-head{min-height:76px;padding:16px 20px;gap:14px}
 .route-panel h2{margin:3px 0 0}
 .route-panel-head p{margin:4px 0 0;font-size:12px;line-height:1.4}
-.route-toggle{display:inline-grid;place-items:center;flex:none;width:44px;height:44px;margin:0;padding:0;border:0;background:transparent;border-radius:10px;cursor:pointer}
-.route-toggle .disclosure-icon{width:32px;height:32px}
 #route-body{padding:0 20px 20px;border-top:1px solid #eef1ed}
 
 .notify.major-card{display:block;padding:0;overflow:hidden}
@@ -397,8 +395,6 @@ main>footer{color:#607468;line-height:1.6}main>footer a{color:#28594b}
 .selection-card,.arrival-summary,.approach-board,.leave-card,.route-panel,.notify,.route-picker{border-color:var(--ui-card-border)}
 .disclosure-icon,
 .approach-board .list-head .disclosure-icon{color:var(--ui-action);background:var(--ui-soft);border-color:var(--ui-border);border-radius:9px}
-.route-toggle{margin-right:-6px}
-.route-toggle .disclosure-icon{color:var(--ui-action)}
 
 /* Two voice actions share the same size, radius, and type scale. */
 .voice-primary #voice,.notify-controls .voice-primary .voice-test{
@@ -508,4 +504,28 @@ body.awaiting-stop .selection-card{border-color:#a9cbb2}
   .route-tabs-shell .route-add{flex:0 0 40px;width:40px;min-width:40px;padding:0}
   .route-tabs-shell .route-add-label{display:none}
   .route-tabs-shell .route-add-mark{font-size:24px}
+}
+
+/* Single compact control beside Add route toggles all dashboard disclosures. */
+.route-tabs-shell .disclosure-toggle{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:0 0 auto;min-width:40px;min-height:42px;margin:0;padding:0 10px;border:1px solid #c7d8cd;border-radius:10px;background:#fff;color:var(--ui-action);font:inherit;font-size:12px;font-weight:750;white-space:nowrap;cursor:pointer}
+.route-tabs-shell .disclosure-toggle:hover{background:var(--ui-soft-active)}
+.route-tabs-shell .disclosure-toggle:focus-visible{outline:3px solid var(--focus-ring);outline-offset:1px}
+.route-tabs-shell .disclosure-toggle svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.route-tabs-shell .disclosure-toggle .disclosure-icon-up{display:none}
+.route-tabs-shell .disclosure-toggle[data-state="expanded"] .disclosure-icon-down{display:none}
+.route-tabs-shell .disclosure-toggle[data-state="expanded"] .disclosure-icon-up{display:block}
+@media(max-width:650px){.route-tabs-shell .disclosure-toggle{display:inline-grid;place-items:center;flex:0 0 36px;width:36px;min-width:36px;min-height:40px;padding:0}.route-tabs-shell .disclosure-toggle-label{display:none}}
+
+/* Match the add, remove, and expand controls in the route tab bar. */
+.route-tabs-shell .route-add,.route-tabs-shell .route-remove,.route-tabs-shell .disclosure-toggle{min-height:42px;height:42px;border-radius:10px}
+.route-tabs-shell .route-add,.route-tabs-shell .route-remove,.route-tabs-shell .disclosure-toggle{font-size:13px;font-weight:800}
+.route-tabs-shell .route-add-mark{font-size:19px;line-height:1}
+.route-tabs-shell .route-remove{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:0 0 auto;width:auto;min-width:42px;padding:0 10px}
+.route-tabs-shell .route-remove svg,.route-tabs-shell .disclosure-toggle svg{width:19px;height:19px;flex:none}
+.route-tabs-shell .route-remove-label,.route-tabs-shell .route-add-label,.route-tabs-shell .disclosure-toggle-label{font-size:13px;line-height:1;font-weight:800}
+.route-tabs-shell .disclosure-toggle{padding:0 10px}
+@media(max-width:650px){
+  .route-tabs-shell .route-add,.route-tabs-shell .route-remove,.route-tabs-shell .disclosure-toggle{flex:0 0 40px;width:40px;min-width:40px;height:40px;min-height:40px;padding:0}
+  .route-tabs-shell .route-add-label,.route-tabs-shell .route-remove-label,.route-tabs-shell .disclosure-toggle-label{display:none}
+  .route-tabs-shell .route-add-mark{font-size:20px}
 }

@@ -24,6 +24,7 @@
       '如何新增路線？':'How do I add a route?','可在':'Choose a route from the',
       '官方路線清單 ↗':'official route list ↗','選擇路線，複製 route.jsp 連結並貼上搜尋。':'then copy its route.jsp link and paste it above.',
       '新增的路線只儲存在此瀏覽器；不同裝置不會自動同步。':'Added routes are saved in this browser and do not sync across devices.',
+      '移除路線':'Remove route',
       '移除目前路線分頁':'Remove current route tab','路線與站牌':'Route & stop','載入中…':'Loading…',
       '常用行程':'Saved trips','顯示其餘行程':'Show more trips','行車方向':'Direction',
       '往捷運景安站':'To Jingan MRT Station','往板橋':'To Banqiao','往三峽':'To Sanxia',
