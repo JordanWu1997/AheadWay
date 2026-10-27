@@ -480,6 +480,18 @@ main>footer a,.brand-banner figcaption a{color:var(--ui-action)}
 .voice-settings-info{display:grid;gap:2px;min-width:0;text-align:right}
 #voice-settings-engine{color:var(--ui-muted);font-size:12px;line-height:1.35;font-weight:500;overflow-wrap:anywhere}
 
+/* A newly added route needs an explicit boarding stop before arrivals or alerts appear. */
+body.awaiting-stop .results,body.awaiting-stop .notify{display:none}
+body.awaiting-stop .selection-card{border-color:#a9cbb2}
+.route-stop-name,.route-column-head span:first-child{min-width:0;overflow-wrap:anywhere}
+.route-column-head span:last-child,.route-status{flex:none}
+.route-map-legend .selected-stop-legend{flex:1 1 230px;min-width:0;flex-wrap:wrap;gap:4px 7px;align-items:center}
+.route-map-legend .selected-stop-legend .legend-stop{flex:none;margin-right:3px}
+.route-map-legend #map-selected-stop-name{display:block;flex-basis:100%;min-width:0;padding-left:27px;color:#3158a2;font-size:13px;line-height:1.35;overflow-wrap:anywhere}
+@media(max-width:650px){
+  .selection-card:not([open]) .selection-card-body{display:none}
+}
+
 /* Direct two-language toggle: each language stays visible and tappable. */
 .masthead-actions{grid-column:2;grid-row:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
 .masthead-actions .live-pill{grid-column:auto;grid-row:auto}

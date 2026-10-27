@@ -3,8 +3,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function harness(error = null, publicMode = false, mobile = false) {
+function harness(error = null, publicMode = false, mobile = false, storage = {}) {
   const elements = new Map();
+  const stored = new Map(Object.entries(storage));
   const spoken = [];
   const audioPlayed = [];
   const voiceRequests = [];
@@ -71,7 +72,8 @@ function harness(error = null, publicMode = false, mobile = false) {
     window: {speechSynthesis: synth, SpeechSynthesisUtterance: Utterance, BUS_TRACKER_PUBLIC: publicMode,
       matchMedia: () => ({matches: mobile}), addEventListener() {}},
     speechSynthesis: synth, SpeechSynthesisUtterance: Utterance,
-    localStorage: {getItem: () => null, setItem() {}, removeItem() {}},
+    localStorage: {getItem: key => stored.get(key) ?? null,
+      setItem: (key, value) => stored.set(key, String(value)), removeItem: key => stored.delete(key)},
     fetch, Audio, URL: {createObjectURL: () => 'blob:test-audio', revokeObjectURL() {}},
     setInterval() {}, console,
   });
@@ -88,7 +90,7 @@ function harness(error = null, publicMode = false, mobile = false) {
       nextStop: '新海橋頭', nextStopEn: 'Xinhai Bridge', atStop: false}]
   };
   vm.runInContext(`latestSnapshot = ${JSON.stringify(snapshot)}`, context);
-  return {elements, spoken, audioPlayed, voiceRequests, pageRequests, pageResponses, tabs, context, snapshot, element};
+  return {elements, stored, spoken, audioPlayed, voiceRequests, pageRequests, pageResponses, tabs, context, snapshot, element};
 }
 
 {
@@ -476,6 +478,25 @@ function harness(error = null, publicMode = false, mobile = false) {
   assert.equal(catalog.element('#route-results').children.length, 1,
     'an older catalog response cannot append stale routes');
   assert.match(catalog.element('#route-picker-status').textContent, /找到 1 條/);
+  const readded = harness(null, false, true, {
+    'bus-tracker-16405-stop-0': '122402', 'orange5-stop-0': '122402'
+  });
+  vm.runInContext('renderRouteMap = () => {}', readded.context);
+  readded.element('#route-query').value = 'Orange 5';
+  const lookup = readded.element('#route-find').events.click();
+  readded.pageResponses.find(item => item.url.startsWith('api/catalog?')).resolve({ok: true,
+    json: async () => [{id: 16405, name: '橘5', nameEn: 'Orange Five',
+      heads: ['往捷運景安站', '往板橋'], source: 'new-taipei'}]});
+  await lookup;
+  readded.element('#route-results').children[0].events.click();
+  readded.pageResponses.find(item => item.url === 'api/stops?route_id=16405').resolve({ok: true,
+    json: async () => [{id: 122402, direction: 0, name: '捷運景安站', selectable: true,
+      lat: 25, lon: 121}]});
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(readded.element('#stop').value, '', 're-adding a route requires a new stop choice');
+  assert.equal(readded.element('#selection-card').open, true, 'Trip & Stop stays open while choosing');
+  assert.equal(readded.stored.has('orange5-stop-0'), false, 'legacy stop choice is cleared on add');
+  assert.equal(readded.pageRequests.filter(url => url.startsWith('api/arrivals?')).length, 0);
   const addedRoute = harness();
   vm.runInContext(`routes[10841] = {name:'0東',spoken:'0東',english:'0East',
     heads:['往臺北車站','往內湖'],headsEn:['toward Taipei Main Station','toward Neihu'],
@@ -486,8 +507,12 @@ function harness(error = null, publicMode = false, mobile = false) {
     {id: 1, direction: 0, name: '瑞湖街口', selectable: true, lat: 25, lon: 121},
     {id: 2, direction: 1, name: '臺北車站', selectable: true, lat: 25.1, lon: 121.1}]});
   await switching;
-  assert.equal(addedRoute.element('#stop').children.length, 1,
-    'an added route loads selectable stops without a hard-coded tab');
+  assert.equal(addedRoute.element('#stop').children.length, 2,
+    'a new route offers a prompt before its selectable stops');
+  assert.equal(addedRoute.element('#stop').value, '',
+    'a new route does not silently track its first stop');
+  assert.equal(addedRoute.pageRequests.filter(url => url.startsWith('api/arrivals?')).length, 0,
+    'arrivals wait until the rider chooses a stop');
   const tracking = harness();
   vm.runInContext(`renderRouteMap = () => {};
     stops = [{id: 2, direction: 0, name: '新站', selectable: true}];`, tracking.context);

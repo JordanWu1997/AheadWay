@@ -16,6 +16,20 @@ class CatalogTests(unittest.TestCase):
         with patch.object(tracker, "_catalog_expires", float("inf")):
             self.assertEqual(search_routes("908")[0]["id"], 16585)
 
+    def test_route_names_accept_language_independent_number_aliases(self):
+        with patch.object(tracker, "_catalog_expires", float("inf")):
+            for spelling in ("橘5", "Ｏｒａｎｇｅ ５", "orange5", "Orange Five"):
+                with self.subTest(spelling=spelling):
+                    self.assertEqual(search_routes(spelling)[0]["id"], 16405)
+
+    def test_structured_number_does_not_match_longer_number(self):
+        route_five = dict(tracker.ROUTES[16405])
+        route_fifty = dict(route_five, name="橘50", name_en="Orange 50")
+        with patch.dict(tracker.ROUTES, {16405: route_five, 50000: route_fifty}, clear=True), \
+                patch.object(tracker, "_catalog_expires", float("inf")):
+            self.assertEqual([r["id"] for r in search_routes("Orange 5")], [16405])
+            self.assertEqual([r["id"] for r in search_routes("Orange 50")], [50000])
+
     def test_dynamic_taipei_route_uses_taipei_feed_and_generic_stop_order(self):
         route = {"Id": 10841, "nameZh": "0東", "nameEn": "0East", "pathAttributeId": 108410,
                  "departureZh": "內湖", "destinationZh": "臺北車站",

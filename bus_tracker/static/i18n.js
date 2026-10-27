@@ -10,6 +10,7 @@
       '先加入你要搭的公車路線':'Add your first bus route',
       '搜尋臺北／新北市公車路線，再選擇方向與上車站牌。AheadWay 會顯示下一班、後續來車與建議出發時間。':'Search for a Taipei or New Taipei bus route, then choose a direction and stop. AheadWay shows the next bus, following buses, and when to leave.',
       '找路線':'Find a route','輸入路線名稱，或貼上官方 route.jsp 連結。':'Enter a route name or paste an official route.jsp link.',
+      '輸入中文或英文路線名稱，或貼上官方 route.jsp 連結。':'Enter a Chinese or English route name, or paste an official route.jsp link.',
       '選站牌':'Choose a stop','選擇行車方向與上車站牌。':'Choose the direction and boarding stop.',
       '看來車':'See arrivals','查看即時到站與後續車輛，按需要開啟提醒。':'See live arrivals and following buses, then turn on alerts if useful.',
       '＋ 加入第一條路線':'+ Add your first route','路線與常用行程只儲存在此瀏覽器。':'Routes and saved trips are stored only in this browser.',
@@ -165,6 +166,10 @@
       '請輸入路線名稱或貼上官方路線連結。':'Enter a route name or paste an official route link.',
       '正在搜尋可追蹤路線…':'Searching trackable routes…',
       '目前的臺北／新北市即時資料中找不到這條路線；公路客運與特殊路線可能尚未支援。':'No match in the current Taipei / New Taipei live data. Intercity and special routes may not be supported.',
+      '找不到符合的路線。請試另一種中文或英文寫法，或貼上官方 route.jsp 連結。':'No matching route. Try another Chinese or English spelling, or paste an official route.jsp link.',
+      '例如 橘5、Orange 5、908，或貼上 route.jsp 連結':'e.g. Orange 5, 908, or paste a route.jsp link',
+      '請選擇上車站牌':'Choose a boarding stop',
+      '可能趕不上':'You may miss this bus',
       '最多可加入 20 條路線；請先移除一條已加入的路線。':'You can add up to 20 routes. Remove one before adding another.',
       '搜尋失敗：':'Search failed: ','已顯示所選站牌的最近資料，正在取得最新公車動態…':'Showing recent data for this stop while loading the latest vehicle positions…',
       '即時更新暫不可用；目前顯示最近可用的公車資料。':'Live updates are unavailable; showing the most recent available bus data.',
@@ -299,6 +304,8 @@
       [/^本方向接近本站 · (\d+) 輛$/, (_, n) => `Approaching this stop · ${n} buses`],
       [/^可能折返續行 · (\d+) 輛$/, (_, n) => `May return · ${n} buses`],
       [/^(.+) 路線$/, (_, route) => `${message(route)} route`],
+      [/^(.+?)：現在出發；預留的 2 分鐘緩衝已不足，可能趕不上這班。(.*)$/, (_, bus, tail) => `${message(bus)}: leave now. The 2-minute buffer is gone; you may miss this bus.${message(tail)}`],
+      [/^(.+?)：現在出發，剩餘緩衝不足 1 分鐘。(.*)$/, (_, bus, tail) => `${message(bus)}: leave now; less than 1 minute of buffer remains.${message(tail)}`],
       [/^原始(.+)路線$/, (_, route) => `Original ${message(route)} route`],
       [/^移除 (.+) 分頁$/, (_, route) => `Remove ${message(route)} tab`],
       [/^(.+)：(.+)，可追蹤 (\d+) 輛公車。$/, (_, stop, status, n) => `${message(stop)}: ${message(status)}; tracking ${n} buses.`],
@@ -361,7 +368,7 @@
     }
   }
   function localizeElement(el) {
-    if (el.closest('script,style,.language-toggle')) return;
+    if (el.closest('script,style,.language-toggle,[data-no-i18n]')) return;
     for (const attr of attributes) {
       const current = el.getAttribute(attr);
       if (current === null) continue;
@@ -402,6 +409,7 @@
     }
     try { localStorage.setItem(storageKey, locale); } catch (_) {}
     refresh();
+    window.dispatchEvent(new Event('aheadway:languagechange'));
   }
   function registerNames(items) {
     for (const [source, translated] of items) if (source && translated && source !== translated) names.set(source, source === '橘5' ? 'Orange 5' : translated);

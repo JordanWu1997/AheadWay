@@ -27,7 +27,7 @@
       <span class="eyebrow">WELCOME TO AHEADWAY</span>
       <h1 id="first-route-title">先加入你要搭的公車路線</h1>
       <p>搜尋臺北／新北市公車路線，再選擇方向與上車站牌。AheadWay 會顯示下一班、後續來車與建議出發時間。</p>
-      <ol><li><strong>找路線</strong><span>輸入路線名稱，或貼上官方 route.jsp 連結。</span></li><li><strong>選站牌</strong><span>選擇行車方向與上車站牌。</span></li><li><strong>看來車</strong><span>查看即時到站與後續車輛，按需要開啟提醒。</span></li></ol>
+      <ol><li><strong>找路線</strong><span>輸入中文或英文路線名稱，或貼上官方 route.jsp 連結。</span></li><li><strong>選站牌</strong><span>選擇行車方向與上車站牌。</span></li><li><strong>看來車</strong><span>查看即時到站與後續車輛，按需要開啟提醒。</span></li></ol>
       <button id="first-route-add" type="button">＋ 加入第一條路線</button>
       <small>路線與常用行程只儲存在此瀏覽器。</small>
     </section>
@@ -37,7 +37,7 @@
       <summary><span>搜尋公車路線</span><span class="disclosure-icon" aria-hidden="true"></span></summary>
       <div class="route-picker-body">
         <label for="route-query">路線名稱或官方連結</label>
-        <div class="route-picker-search"><input id="route-query" type="search" autocomplete="off" placeholder="例如 0東、紅2，或貼上 route.jsp 連結"><button id="route-find" type="button">搜尋</button></div>
+        <div class="route-picker-search"><input id="route-query" type="search" autocomplete="off" placeholder="例如 橘5、Orange 5、908，或貼上 route.jsp 連結"><button id="route-find" type="button">搜尋</button></div>
         <p id="route-picker-status" role="status">輸入路線名稱或貼上官方連結後搜尋。</p>
         <div id="route-results" class="route-results"></div>
         <details class="route-picker-help"><summary><span>如何新增路線？</span><span class="disclosure-icon" aria-hidden="true"></span></summary><div><p>可在<a href="https://pda5284.gov.taipei/MQS/routelist.jsp" target="_blank" rel="noopener">官方路線清單 ↗</a>選擇路線，複製 route.jsp 連結並貼上搜尋。</p><p>新增的路線只儲存在此瀏覽器；不同裝置不會自動同步。</p></div></details>
@@ -122,7 +122,7 @@
       <div class="mobile-route-directions" role="group" aria-label="查看沿線站牌方向"><button type="button" data-mobile-leg="0" aria-pressed="true">去程</button><button type="button" data-mobile-leg="1" aria-pressed="false">返程</button></div>
       <div id="route-columns" class="route-columns"><p class="route-loading">正在載入路線…</p></div>
       <details id="map-detail" class="map-detail" open><summary><span class="map-summary-closed">顯示路線圖與公車位置</span><span class="map-summary-open">收合路線圖</span><span class="disclosure-icon" aria-hidden="true"></span></summary>
-      <div class="route-map-legend" aria-label="路線圖圖例"><span><i class="legend-line outbound"></i>去程</span><span><i class="legend-line inbound"></i>返程</span><span><i class="legend-stop"></i>藍色箭頭與站名＝目前選擇</span><span><i class="legend-bus outbound">2</i>去程公車數</span><span><i class="legend-bus inbound">2</i>返程公車數</span></div>
+      <div class="route-map-legend" aria-label="路線圖圖例"><span><i class="legend-line outbound"></i>去程</span><span><i class="legend-line inbound"></i>返程</span><span class="selected-stop-legend"><i class="legend-stop"></i><span>藍色箭頭與站名＝目前選擇</span><strong id="map-selected-stop-name" data-no-i18n>選擇站牌</strong></span><span><i class="legend-bus outbound">2</i>去程公車數</span><span><i class="legend-bus inbound">2</i>返程公車數</span></div>
       <div class="route-map-wrap unavailable">
         <div id="route-map-status" class="route-map-status">正在載入站牌座標，路線圖稍後顯示…</div>
         <div class="map-zoom-controls" aria-label="路線圖縮放"><button id="map-zoom-in" type="button" aria-label="放大路線圖" title="放大">＋</button><button id="map-zoom-out" type="button" aria-label="縮小路線圖" title="縮小">−</button><button id="map-zoom-reset" type="button" aria-label="重設路線圖縮放" title="重設">重設</button></div>

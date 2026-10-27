@@ -71,6 +71,7 @@ const mapDetailEl = document.querySelector('#map-detail');
 const resultsStatusEl = document.querySelector('#results-status');
 const routeMapEl = document.querySelector('#route-map');
 const routeMapStatusEl = document.querySelector('#route-map-status');
+const mapSelectedStopNameEl = document.querySelector('#map-selected-stop-name');
 const mapZoomInEl = document.querySelector('#map-zoom-in');
 const mapZoomOutEl = document.querySelector('#map-zoom-out');
 const mapZoomResetEl = document.querySelector('#map-zoom-reset');
@@ -93,7 +94,9 @@ const routeTabsEl = document.querySelector('.route-tabs');
 const routeBackEl = document.querySelector('#route-back');
 const routeMoreEl = document.querySelector('#route-more');
 const selectionSummaryEl = document.querySelector('#selection-summary');
+const selectionCardEl = document.querySelector('#selection-card');
 let catalogSearchVersion = 0;
+let catalogMatches = [];
 const routePickerEl = document.querySelector('#route-picker');
 const routeAddEl = document.querySelector('#route-add');
 const routeQueryEl = document.querySelector('#route-query');
@@ -631,22 +634,18 @@ async function hydrateRoutes() {
   }
 }
 
-async function searchRouteCatalog() {
-  const version = ++catalogSearchVersion;
-  const query = routeQueryEl.value.trim();
+function renderCatalogMatches(results) {
   routeResultsEl.replaceChildren();
-  if (!query) { routePickerStatusEl.textContent = '請輸入路線名稱或貼上官方路線連結。'; return; }
-  routePickerStatusEl.textContent = '正在搜尋可追蹤路線…';
-  try {
-    const results = await request(`api/catalog?q=${encodeURIComponent(query)}`);
-    if (version !== catalogSearchVersion) return;
-    routePickerStatusEl.textContent = results.length ? `找到 ${results.length} 條路線。` :
-      '目前的臺北／新北市即時資料中找不到這條路線；公路客運與特殊路線可能尚未支援。';
-    for (const meta of results) {
+  for (const meta of results) {
       const button = document.createElement('button'); button.type = 'button';
-      button.textContent = meta.name;
+      button.dataset.noI18n = '';
+      const english = uiI18n?.language === 'en';
+      button.textContent = english ? (meta.nameEn || meta.name) : meta.name;
       const detail = document.createElement('span');
-      detail.textContent = `${meta.heads.join(' · ')} · ${meta.source === 'taipei' ? '臺北市' : '新北市'}資料`;
+      detail.textContent = `${english ? meta.name : (meta.nameEn || meta.name)} · ` +
+        `${(english ? (meta.headsEn || meta.heads) : meta.heads).join(' · ')} · ` +
+        `${english ? (meta.source === 'taipei' ? 'Taipei' : 'New Taipei') :
+          (meta.source === 'taipei' ? '臺北市' : '新北市')}`;
       button.append(detail);
       button.addEventListener('click', () => {
         rememberRoute(meta);
@@ -655,6 +654,12 @@ async function searchRouteCatalog() {
             routePickerStatusEl.textContent = '最多可加入 20 條路線；請先移除一條已加入的路線。';
             return;
           }
+          // A route being added needs an explicit stop choice, even if this
+          // browser still has a stop from a route removed earlier.
+          for (const direction of [0, 1]) {
+            localStorage.removeItem(`bus-tracker-${meta.id}-stop-${direction}`);
+            if (meta.id === 16405) localStorage.removeItem(`orange5-stop-${direction}`);
+          }
           addedRouteIds.push(meta.id);
           localStorage.setItem('bus-tracker-added-routes', JSON.stringify(addedRouteIds));
         }
@@ -662,8 +667,24 @@ async function searchRouteCatalog() {
         routePickerEl.open = false;
         switchRoute(meta.id);
       });
-      routeResultsEl.append(button);
-    }
+    routeResultsEl.append(button);
+  }
+}
+
+async function searchRouteCatalog() {
+  const version = ++catalogSearchVersion;
+  const query = routeQueryEl.value.trim();
+  catalogMatches = [];
+  routeResultsEl.replaceChildren();
+  if (!query) { routePickerStatusEl.textContent = '請輸入路線名稱或貼上官方路線連結。'; return; }
+  routePickerStatusEl.textContent = '正在搜尋可追蹤路線…';
+  try {
+    const results = await request(`api/catalog?q=${encodeURIComponent(query)}`);
+    if (version !== catalogSearchVersion) return;
+    catalogMatches = results;
+    routePickerStatusEl.textContent = results.length ? `找到 ${results.length} 條路線。` :
+      '找不到符合的路線。請試另一種中文或英文寫法，或貼上官方 route.jsp 連結。';
+    renderCatalogMatches(results);
   } catch (error) {
     if (version === catalogSearchVersion) routePickerStatusEl.textContent = `搜尋失敗：${error.message}`;
   }
@@ -674,6 +695,7 @@ function selectRouteStop(direction, id) {
   directionEl.value = String(direction);
   setStops(false);
   stopEl.value = String(id);
+  syncStopSelection(true);
   renderSelectionSummary();
   resetAlertState();
   lastBriefingAt = 0;
@@ -755,8 +777,36 @@ function endMapPan(event) {
 routeMapEl.addEventListener('pointerup', endMapPan);
 routeMapEl.addEventListener('pointercancel', endMapPan);
 
+function mapStopName(station) {
+  return uiI18n?.language === 'en' && station.nameEn ? station.nameEn : station.name;
+}
+
+function mapLabelLayout(name, maxWidth, fontSize, weight = 700) {
+  const context = document.createElement('canvas').getContext?.('2d');
+  if (context) context.font = `${weight} ${fontSize}px Inter, "Noto Sans TC", system-ui, sans-serif`;
+  const measure = value => context ? context.measureText(value).width :
+    [...value].reduce((sum, char) => sum + (/[^\x00-\x7f]/.test(char) ? fontSize : fontSize * .65), 0);
+  const lines = [];
+  let line = '';
+  for (const word of name.trim().split(/\s+/)) {
+    const candidate = line ? `${line} ${word}` : word;
+    if (measure(candidate) <= maxWidth) { line = candidate; continue; }
+    if (line) lines.push(line);
+    line = '';
+    for (const char of word) {
+      if (line && measure(line + char) > maxWidth) { lines.push(line); line = ''; }
+      line += char;
+    }
+  }
+  if (line) lines.push(line);
+  return {lines: lines.length ? lines : [name], width: Math.ceil(Math.max(...lines.map(measure), 0))};
+}
+
 function renderRouteMap(snapshot) {
   routeMapEl.replaceChildren();
+  const selected = stops.find(s => s.direction === Number(directionEl.value) && String(s.id) === String(stopEl.value));
+  mapSelectedStopNameEl.textContent = selected ? mapStopName(selected) :
+    (uiI18n?.language === 'en' ? 'Choose a stop' : '選擇站牌');
   const all = stops.filter(s => Number.isFinite(s.lat) && Number.isFinite(s.lon));
   const mapWrap = routeMapEl.parentElement;
   if (all.length !== stops.length || !all.length) {
@@ -801,17 +851,24 @@ function renderRouteMap(snapshot) {
       routeMapEl.append(dot);
     });
   });
-  const labels = [
-    [legs[0][0], legs[0][0]?.name, -4, -13],
-    [legs[0][legs[0].length - 1], legs[0][legs[0].length - 1]?.name, 12, -13],
-    [legs[1][legs[1].length - 1], legs[1][legs[1].length - 1]?.name, 10, 20]
-  ];
-  for (const [station, text, dx, dy] of labels) {
-    if (!station) continue;
+  const labels = [[legs[0][0], -4, -13],
+    [legs[0][legs[0].length - 1], 12, -13],
+    [legs[1][legs[1].length - 1], 10, 20]];
+  for (const [station, dx, dy] of labels) {
+    if (!station || station === selected) continue;
     const p = point(station);
-    const label = svgElement('text', {x: p.x + dx, y: p.y + dy, fill: '#34493e',
+    const name = mapStopName(station);
+    const layout = mapLabelLayout(name, 180, 13);
+    const left = Math.max(8, Math.min(792 - layout.width, p.x + dx));
+    const firstLineY = Math.max(16, Math.min(382 - (layout.lines.length - 1) * 16, p.y + dy));
+    const label = svgElement('text', {'data-no-i18n': '', fill: '#34493e',
       'font-size': 13, 'font-weight': 700, 'paint-order': 'stroke', stroke: '#f8faf7', 'stroke-width': 4});
-    label.textContent = text; routeMapEl.append(label);
+    for (const [index, line] of layout.lines.entries()) {
+      const span = svgElement('tspan', {x: left, y: firstLineY + index * 16});
+      span.textContent = line;
+      label.append(span);
+    }
+    routeMapEl.append(label);
   }
   if (snapshot && snapshot.routeVehicles) {
     const grouped = new Map();
@@ -840,37 +897,32 @@ function renderRouteMap(snapshot) {
       routeMapEl.append(marker);
     }
   }
-  const selected = stops.find(s => s.direction === Number(directionEl.value) && String(s.id) === String(stopEl.value));
   if (selected) {
     const p = point(selected);
-    const text = svgElement('text', {x: 0, y: 0, fill: '#254681',
-      'font-size': 12, 'font-weight': 800});
-    text.textContent = selected.name;
-    routeMapEl.append(text);
-    let textWidth = text.getComputedTextLength?.() || 0;
-    if (!textWidth) {
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext?.('2d');
-      if (context) {
-        context.font = '800 12px "Noto Sans TC", system-ui, sans-serif';
-        textWidth = context.measureText(selected.name).width;
-      } else textWidth = [...selected.name].reduce((sum, char) => sum + (/[^\x00-\x7f]/.test(char) ? 12 : 7), 0);
-    }
-    const width = Math.min(784, Math.ceil(textWidth) + 20);
+    const name = mapStopName(selected);
+    const layout = mapLabelLayout(name, 270, 12, 800);
+    const width = Math.max(60, layout.width + 22);
+    const height = 13 + layout.lines.length * 16;
     const left = Math.max(8, Math.min(792 - width, p.x - width / 2));
-    const top = p.y > 75 ? p.y - 45 : p.y + 18;
+    const above = p.y > height + 24;
+    const top = Math.max(8, Math.min(382 - height, above ? p.y - height - 16 : p.y + 18));
     const anchorX = Math.max(left + 12, Math.min(left + width - 12, p.x));
-    const edgeY = p.y > 75 ? top + 29 : top;
+    const edgeY = above ? top + height : top;
     const pointer = svgElement('g', {class: 'selected-stop-pointer', role: 'img',
-      'aria-label': `目前選擇站牌：${selected.name}`});
+      'data-no-i18n': '',
+      'aria-label': `${uiI18n?.language === 'en' ? 'Selected stop: ' : '目前選擇站牌：'}${name}`});
     pointer.append(svgElement('line', {x1: anchorX, y1: edgeY, x2: p.x, y2: p.y,
       stroke: '#3158a2', 'stroke-width': 2}));
     pointer.append(svgElement('circle', {cx: p.x, cy: p.y, r: 5, fill: '#fff',
       stroke: '#3158a2', 'stroke-width': 2.5}));
-    pointer.append(svgElement('rect', {x: left, y: top, width, height: 29, rx: 7,
+    pointer.append(svgElement('rect', {x: left, y: top, width, height, rx: 7,
       fill: '#fff', stroke: '#3158a2', 'stroke-width': 1.5}));
-    text.setAttribute('x', left + 10);
-    text.setAttribute('y', top + 19);
+    const text = svgElement('text', {fill: '#254681', 'font-size': 12, 'font-weight': 800});
+    for (const [index, line] of layout.lines.entries()) {
+      const span = svgElement('tspan', {x: left + 11, y: top + 20 + index * 16});
+      span.textContent = line;
+      text.append(span);
+    }
     pointer.append(text);
     routeMapEl.append(pointer);
   }
@@ -984,7 +1036,11 @@ function setStops(shouldUpdate = true) {
   const available = stops.filter(s => s.direction === direction && s.selectable !== false);
   const previous = localStorage.getItem(routeStorage('stop-' + direction)) ??
     (activeRoute === 16405 ? localStorage.getItem('orange5-stop-' + direction) : null);
-  stopEl.replaceChildren(...available.map(s => {
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = '請選擇上車站牌';
+  placeholder.disabled = true;
+  stopEl.replaceChildren(placeholder, ...available.map(s => {
     const option = document.createElement('option');
     option.value = s.id;
     option.textContent = s.name;
@@ -992,10 +1048,13 @@ function setStops(shouldUpdate = true) {
   }));
   renderScope();
   if (!available.length) {
+    syncStopSelection();
     showError('這個方向目前沒有可上車的站牌資料。請選另一方向或稍後重試。');
     return;
   }
   if (available.some(s => String(s.id) === previous)) stopEl.value = previous;
+  else stopEl.value = '';
+  syncStopSelection();
   renderSelectionSummary();
   renderScope();
   resetAlertState();
@@ -1042,8 +1101,18 @@ function renderSelectionSummary() {
   const direction = Number(directionEl.value);
   const station = stops.find(item => item.direction === direction && String(item.id) === String(stopEl.value));
   const head = routes[activeRoute]?.heads[direction];
-  selectionSummaryEl.textContent = [routes[activeRoute]?.name, head, station?.name]
+  selectionSummaryEl.textContent = [routes[activeRoute]?.name, head, station?.name || '選擇站牌']
     .filter(Boolean).join(' · ') || '選擇路線與站牌';
+}
+
+function syncStopSelection(collapseMobile = false) {
+  const chosen = Boolean(activeRoute && stopEl.value);
+  document.body.classList.toggle('awaiting-stop', Boolean(activeRoute) && !chosen);
+  document.querySelector('#save-trip').disabled = !chosen;
+  if (!chosen) selectionCardEl.open = true;
+  else if (collapseMobile && window.matchMedia?.('(max-width:650px)').matches)
+    selectionCardEl.open = false;
+  syncTrackingContext();
 }
 
 function renderScope() {
@@ -1061,11 +1130,13 @@ function syncTrackingContext() {
     return;
   }
   if (!controls.getBoundingClientRect || !window.matchMedia) return;
+  const anchor = selectionCardEl.open ? controls : selectionCardEl;
   trackingContextEl.hidden = !window.matchMedia('(max-width:650px)').matches ||
-    controls.getBoundingClientRect().bottom > 0;
+    anchor.getBoundingClientRect().bottom > 0;
 }
 trackingContextEl.addEventListener('click', () =>
   document.querySelector('.controls').scrollIntoView({behavior: 'smooth', block: 'start'}));
+selectionCardEl.addEventListener('toggle', syncTrackingContext);
 if (window.addEventListener) {
   window.addEventListener('scroll', syncTrackingContext, {passive: true});
   window.addEventListener('resize', syncTrackingContext);
@@ -1167,6 +1238,7 @@ async function switchRoute(routeId, trip = null) {
   latestSnapshot = null;
   voiceEl.disabled = true;
   stopEl.replaceChildren();
+  syncStopSelection();
   vehiclesEl.replaceChildren();
   document.querySelector('#eta-card').hidden = true;
   document.querySelector('#vehicle-summary').textContent = '';
@@ -1199,6 +1271,7 @@ async function switchRoute(routeId, trip = null) {
       directionEl.value = String(1 - Number(directionEl.value));
     if (trip) localStorage.setItem(routeStorage('stop-' + trip.direction), String(trip.stopId));
     setStops();
+    syncStopSelection(true);
     if (savedSchedule) scheduleStatus();
   } catch (error) {
     if (current === routeGeneration) showError(error.message);
@@ -1526,6 +1599,16 @@ function renderLeaveAdvice(snapshot) {
     return;
   }
   const leaveIn = selected.remaining - needed;
+  if (leaveIn <= 0) {
+    setLeaveAdvice(`${selected.description}：現在出發；預留的 2 分鐘緩衝已不足，可能趕不上這班。` +
+      (selected.conditional ? ' 此車可能在終點停駛，請再確認班次。' : ''), '可能趕不上');
+    return;
+  }
+  if (leaveIn < 60) {
+    setLeaveAdvice(`${selected.description}：現在出發，剩餘緩衝不足 1 分鐘。` +
+      (selected.conditional ? ' 此車可能在終點停駛，請再確認班次。' : ''), '現在出發');
+    return;
+  }
   const clock = new Date(Date.now() + leaveIn * 1000).toLocaleTimeString('zh-TW',
     {hour: '2-digit', minute: '2-digit', hour12: false});
   setLeaveAdvice(`${selected.conditional ? '若此車在終點折返續行，可參考 ' : selected.tentative ? '可考慮 ' : ''}` +
@@ -2149,7 +2232,7 @@ document.querySelector('#jump-to-stop').addEventListener('click', () => {
   selected?.scrollIntoView?.({block: 'center', behavior: 'smooth'});
   selected?.focus?.({preventScroll: true});
 });
-stopEl.addEventListener('change', () => {renderSelectionSummary(); update({selected: true, fresh: true});});
+stopEl.addEventListener('change', () => {syncStopSelection(true); renderSelectionSummary(); renderScope(); update({selected: true, fresh: true});});
 closedEl.addEventListener('change', () => {
   localStorage.setItem(routeStorage('closed-loop'), closedEl.checked ? '1' : '0');
   renderScope();
@@ -2301,6 +2384,10 @@ if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) {
 populateVoices();
 for (const tab of routeTabs) bindRouteTab(tab);
 document.querySelector('#route-find').addEventListener('click', searchRouteCatalog);
+window.addEventListener('aheadway:languagechange', () => renderCatalogMatches(catalogMatches));
+window.addEventListener('aheadway:languagechange', () => {
+  if (stops.length) renderRoute(latestSnapshot);
+});
 routeQueryEl.addEventListener('keydown', event => {
   if (event.key === 'Enter') { event.preventDefault(); searchRouteCatalog(); }
 });
