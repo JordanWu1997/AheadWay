@@ -30,6 +30,10 @@ const leaveBriefEl = document.querySelector('#leave-brief');
 const locationStateEl = document.querySelector('#location-state');
 const locationRefreshEl = document.querySelector('#location-refresh');
 const dataFreshnessEl = document.querySelector('#data-freshness');
+const liveStatusEl = document.querySelector('#live-status');
+const liveStatusTextEl = document.querySelector('#live-status-text');
+const stopSelectionHintEl = document.querySelector('#stop-selection-hint');
+const textSizeToggleEl = document.querySelector('#text-size-toggle');
 const savedTripsEl = document.querySelector('#saved-trips');
 const tripsMoreEl = document.querySelector('#trips-more');
 let tripsExpanded = false;
@@ -91,6 +95,7 @@ let routeTabs = [...document.querySelectorAll('.route-tabs [role="tab"]')];
 const routeTabsEl = document.querySelector('.route-tabs');
 const routeBackEl = document.querySelector('#route-back');
 const routeMoreEl = document.querySelector('#route-more');
+const disclosureToggleEl = document.querySelector('#disclosure-toggle');
 const selectionSummaryEl = document.querySelector('#selection-summary');
 const selectionCardEl = document.querySelector('#selection-card');
 let catalogSearchVersion = 0;
@@ -503,6 +508,52 @@ function populateVoices() {
   syncVoiceMode();
 }
 
+function hasSelectedStop() {
+  return Boolean(activeRoute && stops.some(item =>
+    Number(item.direction) === Number(directionEl.value) && String(item.id) === String(stopEl.value)));
+}
+
+const textSizeStorageKey = 'aheadway-large-text';
+let largeTextEnabled = false;
+try { largeTextEnabled = localStorage.getItem(textSizeStorageKey) === '1'; } catch (_) {}
+function syncTextSizeControl() {
+  document.body.classList.toggle('large-text', largeTextEnabled);
+  textSizeToggleEl.setAttribute('aria-pressed', String(largeTextEnabled));
+  const label = largeTextEnabled
+    ? (uiI18n?.language === 'en' ? 'Use standard text size' : '恢復標準字體')
+    : (uiI18n?.language === 'en' ? 'Use larger text' : '放大文字');
+  textSizeToggleEl.setAttribute('aria-label', label);
+  textSizeToggleEl.title = label;
+}
+textSizeToggleEl.addEventListener('click', () => {
+  largeTextEnabled = !largeTextEnabled;
+  try { localStorage.setItem(textSizeStorageKey, largeTextEnabled ? '1' : '0'); } catch (_) {}
+  syncTextSizeControl();
+  if (activeRoute) renderRouteMap(latestSnapshot);
+});
+window.addEventListener('aheadway:languagechange', syncTextSizeControl);
+syncTextSizeControl();
+
+let currentLiveStatus = 'idle';
+function setLiveStatus(state) {
+  if (!hasSelectedStop()) state = 'idle';
+  currentLiveStatus = state;
+  const english = uiI18n?.language === 'en';
+  const labels = {
+    idle: activeRoute ? (english ? 'Choose a stop' : '選擇站牌') : (english ? 'Add a route' : '先加入路線'),
+    updating: english ? 'Updating' : '更新中',
+    live: english ? 'Live data' : '即時資料',
+    stale: english ? 'Data may be stale' : '資料可能過時',
+    error: english ? 'Data unavailable' : '資料暫不可用'
+  };
+  const label = labels[state] || labels.error;
+  if (liveStatusTextEl.textContent !== label) liveStatusTextEl.textContent = label;
+  liveStatusEl.dataset.state = state;
+  liveStatusEl.setAttribute('aria-label', label);
+}
+window.addEventListener('aheadway:languagechange', () => setLiveStatus(currentLiveStatus));
+setLiveStatus('idle');
+
 async function request(url, options = {}) {
   const response = await fetch(url, {cache: 'no-store', ...options});
   const data = await response.json();
@@ -510,10 +561,17 @@ async function request(url, options = {}) {
   return data;
 }
 
+function englishRouteName(name, nameEn) {
+  const source = String(nameEn || '').trim();
+  const shuttle = source.match(/^(\d+)\s*shuttle$/i);
+  return shuttle ? `${shuttle[1]} Shuttle` : source || `Route ${name}`;
+}
+
 function rememberRoute(meta) {
-  uiI18n?.registerNames([[meta.name, meta.nameEn], ...(meta.heads || []).map((head, i) => [head, meta.headsEn?.[i]])]);
+  const englishName = englishRouteName(meta.name, meta.nameEn);
+  uiI18n?.registerNames([[meta.name, englishName], ...(meta.heads || []).map((head, i) => [head, meta.headsEn?.[i]])]);
   routes[meta.id] = {name: meta.name, spoken: meta.spoken || meta.name,
-    english: meta.nameEn || `Route ${meta.name}`, heads: meta.heads,
+    english: englishName, heads: meta.heads,
     headsEn: meta.headsEn, source: meta.source,
     terminalDirection: meta.terminalDirection, turnaroundStop: meta.turnaroundStop};
 }
@@ -538,20 +596,32 @@ function updateRouteOverflow() {
   const tabStyle = window.getComputedStyle(routeTabsEl);
   const shellGap = parseFloat(shellStyle.columnGap) || 0;
   const tabGap = parseFloat(tabStyle.columnGap) || 0;
-  const controls = [routeAddEl, routeRemoveEl].filter(control => !control.hidden);
-  const spaceForTabs = shell.clientWidth - (parseFloat(shellStyle.paddingLeft) || 0) -
-    (parseFloat(shellStyle.paddingRight) || 0) - controls.reduce((sum, control) => sum + control.offsetWidth, 0) -
-    shellGap * controls.length;
   const tabWidth = routeTabs.reduce((width, tab) => width + tab.getBoundingClientRect().width, 0) +
     Math.max(0, routeTabs.length - 1) * tabGap;
-  const overflow = tabWidth > spaceForTabs + 2;
+  const padding = (parseFloat(shellStyle.paddingLeft) || 0) + (parseFloat(shellStyle.paddingRight) || 0);
+  const controlsWidth = controls => controls.reduce((sum, control) => sum + control.offsetWidth, 0) +
+    shellGap * controls.length;
+  const fixedControls = [routeAddEl, routeRemoveEl, disclosureToggleEl].filter(control => control && !control.hidden);
+  const availableWithoutArrows = shell.clientWidth - padding - controlsWidth(fixedControls);
+  const overflow = tabWidth > availableWithoutArrows + 2;
   routeBackEl.hidden = !overflow;
   routeMoreEl.hidden = !overflow;
+  const visibleControls = overflow ? [routeBackEl, routeMoreEl, ...fixedControls] : fixedControls;
+  const spaceForTabs = shell.clientWidth - padding - controlsWidth(visibleControls);
+  routeTabsEl.style.flexBasis = `${Math.max(0, spaceForTabs)}px`;
   if (!overflow) routeTabsEl.scrollLeft = 0;
   const atStart = routeTabsEl.scrollLeft <= 2;
   const atEnd = routeTabsEl.scrollLeft + routeTabsEl.clientWidth >= routeTabsEl.scrollWidth - 3;
   routeBackEl.disabled = !overflow || atStart;
   routeMoreEl.disabled = !overflow || atEnd;
+}
+function keepActiveRouteTabVisible() {
+  const selected = routeTabs.find(tab => Number(tab.dataset.route) === activeRoute);
+  if (!selected || !routeTabsEl.clientWidth) return;
+  const tabBounds = selected.getBoundingClientRect();
+  const listBounds = routeTabsEl.getBoundingClientRect();
+  if (tabBounds.left < listBounds.left) routeTabsEl.scrollLeft -= listBounds.left - tabBounds.left;
+  else if (tabBounds.right > listBounds.right) routeTabsEl.scrollLeft += tabBounds.right - listBounds.right;
 }
 routeTabsEl.addEventListener('scroll', updateRouteOverflow);
 routeBackEl.addEventListener('click', () => {
@@ -560,7 +630,12 @@ routeBackEl.addEventListener('click', () => {
 routeMoreEl.addEventListener('click', () => {
   routeTabsEl.scrollBy({left: Math.max(180, routeTabsEl.clientWidth * .7), behavior: 'smooth'});
 });
-if (window.addEventListener) window.addEventListener('resize', updateRouteOverflow);
+function refreshRouteTabLayout() {
+  updateRouteOverflow();
+  requestAnimationFrame(keepActiveRouteTabVisible);
+}
+if (window.addEventListener) window.addEventListener('resize', refreshRouteTabLayout);
+window.addEventListener('aheadway:languagechange', refreshRouteTabLayout);
 
 function renderRouteTabs() {
   const tablist = document.querySelector('.route-tabs');
@@ -843,12 +918,17 @@ function renderRouteMap(snapshot) {
         'stroke-width': 2,
         style: station.selectable === false ? 'cursor:default;opacity:.4' : 'cursor:pointer'
       });
-      const title = svgElement('title'); title.textContent = `${direction === 0 ? '去程' : '返程'}：${station.name}`;
+      const english = uiI18n?.language === 'en';
+      const title = svgElement('title'); title.textContent = english
+        ? `${direction === 0 ? 'Outbound' : 'Inbound'}: ${mapStopName(station)}`
+        : `${direction === 0 ? '去程' : '返程'}：${station.name}`;
       dot.append(title);
       if (station.selectable !== false) dot.addEventListener('click', () => selectRouteStop(direction, station.id));
       routeMapEl.append(dot);
     });
   });
+  const mapFontSize = largeTextEnabled ? 16 : 13;
+  const mapLineHeight = largeTextEnabled ? 19 : 16;
   const labels = [[legs[0][0], -4, -13],
     [legs[0][legs[0].length - 1], 12, -13],
     [legs[1][legs[1].length - 1], 10, 20]];
@@ -856,13 +936,13 @@ function renderRouteMap(snapshot) {
     if (!station || station === selected) continue;
     const p = point(station);
     const name = mapStopName(station);
-    const layout = mapLabelLayout(name, 180, 13);
+    const layout = mapLabelLayout(name, 180, mapFontSize);
     const left = Math.max(8, Math.min(792 - layout.width, p.x + dx));
-    const firstLineY = Math.max(16, Math.min(382 - (layout.lines.length - 1) * 16, p.y + dy));
+    const firstLineY = Math.max(mapFontSize + 3, Math.min(382 - (layout.lines.length - 1) * mapLineHeight, p.y + dy));
     const label = svgElement('text', {'data-no-i18n': '', fill: '#34493e',
-      'font-size': 13, 'font-weight': 700, 'paint-order': 'stroke', stroke: '#f8faf7', 'stroke-width': 4});
+      'font-size': mapFontSize, 'font-weight': 700, 'paint-order': 'stroke', stroke: '#f8faf7', 'stroke-width': 4});
     for (const [index, line] of layout.lines.entries()) {
-      const span = svgElement('tspan', {x: left, y: firstLineY + index * 16});
+      const span = svgElement('tspan', {x: left, y: firstLineY + index * mapLineHeight});
       span.textContent = line;
       label.append(span);
     }
@@ -882,15 +962,20 @@ function renderRouteMap(snapshot) {
       const p = point(station);
       const x = p.x + (direction === 0 ? -15 : 15);
       const y = p.y + (direction === 0 ? -15 : 15);
+      const english = uiI18n?.language === 'en';
       const marker = svgElement('g', {class: 'map-bus-marker', role: 'img',
-        'aria-label': `${direction === 0 ? '去程' : '返程'}${station.name}：${buses.length} 輛公車，${buses.map(b => b.id).join('、')}`});
+        'aria-label': english
+          ? `${direction === 0 ? 'Outbound' : 'Inbound'} ${mapStopName(station)}: ${buses.length} ${buses.length === 1 ? 'bus' : 'buses'}, ${buses.map(b => b.id).join(', ')}`
+          : `${direction === 0 ? '去程' : '返程'}${station.name}：${buses.length} 輛公車，${buses.map(b => b.id).join('、')}`});
       marker.append(svgElement('circle', {cx: x, cy: y, r: 15,
         fill: direction === 0 ? '#ed754d' : '#3a9873', stroke: '#fff', 'stroke-width': 3}));
       const label = svgElement('text', {x, y: y + 4.5, 'text-anchor': 'middle', fill: '#173d32',
-        'font-size': 14, 'font-weight': 900});
+        'font-size': largeTextEnabled ? 16 : 14, 'font-weight': 900});
       label.textContent = String(buses.length);
       marker.append(label);
-      const title = svgElement('title'); title.textContent = buses.map(b => `${b.id} · ${b.atStop ? '進站中' : '已離站'}`).join('、');
+      const title = svgElement('title'); title.textContent = buses.map(b => english
+        ? `${b.id} · ${b.atStop ? 'arriving' : 'departed'}`
+        : `${b.id} · ${b.atStop ? '進站中' : '已離站'}`).join(english ? ', ' : '、');
       marker.append(title);
       routeMapEl.append(marker);
     }
@@ -898,9 +983,10 @@ function renderRouteMap(snapshot) {
   if (selected) {
     const p = point(selected);
     const name = mapStopName(selected);
-    const layout = mapLabelLayout(name, 270, 12, 800);
+    const selectedFontSize = largeTextEnabled ? 16 : 12;
+    const layout = mapLabelLayout(name, 270, selectedFontSize, 800);
     const width = Math.max(60, layout.width + 22);
-    const height = 13 + layout.lines.length * 16;
+    const height = selectedFontSize + 5 + layout.lines.length * mapLineHeight;
     const left = Math.max(8, Math.min(792 - width, p.x - width / 2));
     const above = p.y > height + 24;
     const top = Math.max(8, Math.min(382 - height, above ? p.y - height - 16 : p.y + 18));
@@ -915,9 +1001,9 @@ function renderRouteMap(snapshot) {
       stroke: '#3158a2', 'stroke-width': 2.5}));
     pointer.append(svgElement('rect', {x: left, y: top, width, height, rx: 7,
       fill: '#fff', stroke: '#3158a2', 'stroke-width': 1.5}));
-    const text = svgElement('text', {fill: '#254681', 'font-size': 12, 'font-weight': 800});
+    const text = svgElement('text', {fill: '#254681', 'font-size': selectedFontSize, 'font-weight': 800});
     for (const [index, line] of layout.lines.entries()) {
-      const span = svgElement('tspan', {x: left + 11, y: top + 20 + index * 16});
+      const span = svgElement('tspan', {x: left + 11, y: top + selectedFontSize + 8 + index * mapLineHeight});
       span.textContent = line;
       text.append(span);
     }
@@ -1068,19 +1154,13 @@ function showRoute() {
     tab.setAttribute('aria-selected', String(selected));
     tab.tabIndex = selected ? 0 : -1;
   });
-  const selectedTab = routeTabs.find(tab => Number(tab.dataset.route) === activeRoute);
-  if (selectedTab?.getBoundingClientRect && routeTabsEl.getBoundingClientRect) {
-    const tabBounds = selectedTab.getBoundingClientRect();
-    const listBounds = routeTabsEl.getBoundingClientRect();
-    if (tabBounds.left < listBounds.left) routeTabsEl.scrollLeft += tabBounds.left - listBounds.left;
-    else if (tabBounds.right > listBounds.right) routeTabsEl.scrollLeft += tabBounds.right - listBounds.right;
-  }
   updateRouteOverflow();
+  requestAnimationFrame(keepActiveRouteTabVisible);
   document.title = `${route.name} · AheadWay`;
   document.querySelector('.route-badge').textContent = route.name;
   document.querySelector('#hero-route-id').textContent = `${route.source === 'taipei' ? 'TAIPEI' : 'NEW TAIPEI'} · ROUTE ${activeRoute}`;
   document.querySelector('#route-heading').textContent = `${route.name} 路線`;
-  document.querySelector('#route-map').setAttribute('aria-label', `${route.name}去程與返程站點位置示意圖`);
+  syncRouteMapAccessibleName(route);
   const link = document.querySelector('#official-route-link');
   link.href = `https://pda5284.gov.taipei/MQS/route.jsp?rid=${activeRoute}`;
   link.textContent = `原始${route.name}路線`;
@@ -1090,10 +1170,18 @@ function showRoute() {
   routeRemoveEl.hidden = false;
   setRouteRemoveLabel(route);
   updateRouteOverflow();
+  requestAnimationFrame(keepActiveRouteTabVisible);
   renderPushTarget();
   renderScope();
 }
 
+function syncRouteMapAccessibleName(route = routes[activeRoute]) {
+  if (!route) return;
+  const english = uiI18n?.language === 'en';
+  routeMapEl.setAttribute('aria-label', english
+    ? `${route.english} outbound and inbound stops map`
+    : `${route.name}去程與返程站點位置示意圖`);
+}
 function renderSelectionSummary() {
   if (!selectionSummaryEl) return;
   const direction = Number(directionEl.value);
@@ -1104,8 +1192,10 @@ function renderSelectionSummary() {
 }
 
 function syncStopSelection(collapseMobile = false) {
-  const chosen = Boolean(activeRoute && stopEl.value);
+  const chosen = hasSelectedStop();
   document.body.classList.toggle('awaiting-stop', Boolean(activeRoute) && !chosen);
+  stopSelectionHintEl.hidden = !activeRoute || chosen;
+  if (!chosen) setLiveStatus('idle');
   document.querySelector('#save-trip').disabled = !chosen;
   if (!chosen) selectionCardEl.open = true;
   else if (collapseMobile && window.matchMedia?.('(max-width:650px)').matches)
@@ -1192,6 +1282,10 @@ function renderSavedTrips() {
 }
 tripsMoreEl.addEventListener('click', () => { tripsExpanded = !tripsExpanded; renderSavedTrips(); });
 window.addEventListener('aheadway:languagechange', renderSavedTrips);
+window.addEventListener('aheadway:languagechange', () => {
+  syncRouteMapAccessibleName();
+  renderRouteMap(latestSnapshot);
+});
 
 document.querySelector('#save-trip').addEventListener('click', () => {
   const station = stops.find(s => s.direction === Number(directionEl.value) && String(s.id) === String(stopEl.value));
@@ -2001,6 +2095,7 @@ function render(data, {preview = false} = {}) {
   const feedAges = Object.values(fetched).filter(Boolean).map(value => Math.max(0, Math.round((Date.now() - Date.parse(value)) / 1000)));
   const oldestFeed = feedAges.length ? Math.max(...feedAges) : null;
   dataFreshnessEl.classList.toggle('stale', oldestFeed === null || oldestFeed > 90);
+  setLiveStatus(oldestFeed === null || oldestFeed > 90 ? 'stale' : 'live');
   dataFreshnessEl.textContent = oldestFeed === null ? '尚無資料更新時間 · 請留意車輛回報'
     : `資料源最久 ${oldestFeed} 秒前更新` +
       (oldestFeed > 90 ? ' · 資料可能過時' : ' · 車輛回報見下方');
@@ -2156,6 +2251,7 @@ async function update({selected = false, fresh = false} = {}) {
   for (const controller of arrivalsControllers) controller.abort();
   arrivalsControllers = [];
   arrivalsPending = true;
+  setLiveStatus('updating');
   if (selected) beginSelection();
   localStorage.setItem(routeStorage('stop-' + direction), stop);
   const routeId = activeRoute;
@@ -2185,8 +2281,9 @@ async function update({selected = false, fresh = false} = {}) {
       }).catch(error => { if (error.name !== 'AbortError') liveError = error; });
       await Promise.all([recent, live]);
       if (current === generation && routeId === activeRoute) {
-        if (!displayed) showError(liveError?.message || '資料無法取得');
+        if (!displayed) { setLiveStatus('error'); showError(liveError?.message || '資料無法取得'); }
         else if (!liveDisplayed) {
+          setLiveStatus('stale');
           messageEl.hidden = false;
           messageEl.textContent = '即時更新暫不可用；目前顯示最近可用的公車資料。';
           document.querySelector('#updated').textContent = '最近資料 · 即時更新失敗';
@@ -2198,7 +2295,7 @@ async function update({selected = false, fresh = false} = {}) {
       if (current === generation && routeId === activeRoute) render(data);
     }
   } catch (error) {
-    if (current === generation && error.name !== 'AbortError') showError(error.message);
+    if (current === generation && error.name !== 'AbortError') { setLiveStatus('error'); showError(error.message); }
   } finally {
     if (current === generation) {
       arrivalsPending = false;
@@ -2328,7 +2425,23 @@ if (!publicMode) document.querySelector('#schedule-save').addEventListener('clic
 });
 document.querySelector('#refresh').addEventListener('click', () => update({selected: true, fresh: true}));
 const disclosureCards = [...document.querySelectorAll('main details:not(.route-picker):not(.route-picker-help)')];
-const disclosureToggleEl = document.querySelector('#disclosure-toggle');
+const optionalDisclosureCards = [document.querySelector('#departure-card'), routePanelEl,
+  document.querySelector('#voice-card')].filter(Boolean);
+const optionalDisclosureKey = 'aheadway-optional-disclosures-v1';
+let savedOptionalDisclosureState = {};
+try {
+  const storedState = JSON.parse(localStorage.getItem(optionalDisclosureKey) || '{}');
+  if (storedState && typeof storedState === 'object' && !Array.isArray(storedState))
+    savedOptionalDisclosureState = storedState;
+} catch (_) { /* Ignore damaged disclosure preferences. */ }
+for (const card of optionalDisclosureCards) {
+  if (typeof savedOptionalDisclosureState[card.id] === 'boolean')
+    card.open = savedOptionalDisclosureState[card.id];
+}
+function saveOptionalDisclosureState() {
+  for (const card of optionalDisclosureCards) savedOptionalDisclosureState[card.id] = card.open;
+  try { localStorage.setItem(optionalDisclosureKey, JSON.stringify(savedOptionalDisclosureState)); } catch (_) {}
+}
 function syncDisclosureToggle() {
   const expanded = disclosureCards.every(card => card.hidden || card.open);
   const english = uiI18n?.language === 'en';
@@ -2342,11 +2455,17 @@ function syncDisclosureToggle() {
   disclosureToggleEl.title = action;
   disclosureToggleEl.setAttribute('aria-pressed', String(expanded));
   disclosureToggleEl.dataset.state = expanded ? 'expanded' : 'collapsed';
+  updateRouteOverflow();
+  requestAnimationFrame(keepActiveRouteTabVisible);
 }
-disclosureCards.forEach(card => card.addEventListener('toggle', syncDisclosureToggle));
+disclosureCards.forEach(card => card.addEventListener('toggle', () => {
+  syncDisclosureToggle();
+  if (optionalDisclosureCards.includes(card)) saveOptionalDisclosureState();
+}));
 disclosureToggleEl.addEventListener('click', () => {
   const expanded = disclosureCards.every(card => card.hidden || card.open);
   disclosureCards.forEach(card => { if (!card.hidden) card.open = !expanded; });
+  saveOptionalDisclosureState();
   syncDisclosureToggle();
 });
 window.addEventListener('aheadway:languagechange', syncDisclosureToggle);
@@ -2354,16 +2473,13 @@ syncDisclosureToggle();
 function setRouteExpanded(expanded) {
   routePanelEl.open = expanded;
 }
-setRouteExpanded(true);
 const compactScreen = window.matchMedia?.('(max-width:650px)');
 mapDetailEl.open = !compactScreen?.matches;
-voiceSettingsEl.open = !compactScreen?.matches;
 let wasCompact = Boolean(compactScreen?.matches);
 function applyScreenSize(compact) {
   if (compact === wasCompact) return;
   wasCompact = compact;
   mapDetailEl.open = !compact;
-  voiceSettingsEl.open = !compact;
 }
 compactScreen?.addEventListener?.('change', event => applyScreenSize(event.matches));
 window.addEventListener?.('resize', () => applyScreenSize(Boolean(compactScreen?.matches)));

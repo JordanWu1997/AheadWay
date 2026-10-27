@@ -497,7 +497,9 @@ body.awaiting-stop .selection-card{border-color:#a9cbb2}
 .language-toggle button:hover:not([aria-pressed="true"]){background:#dce9df;color:#173d32}
 .language-toggle button:focus-visible{position:relative;z-index:1;outline:3px solid var(--focus-ring);outline-offset:2px}
 @media(max-width:650px){.language-toggle{height:29px}.language-toggle button{height:23px;min-width:31px}}
-@media(max-width:380px){.masthead .masthead-actions{grid-column:1/-1;grid-row:2;justify-content:flex-start}.masthead .author-line{grid-row:3;margin-left:0}}
+@media(max-width:650px){.masthead .author-line{display:none}}
+
+
 
 /* Keep the route action compact on phones; its accessible name remains on the button. */
 @media(max-width:650px){
@@ -528,4 +530,264 @@ body.awaiting-stop .selection-card{border-color:#a9cbb2}
   .route-tabs-shell .route-add,.route-tabs-shell .route-remove,.route-tabs-shell .disclosure-toggle{flex:0 0 40px;width:40px;min-width:40px;height:40px;min-height:40px;padding:0}
   .route-tabs-shell .route-add-label,.route-tabs-shell .route-remove-label,.route-tabs-shell .disclosure-toggle-label{display:none}
   .route-tabs-shell .route-add-mark{font-size:20px}
+}
+
+/* Distinguish working, stale, and unavailable arrival data from the static site header. */
+.live-pill[data-state="updating"]{color:#755c1d;background:#fff8e5;border-color:#ead79a}
+.live-pill[data-state="updating"] .dot{background:#d7a82c}
+.live-pill[data-state="stale"]{color:#80551d;background:#fff5e7;border-color:#e8cc9f}
+.live-pill[data-state="stale"] .dot{background:#c58427}
+.live-pill[data-state="error"]{color:#9b3d30;background:#fff0ed;border-color:#efc1b7}
+.live-pill[data-state="error"] .dot{background:#bc4937}
+.stop-selection-hint{margin:12px 0 0;padding:12px 14px;border:1px solid #cdded2;border-radius:10px;background:var(--ui-soft);color:var(--ui-action);font-size:14px;font-weight:650;line-height:1.5}
+.stop-selection-hint[hidden]{display:none}
+
+.live-pill[data-state="idle"]{color:var(--ui-secondary);background:var(--ui-soft);border-color:var(--ui-border)}
+.live-pill[data-state="idle"] .dot{background:#91a39a}
+
+.route-tabs-shell .route-tabs button{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Align the live-data status with the language switch control beside it. */
+.masthead-actions .live-pill{display:inline-flex;align-items:center;min-height:33px;padding:0 12px;border-radius:10px;white-space:nowrap}
+@media(max-width:650px){.masthead-actions .live-pill{min-height:29px;padding:0 9px}}
+
+
+/* Optional persistent larger-text mode: keep the same structure and let content reflow. */
+.text-size-toggle{display:inline-flex;align-items:center;justify-content:center;flex:none;width:33px;height:33px;padding:0;border:1px solid #c7dbcd;border-radius:10px;background:#e9f0eb;color:#28594b;font:inherit;font-size:13px;font-weight:850;line-height:1;cursor:pointer}
+.text-size-toggle sup{font-size:.7em}
+.text-size-toggle:hover,.text-size-toggle[aria-pressed="true"]{background:#dce9df;color:#173d32}
+.text-size-toggle:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px}
+@media(max-width:650px){.text-size-toggle{width:29px;height:29px;font-size:12px}}
+/* Larger text applies a readable minimum to every HTML label and control, not only selected components. */
+body.large-text :where(*:not(svg):not(svg *)){font-size:max(16px,1em)!important}
+body.large-text :where(*:not(svg):not(svg *))::before,
+body.large-text :where(*:not(svg):not(svg *))::after{font-size:max(16px,1em)!important}
+
+@media(max-width:650px){body.large-text .masthead-actions{align-items:center}body.large-text .language-toggle{height:40px}body.large-text .language-toggle button{height:34px}body.large-text .masthead-actions .live-pill{min-height:40px}body.large-text .text-size-toggle{width:40px;height:40px}}
+
+.location-help{display:block;margin-top:8px;color:var(--ui-secondary);font-size:13px;line-height:1.5}
+@media(max-width:360px){body.large-text .masthead-actions{flex-wrap:wrap;justify-content:flex-start}body.large-text .masthead-actions .live-pill{flex:0 0 auto}}
+
+@media(max-width:360px){body.large-text .masthead-actions{flex-wrap:wrap;justify-content:flex-start}body.large-text .masthead-actions .live-pill{flex:0 0 auto}}
+
+body.large-text :where(input,textarea)::placeholder{font-size:max(16px,1em)!important}
+
+/* On phones, group language, text size, and live status into one toolbar. */
+@media(max-width:650px){
+  .masthead .masthead-actions{width:max-content;max-width:100%;min-height:40px;gap:3px;padding:4px;border:1px solid #c7dbcd;border-radius:12px;background:#e9f0eb}
+  .masthead-actions .language-toggle{height:30px;gap:1px;padding:0;border:0;border-radius:8px;background:transparent}
+  .masthead-actions .language-toggle button{height:30px;min-width:31px;padding:0 6px;border-radius:7px}
+  .masthead-actions .text-size-toggle{width:34px;height:30px;border:0;border-radius:7px;background:transparent}
+  .masthead-actions .text-size-toggle:hover,.masthead-actions .text-size-toggle[aria-pressed="true"]{background:#dce9df}
+  .masthead-actions .live-pill{height:30px;min-height:30px;padding:0 8px;border:0;border-radius:7px;background:transparent}
+  body.large-text .masthead .masthead-actions{min-height:46px;gap:3px;padding:4px}
+  body.large-text .masthead-actions .language-toggle{height:36px}
+  body.large-text .masthead-actions .language-toggle button{height:36px;min-width:36px;padding:0 7px}
+  body.large-text .masthead-actions .text-size-toggle{width:40px;height:36px}
+  body.large-text .masthead-actions .live-pill{height:36px;min-height:36px;padding:0 8px}
+}
+
+
+/* Keep the masthead controls together on every screen, with an individual box for each control. */
+.masthead .masthead-actions{width:max-content;max-width:100%;min-height:41px;gap:4px;padding:4px;border:1px solid var(--ui-border);border-radius:12px;background:var(--ui-soft)}
+.masthead-actions .language-toggle{height:31px;padding:2px;border:1px solid #c7dbcd;border-radius:8px;background:#fff}
+.masthead-actions .language-toggle button{height:25px;min-width:32px;border-radius:6px}
+.masthead-actions .text-size-toggle{width:34px;height:31px;padding:0;border:1px solid #c7dbcd;border-radius:8px;background:#fff}
+.masthead-actions .text-size-toggle:hover,.masthead-actions .text-size-toggle[aria-pressed="true"]{background:#dce9df}
+.masthead-actions .live-pill{height:31px;min-height:31px;padding:0 9px;border-radius:8px}
+@media(max-width:650px){
+  .masthead .masthead-actions{min-height:40px;gap:4px;padding:4px}
+  .masthead-actions .language-toggle{height:30px;padding:2px}
+  .masthead-actions .language-toggle button{height:24px;min-width:31px;padding:0 6px}
+  .masthead-actions .text-size-toggle{width:34px;height:30px}
+  .masthead-actions .live-pill{height:30px;min-height:30px;padding:0 8px}
+  body.large-text .masthead .masthead-actions{min-height:46px;gap:4px;padding:4px}
+  body.large-text .masthead-actions .language-toggle{height:36px}
+  body.large-text .masthead-actions .language-toggle button{height:30px;min-width:36px;padding:0 7px}
+  body.large-text .masthead-actions .text-size-toggle{width:40px;height:36px}
+  body.large-text .masthead-actions .live-pill{height:36px;min-height:36px;padding:0 8px;border-radius:8px}
+}
+
+/* Keep the grouped controls at the top right on phones. Compact them beside the brand on narrow screens. */
+@media(max-width:650px){.masthead .masthead-actions{grid-column:2;grid-row:1;justify-self:end}}
+@media(max-width:450px){
+  body.large-text .masthead .brand-logo{width:32px;height:32px}
+  body.large-text .masthead .masthead-actions{grid-column:2;grid-row:1;justify-self:end;gap:2px;padding:3px;min-height:36px}
+  body.large-text .masthead-actions .language-toggle{height:30px;padding:1px;gap:0}
+  body.large-text .masthead-actions .language-toggle button{height:28px;min-width:28px;padding:0 3px}
+  body.large-text .masthead-actions .text-size-toggle{width:30px;height:30px}
+  body.large-text .masthead-actions .live-pill{height:30px;min-height:30px;max-width:64px;padding:0 4px}
+  body.large-text #live-status-text{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}
+@media(max-width:360px){
+  .masthead{column-gap:4px}
+  .masthead .brand-block{grid-column:1}
+  .masthead .masthead-actions{grid-column:2;grid-row:1;justify-self:end;gap:2px;padding:3px;min-height:34px}
+  .masthead .brand{gap:2px;font-size:14px}
+  .masthead .brand-logo{width:24px;height:24px}
+  .masthead-actions .language-toggle{height:28px;padding:1px;gap:0}
+  .masthead-actions .language-toggle button{height:26px;min-width:24px;padding:0 2px;font-size:11px}
+  .masthead-actions .text-size-toggle{width:26px;height:28px;font-size:11px}
+  .masthead-actions .live-pill{height:28px;min-height:28px;max-width:52px;padding:0 3px;font-size:11px}
+  .masthead-actions .live-pill .dot{flex:0 0 7px;margin-right:4px}
+  #live-status-text{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  body.large-text .masthead .masthead-actions{grid-column:2;grid-row:1;gap:2px;padding:3px;min-height:34px}
+  body.large-text .masthead-actions .language-toggle{height:28px}
+  body.large-text .masthead-actions .language-toggle button{height:26px;min-width:24px;padding:0 2px}
+  body.large-text .masthead-actions .text-size-toggle{width:26px;height:28px}
+  body.large-text .masthead-actions .live-pill{height:28px;min-height:28px;max-width:52px;padding:0 3px}
+}
+
+/* Large-text mode should enlarge the interface without flattening prominent type to 16px. */
+body.large-text .hero h1{font-size:clamp(30px,7vw,38px)!important;line-height:1.18;white-space:normal}
+body.large-text .hero h1 em{font-size:inherit!important}
+body.large-text .route-tabs-shell .route-tabs button{font-size:18px!important;min-height:46px;padding:10px 14px}
+body.large-text .route-badge{font-size:22px!important;min-height:50px;min-width:76px}
+body.large-text .masthead .brand{font-size:20px!important;gap:4px}
+@media(max-width:450px){
+  body.large-text .masthead .brand-logo{width:36px;height:36px}
+  body.large-text .masthead-actions{gap:1px;padding:2px}
+  body.large-text .masthead-actions .language-toggle{height:28px;padding:1px}
+  body.large-text .masthead-actions .language-toggle button{height:26px;min-width:25px;padding:0 2px}
+  body.large-text .masthead-actions .text-size-toggle{width:28px;height:28px}
+  body.large-text .masthead-actions .live-pill{height:28px;min-height:28px;max-width:46px;padding:0 3px}
+}
+@media(max-width:360px){
+  body.large-text .masthead{column-gap:2px}
+  body.large-text .masthead .brand{gap:2px;font-size:17px!important}
+  body.large-text .masthead .brand-logo{width:28px;height:28px}
+  body.large-text .masthead-actions{gap:1px;padding:2px}
+  body.large-text .masthead-actions .language-toggle{height:26px;padding:0}
+  body.large-text .masthead-actions .language-toggle button{height:24px;min-width:23px;padding:0 1px}
+  body.large-text .masthead-actions .text-size-toggle{width:25px;height:26px}
+  body.large-text .masthead-actions .live-pill{height:26px;min-height:26px;max-width:40px;padding:0 2px}
+  body.large-text .route-tabs-shell .route-tabs button{padding:9px 10px}
+}
+
+/* Restore a clear hierarchy in large-text mode: orange section labels, larger green titles, readable supporting copy. */
+body.large-text .selection-card-title strong,
+body.large-text .arrival-summary .section-head h2,
+body.large-text .approach-board .list-head h3,
+body.large-text .leave-card h3,
+body.large-text .route-panel h2,
+body.large-text .notify h2,
+body.large-text .arrival-scope h2{font-size:24px!important;line-height:1.25;overflow-wrap:anywhere}
+body.large-text .selection-card-title .eyebrow,
+body.large-text .major-card .eyebrow,
+body.large-text .route-panel .eyebrow{font-size:16px!important;line-height:1.35}
+body.large-text :is(#selection-summary,.arrival-summary .updated,.approach-board #vehicle-count,.notify-heading .voice-state,#leave-brief,.route-panel-head .summary-end p){font-size:16px!important;line-height:1.4}
+body.large-text :is(.route-panel-head p,.notify-help,.vehicle-summary,.caveat,.leave-note,.route-help,.map-caption,.arrival-scope-note,.location-state){font-size:16px!important;line-height:1.5}
+body.large-text .masthead-actions{min-height:48px;gap:6px;padding:5px}
+body.large-text .masthead-actions .language-toggle{height:40px}
+body.large-text .masthead-actions .language-toggle button{height:34px;min-width:40px;padding:0 8px}
+body.large-text .masthead-actions .text-size-toggle{width:40px;height:40px}
+body.large-text .masthead-actions .live-pill{min-height:40px;height:auto;padding:7px 10px;white-space:normal}
+body.large-text .hero h1{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+body.large-text .route-badge{display:inline-flex;align-items:center;justify-content:center;flex:none;font-size:26px!important;min-width:86px;min-height:56px;padding:.15em .42em .2em;line-height:1.1}
+body.large-text .masthead .brand{font-size:24px!important;gap:5px}
+body.large-text .masthead .brand-logo{width:48px;height:48px}
+@media(max-width:650px){
+  body.large-text .masthead{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto;row-gap:8px;padding:12px 0;align-items:center}
+  body.large-text .masthead .masthead-actions{grid-column:1;grid-row:1;justify-self:end;width:max-content;max-width:100%;flex-wrap:wrap;justify-content:flex-end}
+  body.large-text .masthead .brand-block{grid-column:1;grid-row:2;justify-self:start;min-width:0}
+  body.large-text .masthead .brand{font-size:24px!important;white-space:normal}
+  body.large-text .masthead .brand-logo{width:48px;height:48px;flex:none}
+  body.large-text .masthead-actions .live-pill{max-width:100%}
+  body.large-text #live-status-text{white-space:normal;overflow-wrap:anywhere}
+  body.large-text .hero h1{font-size:clamp(30px,8vw,38px)!important}
+  body.large-text .route-badge{font-size:26px!important;min-width:86px;min-height:56px}
+}
+@media(max-width:360px){
+  body.large-text .masthead .brand{font-size:22px!important}
+  body.large-text .masthead .brand-logo{width:44px;height:44px}
+  body.large-text .masthead .masthead-actions{gap:4px;padding:4px}
+  body.large-text .masthead-actions .language-toggle button{min-width:36px;padding:0 5px}
+  body.large-text .route-tabs-shell .route-tabs button{font-size:18px!important;min-height:46px;padding:9px 10px}
+}
+
+/* Keep large-text masthead controls visually grouped instead of stretching their gaps. */
+body.large-text .masthead-actions{display:inline-flex;width:max-content;max-width:100%;flex-wrap:nowrap;align-items:center;justify-content:flex-end;gap:6px;padding:5px;border-radius:12px}
+body.large-text .masthead-actions .language-toggle{display:inline-flex;flex:none;gap:2px;padding:2px;border-radius:10px}
+body.large-text .masthead-actions .language-toggle button{flex:none;min-width:40px;height:34px;padding:0 8px}
+body.large-text .masthead-actions .text-size-toggle{flex:none}
+body.large-text .masthead-actions .live-pill{display:inline-flex;flex:0 1 auto;align-items:center;gap:6px;max-width:none;white-space:nowrap}
+body.large-text #live-status-text{display:inline;min-width:0;white-space:nowrap;overflow:visible;text-overflow:clip}
+body.large-text .route-badge{font-size:clamp(30px,8vw,38px)!important;line-height:1!important;letter-spacing:-.02em}
+@media(max-width:650px){
+  body.large-text .masthead .masthead-actions{grid-column:1;grid-row:1;width:max-content;max-width:100%;flex-wrap:wrap;gap:5px;padding:4px}
+  body.large-text .masthead-actions .language-toggle button{min-width:36px;height:32px;padding:0 6px}
+  body.large-text .masthead-actions .text-size-toggle{width:38px;height:38px}
+  body.large-text .masthead-actions .live-pill{min-height:38px;height:auto;max-width:100%;white-space:normal}
+  body.large-text #live-status-text{white-space:normal;overflow-wrap:anywhere}
+  body.large-text .route-badge{font-size:clamp(30px,9vw,38px)!important;min-height:56px}
+}
+
+/* In large-text phone mode, give all three masthead controls the same clear box and height. */
+@media(max-width:650px){
+  body.large-text .masthead .masthead-actions{gap:6px;padding:5px;border:1px solid var(--ui-border);border-radius:12px;background:var(--ui-soft)}
+  body.large-text .masthead-actions .language-toggle{height:44px;padding:3px;border:1px solid #c7dbcd;border-radius:9px;background:#fff}
+  body.large-text .masthead-actions .language-toggle button{height:36px;min-width:40px;padding:0 7px;border-radius:7px}
+  body.large-text .masthead-actions .text-size-toggle{width:44px;height:44px;border:1px solid #c7dbcd;border-radius:9px}
+  body.large-text .masthead-actions .live-pill{display:inline-flex;align-items:center;gap:6px;height:44px;min-height:44px;padding:0 9px;border:1px solid currentColor;border-radius:9px;background:#fff;white-space:nowrap}
+  body.large-text #live-status-text{display:inline;white-space:nowrap;overflow:visible;text-overflow:clip}
+  body.large-text .route-badge{font-size:42px!important;min-width:92px;min-height:62px;padding:.12em .38em .16em;line-height:1!important}
+}
+@media(max-width:360px){
+  body.large-text .masthead .masthead-actions{gap:4px;padding:4px}
+  body.large-text .masthead-actions .language-toggle{height:40px;padding:2px}
+  body.large-text .masthead-actions .language-toggle button{height:32px;min-width:34px;padding:0 5px}
+  body.large-text .masthead-actions .text-size-toggle{width:40px;height:40px}
+  body.large-text .masthead-actions .live-pill{height:40px;min-height:40px;padding:0 7px}
+  body.large-text .route-badge{font-size:38px!important;min-width:86px;min-height:58px}
+}
+
+/* Desktop masthead: identity and author links read as one left-to-right line, controls stay right. */
+@media(min-width:900px){
+  .masthead{grid-template-columns:max-content minmax(0,1fr) max-content;grid-template-rows:auto;column-gap:18px;row-gap:0;min-height:88px;padding:12px 0}
+  .masthead .brand-block{grid-column:1;grid-row:1}
+  .masthead .author-line{grid-column:2;grid-row:1;align-self:center;display:flex;align-items:center;min-width:0;margin:0;white-space:nowrap;font-size:15px;line-height:1.4}
+  .masthead .brand{gap:9px;font-size:25px}
+  .masthead .brand-logo{width:50px;height:50px;border-radius:13px}
+  .masthead .brand-logo img{width:180px;height:180px;left:-68px;top:-49px}
+  .masthead .masthead-actions{grid-column:3;grid-row:1;justify-self:end;gap:7px;min-height:48px;padding:5px}
+  .masthead-actions .language-toggle{height:38px;padding:3px;gap:2px}
+  .masthead-actions .language-toggle button{height:30px;min-width:38px;padding:0 8px;font-size:14px}
+  .masthead-actions .text-size-toggle{width:40px;height:38px;font-size:15px}
+  .masthead-actions .live-pill{height:38px;min-height:38px;padding:0 11px;font-size:14px}
+}
+@media(min-width:900px){.masthead .brand-logo img{position:static;width:100%;height:100%;max-width:100%;object-fit:contain}}
+
+/* Keep the two wordmark halves joined; retain the normal gap before the logo. */
+.masthead .brand-way{margin-left:-7px}
+@media(min-width:900px){.masthead .brand-way{margin-left:-9px}}
+@media(max-width:650px){.masthead .brand-way{margin-left:-5px}}
+@media(max-width:650px){body.large-text .masthead .brand-way{margin-left:-5px}}
+@media(max-width:360px){body.large-text .masthead .brand-way{margin-left:-2px}}
+@media(min-width:900px){body.large-text .masthead .brand-way{margin-left:-5px}}
+
+/* The wordmark uses separate spans, so explicitly let both inherit large-text sizing. */
+body.large-text .masthead .brand{font-size:30px!important}
+body.large-text .masthead .brand-ahead,
+body.large-text .masthead .brand-way{font-size:inherit!important}
+body.large-text .masthead .brand-logo{width:60px;height:60px}
+body.large-text .masthead .brand-logo img{position:static;width:100%;height:100%;max-width:100%;object-fit:contain}
+@media(max-width:650px){
+  body.large-text .masthead .brand{font-size:28px!important}
+  body.large-text .masthead .brand-logo{width:56px;height:56px}
+}
+@media(max-width:360px){
+  body.large-text .masthead .brand{font-size:26px!important}
+  body.large-text .masthead .brand-logo{width:52px;height:52px}
+}
+
+/* Keep the wordmark visually joined without letting the final d touch the W. */
+.masthead .brand-way{margin-left:-4px}
+@media(min-width:900px){.masthead .brand-way{margin-left:-6px}}
+@media(max-width:650px){.masthead .brand-way{margin-left:-2px}}
+@media(min-width:900px){body.large-text .masthead .brand-way{margin-left:-2px}}
+@media(max-width:650px){body.large-text .masthead .brand-way{margin-left:-2px}}
+@media(max-width:360px){body.large-text .masthead .brand-way{margin-left:0}}
+@media(max-width:650px){
+  .masthead .brand-way{margin-left:0}
+  body.large-text .masthead .brand-way{margin-left:0}
 }
