@@ -14,7 +14,8 @@ const voiceLanguageEl = document.querySelector('#voice-language');
 const briefingIntervalEl = document.querySelector('#briefing-interval');
 const voiceStateEl = document.querySelector('#voice-state');
 const voiceSettingsEl = document.querySelector('#voice-settings');
-const voiceSettingsSummaryEl = document.querySelector('#voice-settings > summary');
+const voiceSettingsSummaryEl = document.querySelector('#voice-settings-label');
+const voiceSettingsEngineEl = document.querySelector('#voice-settings-engine');
 const voiceModelEl = document.querySelector('#voice-model');
 const apiModelEl = document.querySelector('#api-model');
 const apiVoiceEl = document.querySelector('#api-voice');
@@ -24,6 +25,7 @@ const useLocationEl = document.querySelector('#use-location');
 const walkSourceEl = document.querySelector('#walk-source');
 const walkSettingsEl = document.querySelector('.walk-settings');
 const leaveAdviceEl = document.querySelector('#leave-advice');
+const leaveBriefEl = document.querySelector('#leave-brief');
 const locationStateEl = document.querySelector('#location-state');
 const locationRefreshEl = document.querySelector('#location-refresh');
 const dataFreshnessEl = document.querySelector('#data-freshness');
@@ -88,7 +90,9 @@ const requestedRoute = activeRoute;
 if (!routes[activeRoute]) activeRoute = 16405;
 let routeTabs = [...document.querySelectorAll('.route-tabs [role="tab"]')];
 const routeTabsEl = document.querySelector('.route-tabs');
+const routeBackEl = document.querySelector('#route-back');
 const routeMoreEl = document.querySelector('#route-more');
+const selectionSummaryEl = document.querySelector('#selection-summary');
 let catalogSearchVersion = 0;
 const routePickerEl = document.querySelector('#route-picker');
 const routeAddEl = document.querySelector('#route-add');
@@ -96,13 +100,25 @@ const routeQueryEl = document.querySelector('#route-query');
 const routeResultsEl = document.querySelector('#route-results');
 const routePickerStatusEl = document.querySelector('#route-picker-status');
 const routeRemoveEl = document.querySelector('#route-remove');
+function syncRouteAddButton() {
+  routeAddEl.setAttribute('aria-expanded', String(routePickerEl.open));
+  routeAddEl.setAttribute('aria-label', routePickerEl.open ? '關閉加入路線' : '加入路線');
+  const label = routeAddEl.querySelector?.('.route-add-label');
+  if (label) label.textContent = routePickerEl.open ? '關閉' : '加入路線';
+}
 routeAddEl.addEventListener('click', () => {
   routePickerEl.open = !routePickerEl.open;
-  routeAddEl.setAttribute('aria-expanded', String(routePickerEl.open));
+  syncRouteAddButton();
   if (routePickerEl.open) routeQueryEl.focus();
 });
-routePickerEl.addEventListener('toggle', () =>
-  routeAddEl.setAttribute('aria-expanded', String(routePickerEl.open)));
+routePickerEl.addEventListener('toggle', syncRouteAddButton);
+routePickerEl.addEventListener('keydown', event => {
+  if (event.key !== 'Escape') return;
+  event.preventDefault();
+  routePickerEl.open = false;
+  syncRouteAddButton();
+  routeAddEl.focus();
+});
 const routeStorage = suffix => `bus-tracker-${activeRoute}-${suffix}`;
 closedEl.checked = (localStorage.getItem(routeStorage('closed-loop')) ??
   (activeRoute === 16405 ? localStorage.getItem('orange5-closed-loop') : null) ??
@@ -263,6 +279,16 @@ function savePushTarget(target) {
   localStorage.setItem(pushTargetKey, JSON.stringify(target));
   renderPushTarget();
 }
+function renderMobileReminderSummary() {
+  const mode = mobileMode === 'plan' ? '計畫模式' : '前往站牌模式';
+  let notification = '背景通知未啟用';
+  if (localStorage.getItem(pushPendingRemoveKey) === '1') notification = '正在關閉通知';
+  else if (!pushRetryEl.hidden) notification = '通知同步需重試';
+  else if (localStorage.getItem(pushEnabledKey) === '1' && pushTarget)
+    notification = `通知：${pushTarget.routeName || pushTarget.routeId} ${pushTarget.stopName || ''}`;
+  else if (pushToggleEl.disabled) notification = '背景通知不可用';
+  mobileModeSummaryEl.textContent = `${mode} / ${notification}`;
+}
 function renderPushTarget() {
   pushTargetEl.textContent = pushTarget
     ? `提醒目標：${pushTarget.routeName || pushTarget.routeId}・${pushTarget.stopName || `站牌 ${pushTarget.stopId}`} · 步行 ${pushTarget.walkMinutes} 分鐘` +
@@ -271,6 +297,7 @@ function renderPushTarget() {
     : '尚未啟用；啟用後會固定目前選擇的站牌。';
   pushTargetSwitchEl.hidden = !pushTarget || !selectedPushTarget() || Boolean(pushTargetMatchesSelection()) ||
     localStorage.getItem(pushEnabledKey) !== '1';
+  renderMobileReminderSummary();
 }
 function pushPayload(subscription, revision, target = pushTarget) {
   return {action: 'save', subscription: subscription.toJSON(), route_id: target.routeId,
@@ -320,9 +347,11 @@ function syncPushSettings(force = false) {
     pushStateEl.textContent = `已固定 ${pushTarget.routeName || pushTarget.routeId} ${pushTarget.stopName || ''} · 步行 ${pushTarget.walkMinutes} 分鐘；關閉頁面仍可通知。`;
     pushRetryEl.hidden = true;
     pushToggleEl.textContent = '關閉手機通知';
+    renderMobileReminderSummary();
     } catch (error) { if (revision === pushSyncRevision) {
       pushStateEl.textContent = `同步失敗：${error.message}。手機可能仍追蹤上次成功設定的站牌。`;
       pushRetryEl.hidden = false;
+      renderMobileReminderSummary();
     } }
     finally { if (revision === pushSyncRevision) pushSyncAbort = null; }
   });
@@ -393,7 +422,7 @@ document.querySelector('#push-toggle').addEventListener('click', async () => {
       pushStateEl.textContent = `關閉未完成，請重試：${error.message}`;
     } else pushStateEl.textContent = `無法啟用通知：${error.message}`;
   }
-  finally { button.disabled = false; }
+  finally { button.disabled = false; renderMobileReminderSummary(); }
 });
 
 function resetAlertState() {
@@ -465,18 +494,30 @@ function bindRouteTab(tab) {
 
 function updateRouteOverflow() {
   if (!routeTabsEl.clientWidth) return;
-  const overflow = routeTabsEl.scrollWidth > routeTabsEl.clientWidth + 2;
+  const shell = routeTabsEl.parentElement;
+  const shellStyle = window.getComputedStyle(shell);
+  const tabStyle = window.getComputedStyle(routeTabsEl);
+  const shellGap = parseFloat(shellStyle.columnGap) || 0;
+  const tabGap = parseFloat(tabStyle.columnGap) || 0;
+  const spaceForTabs = shell.clientWidth - (parseFloat(shellStyle.paddingLeft) || 0) -
+    (parseFloat(shellStyle.paddingRight) || 0) - routeAddEl.offsetWidth - shellGap;
+  const tabWidth = routeTabs.reduce((width, tab) => width + tab.getBoundingClientRect().width, 0) +
+    Math.max(0, routeTabs.length - 1) * tabGap;
+  const overflow = tabWidth > spaceForTabs + 2;
+  routeBackEl.hidden = !overflow;
   routeMoreEl.hidden = !overflow;
-  if (!overflow) return;
+  if (!overflow) routeTabsEl.scrollLeft = 0;
+  const atStart = routeTabsEl.scrollLeft <= 2;
   const atEnd = routeTabsEl.scrollLeft + routeTabsEl.clientWidth >= routeTabsEl.scrollWidth - 3;
-  routeMoreEl.textContent = atEnd ? '← 前面路線' : '更多路線 →';
-  routeMoreEl.setAttribute('aria-label', atEnd ? '顯示前面的公車路線' : '顯示更多公車路線');
-  routeMoreEl.dataset.direction = atEnd ? 'back' : 'forward';
+  routeBackEl.disabled = !overflow || atStart;
+  routeMoreEl.disabled = !overflow || atEnd;
 }
 routeTabsEl.addEventListener('scroll', updateRouteOverflow);
+routeBackEl.addEventListener('click', () => {
+  routeTabsEl.scrollBy({left: -Math.max(180, routeTabsEl.clientWidth * .7), behavior: 'smooth'});
+});
 routeMoreEl.addEventListener('click', () => {
-  routeTabsEl.scrollBy({left: (routeMoreEl.dataset.direction === 'back' ? -1 : 1) *
-    Math.max(180, routeTabsEl.clientWidth * .7), behavior: 'smooth'});
+  routeTabsEl.scrollBy({left: Math.max(180, routeTabsEl.clientWidth * .7), behavior: 'smooth'});
 });
 if (window.addEventListener) window.addEventListener('resize', updateRouteOverflow);
 
@@ -569,6 +610,7 @@ function selectRouteStop(direction, id) {
   directionEl.value = String(direction);
   setStops(false);
   stopEl.value = String(id);
+  renderSelectionSummary();
   resetAlertState();
   lastBriefingAt = 0;
   renderRoute();
@@ -877,6 +919,7 @@ function setStops(shouldUpdate = true) {
     return;
   }
   if (available.some(s => String(s.id) === previous)) stopEl.value = previous;
+  renderSelectionSummary();
   renderScope();
   resetAlertState();
   lastBriefingAt = 0;
@@ -891,6 +934,14 @@ function showRoute() {
     tab.setAttribute('aria-selected', String(selected));
     tab.tabIndex = selected ? 0 : -1;
   });
+  const selectedTab = routeTabs.find(tab => Number(tab.dataset.route) === activeRoute);
+  if (selectedTab?.getBoundingClientRect && routeTabsEl.getBoundingClientRect) {
+    const tabBounds = selectedTab.getBoundingClientRect();
+    const listBounds = routeTabsEl.getBoundingClientRect();
+    if (tabBounds.left < listBounds.left) routeTabsEl.scrollLeft += tabBounds.left - listBounds.left;
+    else if (tabBounds.right > listBounds.right) routeTabsEl.scrollLeft += tabBounds.right - listBounds.right;
+  }
+  updateRouteOverflow();
   document.title = `${route.name} · AheadWay`;
   document.querySelector('.route-badge').textContent = route.name;
   document.querySelector('#hero-route-id').textContent = `${route.source === 'taipei' ? 'TAIPEI' : 'NEW TAIPEI'} · ROUTE ${activeRoute}`;
@@ -901,10 +952,20 @@ function showRoute() {
   link.textContent = `原始${route.name}路線`;
   directionEl.options[0].textContent = route.heads[0];
   directionEl.options[1].textContent = route.heads[1];
+  renderSelectionSummary();
   routeRemoveEl.hidden = defaultRouteIds.includes(activeRoute);
   routeRemoveEl.textContent = `移除 ${route.name} 分頁`;
   renderPushTarget();
   renderScope();
+}
+
+function renderSelectionSummary() {
+  if (!selectionSummaryEl) return;
+  const direction = Number(directionEl.value);
+  const station = stops.find(item => item.direction === direction && String(item.id) === String(stopEl.value));
+  const head = directionEl.options[direction]?.textContent;
+  selectionSummaryEl.textContent = [routes[activeRoute]?.name, head, station?.name]
+    .filter(Boolean).join(' · ') || '選擇路線與站牌';
 }
 
 function renderScope() {
@@ -1010,7 +1071,7 @@ async function switchRoute(routeId, trip = null) {
   document.querySelector('#stop-title').textContent = '選擇站牌';
   document.querySelector('#updated').textContent = '—';
   dataFreshnessEl.textContent = '正在讀取資料時間…';
-  leaveAdviceEl.textContent = '載入到站預估後顯示';
+  setLeaveAdvice('載入到站預估後顯示', '等待到站預估');
   routeColumnsEl.textContent = '正在載入路線…';
   routeSearchEl.value = '';
   routeSearchStatusEl.textContent = '';
@@ -1050,7 +1111,7 @@ function showError(text) {
   document.querySelector('#vehicle-count').textContent = '—';
   document.querySelector('#vehicle-summary').textContent = '沿線車輛資料暫不可用。';
   document.querySelector('.approach-board').classList.add('is-empty');
-  leaveAdviceEl.textContent = '資料暫不可用，無法建議出發時間。';
+  setLeaveAdvice('資料暫不可用，無法建議出發時間。', '資料暫不可用');
   vehiclesEl.replaceChildren();
   renderRoute();
 }
@@ -1320,8 +1381,9 @@ function englishEtaRange(vehicle) {
   return low === high ? `about ${high} minutes` : `about ${low} to ${high} minutes`;
 }
 
-function setLeaveAdvice(message) {
+function setLeaveAdvice(message, brief = message) {
   leaveAdviceEl.textContent = message;
+  leaveBriefEl.textContent = brief;
 }
 
 function renderLeaveAdvice(snapshot) {
@@ -1329,7 +1391,7 @@ function renderLeaveAdvice(snapshot) {
   const eta = snapshot.officialEtaSeconds;
   const feedAges = Object.values(snapshot.feedFetchedAt || {}).filter(Boolean).map(elapsedSeconds);
   if (elapsedSeconds(snapshot.updatedAt) > 240 || feedAges.some(age => age > 240)) {
-    setLeaveAdvice('公車資料已過時；請更新後再查看出發建議。');
+    setLeaveAdvice('公車資料已過時；請更新後再查看出發建議。', '資料已過時');
     return;
   }
   const needed = walk * 60 + 120;
@@ -1356,7 +1418,7 @@ function renderLeaveAdvice(snapshot) {
   if (!selected) {
     setLeaveAdvice(eta === null
       ? '目前沒有可確認來得及搭乘的車輛；請查看各車推估範圍。'
-      : '官方下一班可能趕不上；目前沒有可確認來得及搭乘的後續車輛。');
+      : '官方下一班可能趕不上；目前沒有可確認來得及搭乘的後續車輛。', '暫無可確認班次');
     return;
   }
   const leaveIn = selected.remaining - needed;
@@ -1365,7 +1427,8 @@ function renderLeaveAdvice(snapshot) {
   setLeaveAdvice(`${selected.conditional ? '若此車在終點折返續行，可參考 ' : selected.tentative ? '可考慮 ' : ''}` +
     `${selected.description}：${selected.conditional ? '約' : '建議'} ${clock} 前出發` +
     `${leaveIn < 60 ? '（現在）' : `（約 ${Math.floor(leaveIn / 60)} 分鐘後）`}` +
-    (selected.conditional ? '；可能在終點停駛，請再確認班次。' : ''));
+    (selected.conditional ? '；可能在終點停駛，請再確認班次。' : ''),
+  `${selected.conditional ? '折返參考 · ' : ''}${leaveIn < 60 ? '現在出發' : `${clock} 前出發`}`);
 }
 
 function syncLocationUI() {
@@ -1626,8 +1689,7 @@ function setMobileMode(mode) {
   mobileTravelEl.setAttribute('aria-pressed', String(mode === 'travel'));
   planPanelEl.hidden = mode !== 'plan';
   travelPanelEl.hidden = mode !== 'travel';
-  mobileModeSummaryEl.textContent = mode === 'plan' ? '計畫模式 · 出發建議' :
-    '前往站牌模式 · 即時步速警告';
+  renderMobileReminderSummary();
   if (mode === 'travel') startTravelTracking();
 }
 mobilePlanEl.addEventListener('click', () => setMobileMode('plan'));
@@ -1702,7 +1764,12 @@ function announce(snapshot) {
 
 function syncVoiceMode() {
   const briefing = voiceModeEl.value === 'briefing';
-  voiceSettingsSummaryEl.textContent = `語音設定 · ${briefing ? '定時播報' : `到站提醒 ${alertThresholdMinutes()} 分鐘`} / ${voiceFormatEl.value === 'verbose' ? '詳細' : '簡短'} / ${voiceLanguageEl.value === 'en' ? 'English' : '中文'}`;
+  const schedule = briefing ? `每 ${briefingIntervalEl.value || '5'} 分鐘播報`
+    : `到站提醒 ${alertThresholdMinutes()} 分鐘`;
+  const engine = voiceModelEl.value === 'api' ? '本機 TTS'
+    : voiceModelEl.value.startsWith('espeak:') ? 'eSpeak' : '瀏覽器語音';
+  voiceSettingsSummaryEl.textContent = `${schedule} · ${voiceLanguageEl.value === 'en' ? 'English' : '中文'}`;
+  voiceSettingsEngineEl.textContent = `${voiceFormatEl.value === 'verbose' ? '詳細' : '簡短'} · ${engine}`;
   document.querySelector('#alert-settings').hidden = briefing;
   document.querySelector('#briefing-settings').hidden = !briefing;
   if (voiceError || activeUtterance || activeAudio || pendingAudio) return;
@@ -1711,7 +1778,7 @@ function syncVoiceMode() {
     ? /^en/i.test(v.lang) : /^(zh|cmn)/i.test(v.lang));
   const localChoice = voiceModelEl.value === 'api' || voiceModelEl.value.startsWith('espeak:');
   voiceStateEl.className = 'voice-state';
-  voiceStateEl.textContent = !latestSnapshot ? '正在載入目前站牌資訊；可先按「試播」檢查聲音'
+  voiceStateEl.textContent = !latestSnapshot ? '正在載入站牌 · 可先試播'
     : voiceEnabled ? (briefing ? '已啟用；依設定間隔播報' : '已啟用；每輛車進入門檻時提醒')
     : localChoice ? '尚未啟用 · 可按「試播」檢查本機語音'
         : voices.length ? `尚未啟用 · ${hasLanguageVoice ? '所選語言語音可用' : '未找到對應語音，請先試播'}`
@@ -1882,7 +1949,7 @@ function beginSelection() {
   document.querySelector('#vehicle-count').textContent = '更新中…';
   document.querySelector('#vehicle-summary').textContent = '正在確認沿線公車…';
   document.querySelector('.approach-board').classList.add('is-empty');
-  setLeaveAdvice('正在計算建議出發時間…');
+  setLeaveAdvice('正在計算建議出發時間…', '正在計算…');
   renderTravelGuidance();
   dataFreshnessEl.textContent = '正在讀取資料時間…';
   vehiclesEl.replaceChildren();
@@ -1977,7 +2044,7 @@ document.querySelector('#jump-to-stop').addEventListener('click', () => {
   selected?.scrollIntoView?.({block: 'center', behavior: 'smooth'});
   selected?.focus?.({preventScroll: true});
 });
-stopEl.addEventListener('change', () => update({selected: true, fresh: true}));
+stopEl.addEventListener('change', () => {renderSelectionSummary(); update({selected: true, fresh: true});});
 closedEl.addEventListener('change', () => {
   localStorage.setItem(routeStorage('closed-loop'), closedEl.checked ? '1' : '0');
   renderScope();
@@ -2028,6 +2095,7 @@ briefingIntervalEl.addEventListener('change', () => {
   briefingIntervalEl.value = String(minutes);
   localStorage.setItem('orange5-briefing-interval', String(minutes));
   lastBriefingAt = 0;
+  syncVoiceMode();
   if (voiceEnabled && voiceModeEl.value === 'briefing') { speakCurrentMode(); update(); }
 });
 walkMinutesEl.addEventListener('change', () => {
@@ -2076,7 +2144,7 @@ document.querySelector('#refresh').addEventListener('click', () => update({selec
 function setRouteExpanded(expanded) {
   routeBodyEl.hidden = !expanded;
   routeToggleEl.setAttribute('aria-expanded', String(expanded));
-  routeToggleEl.textContent = expanded ? '收合路線' : '展開路線與沿線公車';
+  routeToggleEl.setAttribute('aria-label', expanded ? '收合路線' : '展開路線與沿線公車');
 }
 setRouteExpanded(true);
 const compactScreen = window.matchMedia?.('(max-width:650px)');

@@ -23,16 +23,16 @@ AheadWay is a responsive bus-tracking dashboard for Taipei and New Taipei. It co
 
 ## Dashboard preview
 
-The screenshots below were captured with Playwright from the running local dashboard. The capture was just after midnight, so the live status correctly showed no active service; the route map and mobile layout remain visible.
+These Playwright screenshots show the running dashboard with **橘5 → toward Banqiao (往板橋) → MRT Jingan Station, Jingping Road (捷運景安站(景平路))** selected. The page separates the official next arrival from identified buses in the selected direction and buses that might return on another circuit. Captured on 2026-10-27, the arrival times and vehicle positions are a snapshot; the site recalculates them from current data when opened.
 
 <details open>
-  <summary>Desktop dashboard</summary>
-  <p align="center"><img src="docs/aheadway-dashboard-desktop.png" alt="AheadWay desktop dashboard showing route selection, arrival status, route map, stop lists, and voice controls" width="100%" /></p>
+  <summary>Desktop · 橘5 toward Banqiao at MRT Jingan</summary>
+  <p align="center"><img src="docs/aheadway-dashboard-desktop.png" alt="AheadWay desktop dashboard showing 橘5 toward Banqiao at MRT Jingan Station, following buses, route map, and voice controls" width="100%" /></p>
 </details>
 
 <details>
-  <summary>Mobile dashboard</summary>
-  <p align="center"><img src="docs/aheadway-dashboard-mobile.png" alt="AheadWay responsive mobile dashboard with stop selection, bus status, route list, and voice controls" width="390" /></p>
+  <summary>Mobile · 橘5 toward Banqiao at MRT Jingan</summary>
+  <p align="center"><img src="docs/aheadway-dashboard-mobile.png" alt="AheadWay mobile dashboard showing 橘5 toward Banqiao at MRT Jingan Station, following buses, and departure advice" width="390" /></p>
 </details>
 
 ## What it does

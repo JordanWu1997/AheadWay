@@ -23,16 +23,16 @@ AheadWay 是臺北與新北公車追蹤儀表板。它將官方下一班狀態�
 
 ## 畫面預覽
 
-以下桌面與手機截圖由 Playwright 從執行中的本機網站擷取。擷取時間在午夜過後，因此即時狀態正確顯示當時沒有營運中的公車；路線圖與響應式版面仍可供預覽。
+以下桌面與手機截圖由 Playwright 從執行中的本機網站擷取，示範 **橘5 → 往板橋 → 捷運景安站(景平路)**。畫面同時顯示官方下一班、已辨識的本方向公車與可能折返的下一輪公車。截圖擷取於 2026-10-27；到站時間與車輛位置是當時的快照，開啟網站時會以最新資料重新計算。
 
 <details open>
-  <summary>桌面版儀表板</summary>
-  <p align="center"><img src="docs/aheadway-dashboard-desktop.png" alt="AheadWay 桌面版：路線選擇、到站狀態、路線圖、站牌清單與語音控制" width="100%" /></p>
+  <summary>桌面版 · 橘5往板橋／捷運景安站</summary>
+  <p align="center"><img src="docs/aheadway-dashboard-desktop.png" alt="AheadWay 桌面版：橘5往板橋、捷運景安站(景平路)的到站資訊、後續公車、路線圖與語音控制" width="100%" /></p>
 </details>
 
 <details>
-  <summary>手機版儀表板</summary>
-  <p align="center"><img src="docs/aheadway-dashboard-mobile.png" alt="AheadWay 手機版：站牌選擇、公車狀態、路線清單與語音控制" width="390" /></p>
+  <summary>手機版 · 橘5往板橋／捷運景安站</summary>
+  <p align="center"><img src="docs/aheadway-dashboard-mobile.png" alt="AheadWay 手機版：橘5往板橋、捷運景安站(景平路)的到站資訊、後續公車與出發建議" width="390" /></p>
 </details>
 
 ## 功能
