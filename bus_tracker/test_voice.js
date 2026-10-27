@@ -29,7 +29,13 @@ function harness(error = null, publicMode = false, mobile = false, storage = {})
       addEventListener(name, fn) {this.events[name] = fn;}, focus() {},
       setAttribute(name, value) {this.attributes[name] = value;},
       replaceChildren(...children) {this.children = children;},
-      append(...children) {this.children.push(...children);}, querySelectorAll() {return [];}
+      append(...children) {this.children.push(...children);},
+      querySelector(selector) {
+        if (selector === '.disclosure-toggle-label')
+          return this.disclosureLabel ||= {textContent: ''};
+        return null;
+      },
+      querySelectorAll() {return [];}
     });
     return elements.get(id);
   }
@@ -75,7 +81,7 @@ function harness(error = null, publicMode = false, mobile = false, storage = {})
     localStorage: {getItem: key => stored.get(key) ?? null,
       setItem: (key, value) => stored.set(key, String(value)), removeItem: key => stored.delete(key)},
     fetch, Audio, URL: {createObjectURL: () => 'blob:test-audio', revokeObjectURL() {}},
-    setInterval() {}, console,
+    setInterval() {}, requestAnimationFrame(callback) {callback();}, console,
   });
   const code = fs.readFileSync(path.join(__dirname, 'static/app.js'), 'utf8');
   vm.runInContext(code, context);

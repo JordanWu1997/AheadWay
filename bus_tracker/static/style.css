@@ -314,6 +314,9 @@ main>footer{color:#607468;line-height:1.6}main>footer a{color:#28594b}
 .first-route{display:none;margin:22px 0 0;padding:clamp(24px,5vw,40px);border:1px solid var(--ui-card-border);border-radius:20px;background:#fff;box-shadow:0 12px 28px #193c2a0b}
 .no-route .first-route{display:block}
 .first-route h1{margin:8px 0 12px;color:var(--brand-forest);font-size:clamp(26px,4vw,38px);line-height:1.25}
+/* Keep the first-visit heading in the large-text hierarchy despite the global minimum-size rule. */
+body.large-text .first-route h1{font-size:clamp(32px,5vw,44px)!important;line-height:1.2}
+@media(max-width:650px){body.large-text .first-route h1{font-size:clamp(30px,8vw,38px)!important}}
 .first-route p{max-width:670px;margin:0;color:var(--ui-secondary);font-size:16px;line-height:1.7}
 .first-route ol{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;list-style:none;counter-reset:step;margin:25px 0;padding:0}
 .first-route li{display:grid;grid-template-columns:32px 1fr;gap:3px 8px;align-content:start;padding:14px;border:1px solid #dce5df;border-radius:12px;background:#f5faf6;counter-increment:step}
@@ -791,3 +794,15 @@ body.large-text .masthead .brand-logo img{position:static;width:100%;height:100%
   .masthead .brand-way{margin-left:0}
   body.large-text .masthead .brand-way{margin-left:0}
 }
+/* Normalize the optical wordmark gap across phone base and large-text rules. */
+@media(max-width:650px){.masthead .brand-way{margin-left:5px}}
+@media(max-width:650px){body.large-text .masthead .brand-way{margin-left:0}}
+@media(max-width:360px){body.large-text .masthead .brand-way{margin-left:3px}}
+/* Use explicit logo and wordmark spacing so changing font mode cannot alter the d–W gap. */
+.masthead .brand{column-gap:0!important}
+.masthead .brand-logo{margin-right:7px}
+.masthead .brand-way{margin-left:3px}
+@media(min-width:900px){.masthead .brand-logo{margin-right:9px}}
+@media(max-width:650px){.masthead .brand-logo{margin-right:7px}.masthead .brand-way{margin-left:5px}}
+@media(min-width:900px){body.large-text .masthead .brand-way{margin-left:3px}}
+@media(max-width:650px){body.large-text .masthead .brand-way{margin-left:5px}}
