@@ -803,6 +803,6 @@ body.large-text .masthead .brand-logo img{position:static;width:100%;height:100%
 .masthead .brand-logo{margin-right:7px}
 .masthead .brand-way{margin-left:3px}
 @media(min-width:900px){.masthead .brand-logo{margin-right:9px}}
-@media(max-width:650px){.masthead .brand-logo{margin-right:7px}.masthead .brand-way{margin-left:5px}}
+@media(max-width:650px){.masthead .brand-logo{margin-right:7px}.masthead .brand-way{margin-left:1px}}
 @media(min-width:900px){body.large-text .masthead .brand-way{margin-left:3px}}
-@media(max-width:650px){body.large-text .masthead .brand-way{margin-left:5px}}
+@media(max-width:650px){body.large-text .masthead .brand-way{margin-left:1px}}
