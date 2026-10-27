@@ -791,3 +791,15 @@ body.large-text .masthead .brand-logo img{position:static;width:100%;height:100%
   .masthead .brand-way{margin-left:0}
   body.large-text .masthead .brand-way{margin-left:0}
 }
+/* Normalize the optical wordmark gap across phone base and large-text rules. */
+@media(max-width:650px){.masthead .brand-way{margin-left:5px}}
+@media(max-width:650px){body.large-text .masthead .brand-way{margin-left:0}}
+@media(max-width:360px){body.large-text .masthead .brand-way{margin-left:3px}}
+/* Use explicit logo and wordmark spacing so changing font mode cannot alter the d–W gap. */
+.masthead .brand{column-gap:0!important}
+.masthead .brand-logo{margin-right:7px}
+.masthead .brand-way{margin-left:3px}
+@media(min-width:900px){.masthead .brand-logo{margin-right:9px}}
+@media(max-width:650px){.masthead .brand-logo{margin-right:7px}.masthead .brand-way{margin-left:5px}}
+@media(min-width:900px){body.large-text .masthead .brand-way{margin-left:3px}}
+@media(max-width:650px){body.large-text .masthead .brand-way{margin-left:5px}}
