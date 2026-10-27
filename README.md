@@ -4,6 +4,7 @@
   <p><strong>下一班，還有下幾班。</strong><br />掌握臺北與新北公車即時動態，不只看下一班。</p>
   <p>
     <a href="README.md">繁體中文</a> · <a href="README_en.md">English</a> ·
+    <a href="docs/learning-guide.md">程式入門教學（英文）</a> ·
     <a href="bus_tracker/static/technical-report.md">技術報告</a> ·
     <a href="https://pda5284.gov.taipei/MQS/routelist.jsp">臺北市官方公車路線</a>
   </p>
@@ -71,6 +72,8 @@ python3 -m bus_tracker.server 8000
 
 完整安裝方式、Tailscale Funnel、API 與資料來源、到站推估、語音設定、通知及已知限制，請參閱[技術報告](bus_tracker/static/technical-report.md)。
 
+想從零開始學 Python、JavaScript、HTML、CSS 與 UI／UX？閱讀[英文程式入門教學](docs/learning-guide.md)，跟著一次路線搜尋理解從伺服器到畫面的完整流程，並動手做小練習。
+
 ## 資料來源與限制
 
 系統讀取臺北與新北公開的路線、站牌、車輛、停靠事件及官方到站時間資料，不會從路線網頁憑空推算車輛位置。官方資料提供下一班預估，並未提供每一輛後續公車的到站時間；後續班次時間是根據新鮮且可辨識的車輛資料推估。
@@ -93,7 +96,7 @@ python3 -m bus_tracker.server 8000
 | `bus_tracker/speech_audio.py`、`schedule.py`、`scheduled_voice.py` | 語音合成與擁有者語音排程 |
 | `bus_tracker/push.py`、`bus_tracker/static/sw.js` | 選用的手機 Web Push 通知 |
 | `deploy/` | 擁有者與公開服務的範例 user service |
-| `docs/` | Playwright 儀表板截圖 |
+| `docs/` | 程式入門教學與 Playwright 儀表板截圖 |
 
 ## 致謝
 

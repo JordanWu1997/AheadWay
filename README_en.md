@@ -3,6 +3,7 @@
   <h1>AheadWay</h1>
   <p><strong>下一班，還有下幾班。</strong><br />Live Taipei and New Taipei bus arrivals, with the next buses made visible.</p>
   <p>
+    <a href="docs/learning-guide.md">Beginner's guide</a> ·
     <a href="bus_tracker/static/technical-report.md">Technical report</a> ·
     <a href="https://pda5284.gov.taipei/MQS/routelist.jsp">Official Taipei bus routes</a>
   </p>
@@ -43,7 +44,7 @@ These Playwright screenshots show the running dashboard with **橘5 → toward B
 - **Helps plan when to leave.** Combine bus arrivals with a manually entered walk time or a rough browser-location estimate, including a configurable two-minute buffer.
 - **Speaks the live board.** Use Chinese or English voice alerts and periodic briefings through browser speech, eSpeak, or a local OpenAI-compatible TTS server. The owner dashboard can schedule daily voice reports.
 - **Supports phone reminders.** On a supported HTTPS deployment, Web Push can send a text departure notification after the page closes. It does not provide background voice playback.
-- **Lets riders add routes.** Start with 橘5, 908, and 921, then search for a route or paste an official Taipei route link. Added route tabs and preferences are stored in that browser.
+- **Lets riders add routes.** Start with an empty route list, then search for a route or paste an official Taipei route link. Added route tabs and preferences are stored in that browser.
 
 ## Why use it
 
@@ -71,6 +72,8 @@ Optional features have additional requirements:
 
 See the [technical report](bus_tracker/static/technical-report.md) for full setup, Tailscale Funnel deployment, API/data sources, estimation details, voice configuration, notifications, and known limitations.
 
+New to web development? Follow the [beginner's learning guide](docs/learning-guide.md) to learn Python, JavaScript, HTML, CSS, and UI/UX from a route search, with small exercises you can try locally.
+
 ## Data and limits
 
 The app reads public route, stop, vehicle, stop-event, and official estimated-time feeds from Taipei and New Taipei. It does not scrape the route webpage to invent live positions. The official feed provides a next-bus estimate, not an ETA for every following vehicle; later arrival times are estimates based on vehicles that can be identified from fresh feed data.
@@ -90,7 +93,7 @@ The optional Hugging Face [`speech-to-speech`](https://github.com/huggingface/sp
 | `bus_tracker/speech_audio.py`, `schedule.py`, `scheduled_voice.py` | Speech synthesis and owner voice scheduling |
 | `bus_tracker/push.py`, `bus_tracker/static/sw.js` | Optional phone Web Push notifications |
 | `deploy/` | Example user services for owner and public server processes |
-| `docs/` | Playwright screenshots of the dashboard |
+| `docs/` | Beginner's learning guide and Playwright dashboard screenshots |
 
 ## Credits
 
