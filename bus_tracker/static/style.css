@@ -47,7 +47,7 @@
 .custom-threshold-label{margin:10px 0 0;font-size:12px}.custom-threshold-label input{display:block;margin-top:7px;width:100%}.custom-threshold-label[hidden]{display:none}
 @media(max-width:650px){.hero{padding:22px 0 16px}}
 .route-picker{margin:0 0 12px}.trip-bar{margin:0 0 12px;padding:9px 12px;gap:8px}.trips-empty{font-size:11px;color:#74857a;line-height:1.4}
-#trips-more{display:none}#trips-more[hidden]{display:none}@media(max-width:650px){.trip-bar:not(.expanded) .saved-trip:nth-child(n+4){display:none}#trips-more:not([hidden]){display:inline-flex;border:0;background:transparent;color:#28594b;padding:5px 0;font-size:11px;font-weight:800}}
+.trip-bar:not(.expanded) .saved-trip:nth-child(n+6){display:none}#trips-more[hidden]{display:none}#trips-more:not([hidden]){display:inline-flex;border:0;background:transparent;color:#28594b;padding:5px 0;font-size:11px;font-weight:800}@media(max-width:650px){.language-toggle{height:29px}.language-toggle button{height:23px;min-width:31px}.trip-bar:not(.expanded) .saved-trip:nth-child(n+6){display:none}}
 .leave-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,440px);align-items:start;gap:24px}
 .leave-summary{min-width:0}.leave-summary small{display:block}
 .walk-settings{display:grid;grid-template-columns:minmax(0,1fr) minmax(145px,165px);align-items:start;gap:10px 12px;align-self:start}
@@ -312,6 +312,31 @@ main>footer{color:#607468;line-height:1.6}main>footer a{color:#28594b}
 
 /* A single vertical rhythm for the dashboard cards. */
 :root{--card-gap:16px}
+.no-route .requires-route{display:none!important}
+.first-route{display:none;margin:22px 0 0;padding:clamp(24px,5vw,40px);border:1px solid var(--ui-card-border);border-radius:20px;background:#fff;box-shadow:0 12px 28px #193c2a0b}
+.no-route .first-route{display:block}
+.first-route h1{margin:8px 0 12px;color:var(--brand-forest);font-size:clamp(26px,4vw,38px);line-height:1.25}
+.first-route p{max-width:670px;margin:0;color:var(--ui-secondary);font-size:16px;line-height:1.7}
+.first-route ol{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;list-style:none;counter-reset:step;margin:25px 0;padding:0}
+.first-route li{display:grid;grid-template-columns:32px 1fr;gap:3px 8px;align-content:start;padding:14px;border:1px solid #dce5df;border-radius:12px;background:#f5faf6;counter-increment:step}
+.first-route li:before{content:counter(step);grid-row:span 2;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#dcefe3;color:#173d32;font-weight:800}
+.first-route li strong{color:#173d32}.first-route li span{color:var(--ui-secondary);font-size:13px;line-height:1.5}
+#first-route-add{min-height:48px;padding:10px 20px;border:0;border-radius:10px;background:#173d32;color:#fff;font:inherit;font-weight:800;cursor:pointer}
+#first-route-add:hover{background:#28594b}.first-route small{display:block;margin-top:12px;color:var(--ui-secondary);font-size:13px}
+.route-current-actions .route-remove{display:inline-flex;align-items:center;min-height:36px;margin:0 0 12px;padding:6px 12px;font-size:13px}
+.route-current-actions .route-remove:before{content:"×";display:inline-grid;place-items:center;width:18px;height:18px;margin-right:5px;border:1px solid currentColor;border-radius:50%;font-size:15px;line-height:1}
+.no-route .tracking-context{display:none!important}
+.route-tabs-shell .route-remove{display:inline-grid;place-items:center;flex:0 0 42px;width:42px;min-height:42px;margin:0;padding:0;border:1px solid #c7d8cd;border-radius:10px;background:#fff;color:#46675a;cursor:pointer}
+.route-tabs-shell .route-remove:hover,.route-tabs-shell .route-remove[aria-expanded="true"]{background:#fff2ee;color:#994d3a;border-color:#efc9bd}
+.route-tabs-shell .route-remove[hidden]{display:none}
+.route-tabs-shell .route-remove svg{display:block;width:19px;height:19px}
+.route-tabs-shell .route-remove:focus-visible{outline:3px solid var(--focus-ring);outline-offset:1px}
+@media(max-width:650px){.route-tabs-shell .route-remove{flex-basis:38px;width:38px;min-height:40px}}
+.route-remove-confirm{max-width:440px;margin:0 0 16px auto;padding:16px;text-align:left;border:1px solid #efc9bd;border-radius:13px;background:#fff7f4;color:#173d32}
+.route-remove-confirm[hidden]{display:none}.route-remove-confirm strong{font-size:16px}.route-remove-confirm p{margin:6px 0 14px;color:#65756d;font-size:13px;line-height:1.5}
+.route-remove-confirm>div{display:flex;justify-content:flex-end;gap:8px}.route-remove-confirm button{min-height:38px;padding:7px 13px;border:1px solid #c7d8cd;border-radius:8px;background:#fff;color:#28594b;font:inherit;font-size:13px;font-weight:750;cursor:pointer}
+.route-remove-confirm #route-remove-accept{border-color:#a4402e;background:#a4402e;color:#fff}
+@media(max-width:650px){.first-route{margin-top:10px;padding:22px 18px}.first-route ol{grid-template-columns:1fr;gap:8px}.first-route li{grid-template-columns:28px 1fr;padding:10px 12px}.route-remove-confirm{max-width:none}}
 .selection-card,.results,.results .approach-board,.results .leave-card,.route-panel,.notify,.brand-banner{margin-top:var(--card-gap)}
 .route-picker[open]{margin:var(--card-gap) 0 0}
 .route-picker[open] + .route-current-actions + .selection-card{margin-top:var(--card-gap)}
@@ -454,3 +479,21 @@ main>footer a,.brand-banner figcaption a{color:var(--ui-action)}
 }
 .voice-settings-info{display:grid;gap:2px;min-width:0;text-align:right}
 #voice-settings-engine{color:var(--ui-muted);font-size:12px;line-height:1.35;font-weight:500;overflow-wrap:anywhere}
+
+/* Direct two-language toggle: each language stays visible and tappable. */
+.masthead-actions{grid-column:2;grid-row:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
+.masthead-actions .live-pill{grid-column:auto;grid-row:auto}
+.language-toggle{display:inline-flex;align-items:center;gap:2px;flex:none;height:33px;padding:2px;border:1px solid #c7dbcd;border-radius:10px;background:#e9f0eb}
+.language-toggle button{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:27px;margin:0;padding:0 7px;border:0;border-radius:7px;background:transparent;color:#426b57;font:inherit;font-size:12px;font-weight:850;line-height:1;cursor:pointer}
+.language-toggle button[aria-pressed="true"]{background:#173d32;color:#fff;box-shadow:0 1px 3px #173d3226}
+.language-toggle button:hover:not([aria-pressed="true"]){background:#dce9df;color:#173d32}
+.language-toggle button:focus-visible{position:relative;z-index:1;outline:3px solid var(--focus-ring);outline-offset:2px}
+@media(max-width:650px){.language-toggle{height:29px}.language-toggle button{height:23px;min-width:31px}}
+@media(max-width:380px){.masthead .masthead-actions{grid-column:1/-1;grid-row:2;justify-content:flex-start}.masthead .author-line{grid-row:3;margin-left:0}}
+
+/* Keep the route action compact on phones; its accessible name remains on the button. */
+@media(max-width:650px){
+  .route-tabs-shell .route-add{flex:0 0 40px;width:40px;min-width:40px;padding:0}
+  .route-tabs-shell .route-add-label{display:none}
+  .route-tabs-shell .route-add-mark{font-size:24px}
+}

@@ -12,7 +12,8 @@ function harness(error = null, publicMode = false, mobile = false) {
   const pageResponses = [];
   let createdNode = 0;
   const tabs = [16405, 16585, 16664].map(id => ({dataset: {route: String(id)},
-    events: {}, setAttribute() {}, addEventListener(name, fn) {this.events[name] = fn;}, focus() {}, click() {this.events.click();}}));
+    events: {}, setAttribute() {}, addEventListener(name, fn) {this.events[name] = fn;},
+    focus() {}, remove() {}, click() {this.events.click();}}));
   function svgNode(tagName) {
     return {tagName, attributes: {}, children: [], textContent: '',
       setAttribute(name, value) {this.attributes[name] = value;},
@@ -63,18 +64,20 @@ function harness(error = null, publicMode = false, mobile = false) {
     return button;
   });
   const context = vm.createContext({
-    document: {querySelector: element, querySelectorAll: selector => selector === '.route-tabs [role="tab"]' ? tabs :
+    document: {body: {classList: {add() {}, remove() {}, toggle() {}, contains() {return false;}}},
+      querySelector: element, querySelectorAll: selector => selector === '.route-tabs [role="tab"]' ? tabs :
       selector === '[data-mobile-leg]' ? mobileButtons : [],
       createElement: () => element(`created-${++createdNode}`), createElementNS: (_namespace, tag) => svgNode(tag)},
     window: {speechSynthesis: synth, SpeechSynthesisUtterance: Utterance, BUS_TRACKER_PUBLIC: publicMode,
-      matchMedia: () => ({matches: mobile})},
+      matchMedia: () => ({matches: mobile}), addEventListener() {}},
     speechSynthesis: synth, SpeechSynthesisUtterance: Utterance,
-    localStorage: {getItem: () => null, setItem() {}},
+    localStorage: {getItem: () => null, setItem() {}, removeItem() {}},
     fetch, Audio, URL: {createObjectURL: () => 'blob:test-audio', revokeObjectURL() {}},
     setInterval() {}, console,
   });
   const code = fs.readFileSync(path.join(__dirname, 'static/app.js'), 'utf8');
   vm.runInContext(code, context);
+  vm.runInContext('activeRoute = 16405', context);
   const snapshot = {
     direction: 0, directionLabel: '往捷運景安站', closedLoop: true,
     stop: {id: 122402, name: '捷運景安站(景平路)', nameEn: 'MRT Jingan Sta.(Jingping Rd.)'},
@@ -97,7 +100,7 @@ function harness(error = null, publicMode = false, mobile = false) {
   assert.match(html, /id="route-search"/);
   assert.match(html, /id="jump-to-stop"/);
   assert.ok(html.indexOf('class="arrival-scope"') > html.indexOf('class="controls"') &&
-    html.indexOf('class="arrival-scope"') < html.indexOf('class="results"'),
+    html.indexOf('class="arrival-scope"') < html.indexOf('class="results requires-route"'),
   'arrival scope is visible before the arrival estimates');
   const ordered = ['class="route-tabs"', 'class="route-picker"', 'class="trip-bar"',
     'class="controls"', 'class="arrival-scope"'];
@@ -211,7 +214,7 @@ function harness(error = null, publicMode = false, mobile = false) {
     addedRouteIds=[10841]; activeRoute=10841; renderRouteTabs()`, routeTools.context);
   assert.equal(routeTools.element('#route-remove').hidden, false,
     'selected added route has a remove action beside the tabs');
-  assert.equal(routeTools.element('#route-remove').textContent, '移除 0東 分頁');
+  assert.equal(routeTools.element('#route-remove').attributes['aria-label'], '移除 0東 路線');
 }
 
 {
@@ -311,7 +314,7 @@ function harness(error = null, publicMode = false, mobile = false) {
   assert.equal(groups.length, 2, 'direct and conditional buses have separate sections');
   assert.match(groups[0].children[0].textContent, /本方向接近本站/);
   assert.match(groups[1].children[0].textContent, /可能折返續行/);
-  vm.runInContext(`savedTrips = Array.from({length:5}, (_, index) => ({routeId:16405,
+  vm.runInContext(`savedTrips = Array.from({length:6}, (_, index) => ({routeId:16405,
     direction:0,stopId:index+1,stopName:'測試'+index,closedLoop:true})); renderSavedTrips()`, h.context);
   assert.equal(h.element('#trips-more').hidden, false);
   h.element('#trips-more').events.click();

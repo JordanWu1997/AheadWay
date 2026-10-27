@@ -37,7 +37,16 @@ class PublicServerTests(unittest.TestCase):
                 self.assertIn(b'<base href="/bus/">', body)
                 self.assertIn(b'href="style.css"', body)
                 self.assertIn(b'src="app.js"', body)
+                self.assertIn(b'src="i18n.js"', body)
                 self.assertIn("text/html", content_type)
+
+    def test_localization_table_is_served_in_public_view(self):
+        handler = self.handler("/bus/i18n.js")
+        handler.do_GET()
+        status, body, content_type = handler.reply.call_args.args
+        self.assertEqual(status, 200)
+        self.assertIn(b"aheadway-ui-language", body)
+        self.assertIn("javascript", content_type)
 
     def test_brand_images_are_served_from_public_bus_path(self):
         for name in ("LOGO.jpeg", "BANNER.jpeg"):

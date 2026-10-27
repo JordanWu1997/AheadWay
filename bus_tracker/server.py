@@ -121,7 +121,7 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(200, CACHE.snapshot(stop_id, direction, loop_value == "1",
                                                           route_id, refresh=True))
                 return self.reply(200, CACHE.snapshot(stop_id, direction, loop_value == "1", route_id))
-            if path in ("/", "/app.js", "/style.css", "/sw.js", "/manifest.webmanifest", "/icon.svg",
+            if path in ("/", "/app.js", "/i18n.js", "/style.css", "/sw.js", "/manifest.webmanifest", "/icon.svg",
                         "/LOGO.jpeg", "/BANNER.jpeg",
                         "/technical-report.html", "/technical-report.md", "/technical-report.pdf", "/technical-report.css"):
                 file = STATIC / ("index.html" if path == "/" else path.lstrip("/"))
