@@ -58,8 +58,11 @@ def validate(data):
     if language not in ("zh", "en"):
         raise ValueError("Voice language must be zh or en")
     voice_format = data.get("voice_format", "short")
-    if voice_format not in ("short", "verbose"):
-        raise ValueError("Voice format must be short or verbose")
+    if voice_format not in ("short", "verbose", "track"):
+        raise ValueError("Voice format must be short, verbose, or track")
+    tracked_bus_id = data.get("tracked_bus_id", "")
+    if not isinstance(tracked_bus_id, str) or len(tracked_bus_id) > 40 or (voice_format == "track" and data["enabled"] and not tracked_bus_id.strip()):
+        raise ValueError("Choose a bus before saving tracking voice mode")
     model = data.get("voice_model", "tts-1")
     name = data.get("voice_name", "anne" if engine == "api" else "en" if language == "en" else "cmn")
     if engine == "espeak" and name not in ESPEAK_VOICES:
@@ -85,7 +88,7 @@ def validate(data):
             "direction": direction, "stop_id": stop_id,
             "closed_loop": data["closed_loop"], "voice_engine": engine,
             "voice_model": model, "voice_name": name, "voice_language": language,
-            "voice_format": voice_format,
+            "voice_format": voice_format, "tracked_bus_id": tracked_bus_id.strip(),
             "mode": mode, "duration_minutes": duration,
             "briefing_interval_minutes": interval, "alert_threshold_minutes": threshold}
 

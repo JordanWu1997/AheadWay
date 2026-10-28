@@ -111,6 +111,43 @@ class ScheduleTests(unittest.TestCase):
         self.assertNotIn("loop-one", english)
         self.assertNotIn("返程", english)
 
+    def test_tracking_schedule_requires_selected_bus_and_speaks_only_it(self):
+        data = {"enabled": True, "time": "07:30", "direction": 0,
+                "stop_id": 122402, "closed_loop": True, "voice_format": "track"}
+        with self.assertRaises(ValueError):
+            validate(data)
+        self.assertFalse(validate({**data, "enabled": False})["enabled"])
+        data["tracked_bus_id"] = "FAA-113"
+        settings = validate(data)
+        self.assertEqual(settings["tracked_bus_id"], "FAA-113")
+        snapshot = {"route": "908", "officialEtaSeconds": 60,
+                    "vehicles": [{"id": "FAA-113", "estimatedEtaSeconds": 360},
+                                 {"id": "OTHER", "estimatedEtaSeconds": 120}],
+                    "directionLabel": "往捷運景安站", "stop": {"name": "景安站", "nameEn": "Jingan Station"}}
+        for language in ("zh", "en"):
+            words = report_text(snapshot, language, "track", settings["tracked_bus_id"])
+            self.assertIn("FAA-113", words)
+            self.assertNotIn("OTHER", words)
+            self.assertNotIn("official", words.lower())
+
+    def test_tracking_alert_ignores_other_buses_and_official_eta(self):
+        settings = validate({"enabled": True, "time": "07:30", "direction": 0,
+                             "stop_id": 122402, "closed_loop": True, "duration_minutes": 2,
+                             "mode": "alert", "voice_format": "track", "tracked_bus_id": "FAA-113"})
+        now = [0]
+        snapshot = {"route": "908", "officialEtaSeconds": 60, "vehicles": [],
+                    "directionLabel": "往捷運景安站", "stop": {"name": "景安站"}}
+        def fetch(*args):
+            snapshot["vehicles"] = ([{"id": "OTHER", "estimatedEtaSeconds": 60}] if now[0] >= 30 else []) + \
+                ([{"id": "FAA-113", "estimatedEtaSeconds": 180}] if now[0] >= 90 else [])
+            return snapshot
+        spoken = []
+        scheduled_voice.run_session(settings, cache=SimpleNamespace(snapshot=fetch), speak=spoken.append,
+                                    clock=lambda: now[0], sleep=lambda seconds: now.__setitem__(0, now[0] + seconds),
+                                    current_settings=lambda: settings)
+        self.assertEqual(sum("FAA-113推估" in words for words in spoken), 1)
+        self.assertFalse(any("OTHER" in words or "官方下一班" in words for words in spoken))
+
     def test_custom_alert_threshold_is_saved_and_bounded(self):
         data = {"enabled": True, "time": "07:45", "direction": 0,
                 "stop_id": 122402, "closed_loop": True, "mode": "alert",

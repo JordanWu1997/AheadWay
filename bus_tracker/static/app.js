@@ -27,6 +27,11 @@ const walkSourceEl = document.querySelector('#walk-source');
 const walkSettingsEl = document.querySelector('.walk-settings');
 const leaveAdviceEl = document.querySelector('#leave-advice');
 const leaveBriefEl = document.querySelector('#leave-brief');
+const trackAdviceOnlyEl = document.querySelector('#track-advice-only');
+const trackedBusEl = document.querySelector('#tracked-bus');
+const trackedBusTitleEl = document.querySelector('#tracked-bus-title');
+const trackedBusDetailEl = document.querySelector('#tracked-bus-detail');
+const trackedBusClearEl = document.querySelector('#tracked-bus-clear');
 const locationStateEl = document.querySelector('#location-state');
 const locationRefreshEl = document.querySelector('#location-refresh');
 const dataFreshnessEl = document.querySelector('#data-freshness');
@@ -36,7 +41,17 @@ const stopSelectionHintEl = document.querySelector('#stop-selection-hint');
 const textSizeToggleEl = document.querySelector('#text-size-toggle');
 const savedTripsEl = document.querySelector('#saved-trips');
 const tripsMoreEl = document.querySelector('#trips-more');
+const savedTripsBarEl = document.querySelector('.quick-trips');
+const tripRemoveConfirmEl = document.querySelector('#trip-remove-confirm');
+const tripRemoveTitleEl = document.querySelector('#trip-remove-title');
+const tripRemoveDescriptionEl = document.querySelector('#trip-remove-description');
+const tripRemoveCancelEl = document.querySelector('#trip-remove-cancel');
+const tripRemoveAcceptEl = document.querySelector('#trip-remove-accept');
+const savedTripsPhoneMedia = window.matchMedia('(max-width: 650px)');
 let tripsExpanded = false;
+let pendingSavedTripKey = null;
+let pendingTripRemoval = null;
+let pendingTripRemoveButton = null;
 const pushStateEl = document.querySelector('#push-state');
 const pushPanelEl = document.querySelector('#mobile-reminder');
 const mobileModeSummaryEl = document.querySelector('#mobile-mode-summary');
@@ -61,8 +76,9 @@ const scheduleDurationEl = document.querySelector('#schedule-duration');
 const scheduleEnabledEl = document.querySelector('#schedule-enabled');
 const scheduleStateEl = document.querySelector('#schedule-state');
 const closedEl = document.querySelector('#closed-loop');
-const scopePanelEl = document.querySelector('.arrival-scope');
 const scopeEffectEl = document.querySelector('#scope-effect');
+const arrivalScopeHelpEl = document.querySelector('#arrival-scope');
+const scopeHelpToggleEl = document.querySelector('#scope-help-toggle');
 const trackingContextEl = document.querySelector('#tracking-context');
 const routeColumnsEl = document.querySelector('#route-columns');
 const mobileLegButtons = [...document.querySelectorAll('[data-mobile-leg]')];
@@ -167,7 +183,8 @@ closedEl.checked = (localStorage.getItem(routeStorage('closed-loop')) ??
   (activeRoute === 16405 ? localStorage.getItem('orange5-closed-loop') : null) ??
   (knownLoopRouteIds.includes(activeRoute) ? '1' : '0')) === '1';
 voiceModeEl.value = localStorage.getItem('orange5-voice-mode') === 'briefing' ? 'briefing' : 'alert';
-voiceFormatEl.value = localStorage.getItem('orange5-voice-format') === 'verbose' ? 'verbose' : 'short';
+voiceFormatEl.value = ['verbose', 'track'].includes(localStorage.getItem('orange5-voice-format'))
+  ? localStorage.getItem('orange5-voice-format') : 'short';
 const storedThreshold = Number(localStorage.getItem('orange5-alert-threshold'));
 const initialThreshold = Number.isInteger(storedThreshold) && storedThreshold >= 1 && storedThreshold <= 60
   ? storedThreshold : 5;
@@ -547,7 +564,11 @@ function setLiveStatus(state) {
     error: english ? 'Data unavailable' : '資料暫不可用'
   };
   const label = labels[state] || labels.error;
+  const compactLabels = english
+    ? {idle: activeRoute ? 'Stop' : 'Add', updating: 'Sync', live: 'Live', stale: 'Stale', error: 'Offline'}
+    : {idle: activeRoute ? '選站' : '加路線', updating: '更新', live: '即時', stale: '過時', error: '無資料'};
   if (liveStatusTextEl.textContent !== label) liveStatusTextEl.textContent = label;
+  liveStatusEl.dataset.short = compactLabels[state] || compactLabels.error;
   liveStatusEl.dataset.state = state;
   liveStatusEl.setAttribute('aria-label', label);
 }
@@ -764,16 +785,18 @@ async function searchRouteCatalog() {
 }
 
 function selectRouteStop(direction, id) {
-  if (!stops.some(s => s.direction === direction && s.id === id && s.selectable !== false)) return;
+  if (!stops.some(s => s.direction === direction && String(s.id) === String(id) && s.selectable !== false)) return false;
   directionEl.value = String(direction);
   setStops(false);
   stopEl.value = String(id);
   syncStopSelection(true);
   renderSelectionSummary();
+  syncSavedTripCurrentState();
   resetAlertState();
   lastBriefingAt = 0;
   renderRoute();
   update({selected: true, fresh: true});
+  return true;
 }
 
 function svgElement(tag, attributes = {}) {
@@ -1201,11 +1224,11 @@ function syncStopSelection(collapseMobile = false) {
   else if (collapseMobile && window.matchMedia?.('(max-width:650px)').matches)
     selectionCardEl.open = false;
   syncTrackingContext();
+  syncDisclosureToggle();
 }
 
 function renderScope() {
   const selected = stops.find(item => item.direction === Number(directionEl.value) && String(item.id) === String(stopEl.value))?.name || '所選站牌';
-  scopePanelEl.classList.toggle('active', closedEl.checked);
   scopeEffectEl.textContent = closedEl.checked
     ? `將估算本方向及另一方向下一輪抵達${selected}的公車。`
     : `只估算本方向抵達${selected}的公車。`;
@@ -1230,18 +1253,77 @@ if (window.addEventListener) {
   window.addEventListener('resize', syncTrackingContext);
 }
 
+function savedTripKey(trip) {
+  return `${trip.routeId}:${trip.direction}:${trip.stopId}`;
+}
+
+function closeSavedTripRemoval(restoreFocus = false) {
+  const button = pendingTripRemoveButton;
+  if (button) button.setAttribute('aria-expanded', 'false');
+  tripRemoveConfirmEl.hidden = true;
+  pendingTripRemoval = null;
+  pendingTripRemoveButton = null;
+  if (restoreFocus && button?.isConnected) button.focus();
+}
+
+function updateSavedTripRemovalText() {
+  if (!pendingTripRemoval) return;
+  const english = uiI18n?.language === 'en';
+  const group = [...savedTripsEl.querySelectorAll('.saved-trip')]
+    .find(item => item.dataset.tripKey === pendingTripRemoval.key);
+  const label = group?.querySelector('button:not(.remove-trip)')?.textContent || pendingTripRemoval.label;
+  pendingTripRemoveButton = group?.querySelector('.remove-trip') || pendingTripRemoveButton;
+  pendingTripRemoveButton?.setAttribute('aria-expanded', 'true');
+  tripRemoveTitleEl.textContent = english ? 'Remove this saved trip?' : '移除這筆常用行程？';
+  tripRemoveDescriptionEl.textContent = english
+    ? `Remove “${label}” from your saved trips on this device?`
+    : `確定從此瀏覽器移除「${label}」？`;
+}
+
+function openSavedTripRemoval(trip, button, label) {
+  const key = savedTripKey(trip);
+  if (pendingTripRemoval?.key === key) {
+    closeSavedTripRemoval(true);
+    return;
+  }
+  closeRouteRemoval();
+  closeSavedTripRemoval();
+  pendingTripRemoval = {key, label};
+  pendingTripRemoveButton = button;
+  button.setAttribute('aria-expanded', 'true');
+  updateSavedTripRemovalText();
+  tripRemoveConfirmEl.hidden = false;
+  tripRemoveCancelEl.focus();
+}
+
+function syncSavedTripCurrentState() {
+  for (const group of savedTripsEl.querySelectorAll('.saved-trip')) {
+    const trip = savedTrips.find(item => savedTripKey(item) === group.dataset.tripKey);
+    const current = Boolean(trip && activeRoute === trip.routeId &&
+      Number(directionEl.value) === trip.direction && String(stopEl.value) === String(trip.stopId));
+    group.classList.toggle('is-current', current);
+    group.querySelector('button:not(.remove-trip)')?.setAttribute('aria-pressed', String(current));
+  }
+}
+
 function renderSavedTrips() {
   const english = uiI18n?.language === 'en';
   savedTripsEl.replaceChildren();
+  savedTripsBarEl.hidden = savedTrips.length === 0;
   if (!savedTrips.length) {
-    const empty = document.createElement('span');
-    empty.className = 'trips-empty';
-    empty.textContent = '尚無常用行程 · 選站後按「☆ 儲存常用」';
-    savedTripsEl.append(empty);
+    tripsExpanded = false;
+    pendingSavedTripKey = null;
+    closeSavedTripRemoval();
+    tripsMoreEl.hidden = true;
+    tripsMoreEl.setAttribute('aria-expanded', 'false');
+    return;
   }
   for (const trip of savedTrips) {
+    const key = savedTripKey(trip);
     const group = document.createElement('span'); group.className = 'saved-trip';
+    group.dataset.tripKey = key;
     const open = document.createElement('button'); open.type = 'button';
+    open.disabled = Boolean(pendingSavedTripKey);
     const route = routes[trip.routeId];
     const matchedStop = trip.routeId === activeRoute
       ? stops.find(s => s.direction === trip.direction && String(s.id) === String(trip.stopId)) : null;
@@ -1251,25 +1333,50 @@ function renderSavedTrips() {
       : matchedStop?.name || trip.stopName;
     open.textContent = `${routeName} · ${stopName}`;
     open.title = `${english ? (trip.direction === 0 ? 'Outbound' : 'Inbound') : (trip.direction === 0 ? '去程' : '返程')} · ${stopName}`;
+    const isCurrent = activeRoute === trip.routeId && Number(directionEl.value) === trip.direction &&
+      String(stopEl.value) === String(trip.stopId);
+    group.classList.toggle('is-current', isCurrent);
+    group.classList.toggle('is-pending', pendingSavedTripKey === key);
+    open.setAttribute('aria-pressed', String(isCurrent));
     open.addEventListener('click', () => {
+      if (pendingTripRemoval) closeSavedTripRemoval();
+      pendingSavedTripKey = key;
+      for (const button of savedTripsEl.querySelectorAll('.saved-trip button')) button.disabled = true;
+      group.classList.add('is-pending');
+      const finish = applied => {
+        if (pendingSavedTripKey !== key) return;
+        pendingSavedTripKey = null;
+        for (const item of savedTripsEl.querySelectorAll('.saved-trip')) {
+          item.classList.remove('is-pending');
+          for (const button of item.querySelectorAll('button')) button.disabled = false;
+        }
+        syncSavedTripCurrentState();
+      };
       if (activeRoute === trip.routeId && stops.length) {
         closedEl.checked = trip.closedLoop;
         localStorage.setItem(routeStorage('closed-loop'), trip.closedLoop ? '1' : '0');
-        selectRouteStop(trip.direction, trip.stopId);
-      } else switchRoute(trip.routeId, trip);
+        finish(selectRouteStop(trip.direction, trip.stopId));
+      } else switchRoute(trip.routeId, trip).then(finish);
     });
     const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'remove-trip';
     remove.setAttribute('aria-label', english ? `Remove ${routeName} ${stopName}`
       : `移除 ${routeName} ${stopName}`);
+    remove.setAttribute('aria-controls', 'trip-remove-confirm');
+    remove.setAttribute('aria-expanded', 'false');
+    remove.disabled = Boolean(pendingSavedTripKey);
     remove.textContent = '×';
-    remove.addEventListener('click', () => {
-      savedTrips = savedTrips.filter(item => !(item.routeId === trip.routeId && item.direction === trip.direction && item.stopId === trip.stopId));
-      localStorage.setItem('bus-tracker-saved-trips', JSON.stringify(savedTrips));
-      renderSavedTrips();
-    });
+    remove.addEventListener('click', () => openSavedTripRemoval(trip, remove, open.textContent));
     group.append(open, remove); savedTripsEl.append(group);
   }
-  const previewLimit = 5;
+  if (pendingTripRemoval) {
+    const matchingGroup = [...savedTripsEl.querySelectorAll('.saved-trip')]
+      .find(group => group.dataset.tripKey === pendingTripRemoval.key);
+    if (matchingGroup) {
+      pendingTripRemoveButton = matchingGroup.querySelector('.remove-trip');
+      updateSavedTripRemovalText();
+    } else closeSavedTripRemoval();
+  }
+  const previewLimit = savedTripsPhoneMedia.matches ? 5 : 8;
   if (savedTrips.length <= previewLimit) tripsExpanded = false;
   document.querySelector('.trip-bar').classList.toggle('expanded', tripsExpanded);
   tripsMoreEl.hidden = savedTrips.length <= previewLimit;
@@ -1281,6 +1388,9 @@ function renderSavedTrips() {
       : `顯示其餘 ${remainingTrips} 筆`;
 }
 tripsMoreEl.addEventListener('click', () => { tripsExpanded = !tripsExpanded; renderSavedTrips(); });
+const resetTripsPreviewForViewport = () => { tripsExpanded = false; renderSavedTrips(); };
+if (savedTripsPhoneMedia.addEventListener) savedTripsPhoneMedia.addEventListener('change', resetTripsPreviewForViewport);
+else savedTripsPhoneMedia.addListener(resetTripsPreviewForViewport);
 window.addEventListener('aheadway:languagechange', renderSavedTrips);
 window.addEventListener('aheadway:languagechange', () => {
   syncRouteMapAccessibleName();
@@ -1298,9 +1408,28 @@ document.querySelector('#save-trip').addEventListener('click', () => {
   renderSavedTrips();
 });
 renderSavedTrips();
+tripRemoveCancelEl.addEventListener('click', () => closeSavedTripRemoval(true));
+tripRemoveConfirmEl.addEventListener('keydown', event => {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeSavedTripRemoval(true);
+  }
+});
+tripRemoveAcceptEl.addEventListener('click', () => {
+  if (!pendingTripRemoval) return;
+  const key = pendingTripRemoval.key;
+  const oldIndex = savedTrips.findIndex(trip => savedTripKey(trip) === key);
+  if (oldIndex < 0) { closeSavedTripRemoval(); return; }
+  savedTrips = savedTrips.filter(trip => savedTripKey(trip) !== key);
+  localStorage.setItem('bus-tracker-saved-trips', JSON.stringify(savedTrips));
+  closeSavedTripRemoval();
+  renderSavedTrips();
+  const remainingButtons = [...savedTripsEl.querySelectorAll('.saved-trip button:not(.remove-trip)')];
+  (remainingButtons[Math.min(oldIndex, remainingButtons.length - 1)] || routeAddEl).focus();
+});
 
 async function switchRoute(routeId, trip = null) {
-  if (!routes[routeId]) return;
+  if (!routes[routeId]) return false;
   if (!addedRouteIds.includes(routeId)) {
     if (addedRouteIds.length >= 20) return;
     addedRouteIds.push(routeId);
@@ -1354,7 +1483,7 @@ async function switchRoute(routeId, trip = null) {
   showRoute();
   try {
     const data = await request(`api/stops?route_id=${routeId}`);
-    if (current !== routeGeneration) return;
+    if (current !== routeGeneration) return false;
     stops = data;
     for (const direction of [0, 1])
       directionEl.options[direction].disabled = !stops.some(s => s.direction === direction && s.selectable !== false);
@@ -1365,8 +1494,11 @@ async function switchRoute(routeId, trip = null) {
     setStops();
     syncStopSelection(true);
     if (savedSchedule) scheduleStatus();
+    return !trip || (Number(directionEl.value) === trip.direction &&
+      String(stopEl.value) === String(trip.stopId) && hasSelectedStop());
   } catch (error) {
     if (current === routeGeneration) showError(error.message);
+    return false;
   }
 }
 
@@ -1544,7 +1676,75 @@ function englishStatus(status) {
     '資料暫缺': 'The official arrival status is unavailable'})[status] || 'The official arrival status is unavailable';
 }
 
+function trackedBusKey() { return `bus-tracker-tracked-${currentStopKey()}`; }
+function trackedBusId() { return localStorage.getItem(trackedBusKey()) || ''; }
+function trackedVehicle(snapshot) {
+  return snapshot?.vehicles?.find(bus => bus.id === trackedBusId()) || null;
+}
+function trackedVoiceText(snapshot) {
+  const bus = trackedVehicle(snapshot);
+  const route = voiceLanguageEl.value === 'en'
+    ? (snapshot.routeNameEn || routes[activeRoute]?.english || snapshot.route)
+    : (routes[snapshot.routeId]?.spoken || snapshot.route);
+  const stop = voiceLanguageEl.value === 'en'
+    ? englishStopName(snapshot.stop.nameEn || snapshot.stop.name) : snapshot.stop.name;
+  if (!trackedBusId()) return voiceLanguageEl.value === 'en'
+    ? 'Choose a bus in Approaching and following buses to use tracking voice mode.'
+    : '請先在本方向來車與後續車選擇要追蹤的車輛。';
+  if (!bus) return voiceLanguageEl.value === 'en'
+    ? `${route}, ${stop}. Tracked bus ${trackedBusId()} is no longer in the live vehicle list. Check the route before leaving.`
+    : `${route}，${stop}。追蹤車輛${trackedBusId()}目前未出現在即時車輛清單，出發前請再確認。`;
+  const uncertain = bus.crossDirection && !bus.atStop;
+  if (voiceLanguageEl.value === 'en') return `${route}, ${stop}. Tracked bus ${bus.id} is ${bus.atStop ? 'at the stop' : `estimated in ${englishEtaRange(bus)}`}.` +
+    (uncertain ? ' It must turn back at the terminal and may end service there.' : '');
+  return `${route}，${stop}。追蹤車輛${bus.id}${bus.atStop ? '已在本站' : `推估${etaRangeLabel(bus)}抵達`}。` +
+    (uncertain ? '此車須在終點折返續行，也可能在終點停駛。' : '');
+}
+function renderTrackedBus(snapshot) {
+  const id = trackedBusId();
+  trackedBusEl.hidden = !id;
+  trackAdviceOnlyEl.closest('.track-advice-toggle').hidden = !id;
+  trackAdviceOnlyEl.checked = Boolean(id) && localStorage.getItem(`${trackedBusKey()}-advice`) === '1';
+  document.querySelector('#track-advice-note').hidden = !id || !trackAdviceOnlyEl.checked;
+  if (!id) return;
+  const bus = snapshot?.vehicles?.find(vehicle => vehicle.id === id);
+  trackedBusTitleEl.textContent = id;
+  trackedBusDetailEl.textContent = !bus ? '目前未在沿線車輛清單中；可能離線、已離站或已結束營運。請勿依舊資料出發。'
+    : bus.atStop ? '已抵達所選站牌 · 逐車位置，非官方下一班時間'
+      : `逐車推估 ${etaRangeLabel(bus)} · 下一站 ${bus.nextStop || '不明'}` +
+        (bus.crossDirection ? ' · 須折返續行，不保證繼續載客' : ' · 非官方下一班時間');
+}
+function selectTrackedBus(id) {
+  if (trackedBusId() === id) localStorage.removeItem(trackedBusKey());
+  else {
+    localStorage.setItem(trackedBusKey(), id);
+    document.querySelector('#arrival-summary').open = true;
+  }
+  resetAlertState(); lastBriefingAt = 0; lastBriefingKey = '';
+  for (const button of vehiclesEl.querySelectorAll('.vehicle-track')) {
+    const selected = button.closest('.vehicle')?.dataset.busId === trackedBusId();
+    button.textContent = selected ? '追蹤中 ✓' : '追蹤這輛';
+    button.setAttribute('aria-pressed', String(selected));
+    button.setAttribute('aria-label', `${selected ? '停止追蹤' : '追蹤'} ${button.closest('.vehicle')?.dataset.busId}`);
+  }
+  renderTrackedBus(latestSnapshot);
+  if (latestSnapshot) {
+    renderLeaveAdvice(latestSnapshot);
+    renderTravelGuidance();
+    if (!activeUtterance && !activeAudio && !pendingAudio)
+      voicePreviewEl.textContent = `播報內容：${briefingText(latestSnapshot)}`;
+  }
+  syncVoiceMode();
+}
+trackedBusClearEl.addEventListener('click', () => selectTrackedBus(trackedBusId()));
+trackAdviceOnlyEl.addEventListener('change', () => {
+  localStorage.setItem(`${trackedBusKey()}-advice`, trackAdviceOnlyEl.checked ? '1' : '0');
+  document.querySelector('#track-advice-note').hidden = !trackAdviceOnlyEl.checked;
+  if (latestSnapshot) { renderLeaveAdvice(latestSnapshot); renderTravelGuidance(); }
+});
+
 function briefingText(snapshot) {
+  if (voiceFormatEl.value === 'track') return trackedVoiceText(snapshot);
   const eta = snapshot.officialEtaSeconds;
   const direct = snapshot.vehicles.filter(bus => !bus.crossDirection || bus.atStop);
   const nextCircuit = snapshot.vehicles.filter(bus => bus.crossDirection && !bus.atStop);
@@ -1663,13 +1863,25 @@ function renderLeaveAdvice(snapshot) {
     setLeaveAdvice('公車資料已過時；請更新後再查看出發建議。', '資料已過時');
     return;
   }
+  if (trackAdviceOnlyEl.checked && trackedBusId()) {
+    const bus = trackedVehicle(snapshot);
+    if (!bus) { setLeaveAdvice('追蹤車輛目前未出現在即時車輛清單；無法建議出發時間。', '追蹤車輛暫無資料'); return; }
+    if (bus.atStop) { setLeaveAdvice('追蹤車輛已抵達所選站牌；請確認是否還能搭乘。', '已抵達站牌'); return; }
+  }
   const needed = walk * 60 + 120;
   const officialRemaining = eta === null ? null : Math.max(0, eta - elapsedSeconds(
     snapshot.feedFetchedAt?.EstimateTime || snapshot.updatedAt));
   let selected = null;
-  if (officialRemaining !== null && officialRemaining > needed) {
+  if (trackAdviceOnlyEl.checked && trackedBusId()) {
+    const bus = trackedVehicle(snapshot);
+    const [lower] = remainingVehicleWindow(bus);
+    if (lower <= walk * 60) { setLeaveAdvice('追蹤車輛可能趕不上；請查看逐車到站範圍。', '可能趕不上'); return; }
+    selected = {remaining: lower, description: `${bus.id}（逐車推估${etaRangeLabel(bus)}）`,
+      tentative: true, conditional: Boolean(bus.crossDirection)};
+  }
+  if (!selected && !trackAdviceOnlyEl.checked && officialRemaining !== null && officialRemaining > needed) {
     selected = {remaining: officialRemaining, description: '官方下一班', tentative: false};
-  } else {
+  } else if (!selected && !trackAdviceOnlyEl.checked) {
     const candidates = snapshot.vehicles.filter(bus => !bus.atStop &&
       remainingVehicleWindow(bus)[0] > needed)
       .sort((a, b) => Number(a.crossDirection) - Number(b.crossDirection) ||
@@ -1681,7 +1893,7 @@ function renderLeaveAdvice(snapshot) {
         tentative: true, conditional: Boolean(bus.crossDirection)};
     }
   }
-  if (!selected && officialRemaining !== null && officialRemaining > walk * 60) {
+  if (!selected && !trackAdviceOnlyEl.checked && officialRemaining !== null && officialRemaining > walk * 60) {
     selected = {remaining: officialRemaining, description: '官方下一班', tentative: true};
   }
   if (!selected) {
@@ -1828,11 +2040,12 @@ function setTravelResult(level, heading, detail, targetKey = '') {
 function travelCandidates(snapshot) {
   const candidates = [];
   const officialAge = elapsedSeconds(snapshot.feedFetchedAt?.EstimateTime || snapshot.updatedAt);
-  if (Number.isFinite(snapshot.officialEtaSeconds)) {
+  if (!trackAdviceOnlyEl.checked && Number.isFinite(snapshot.officialEtaSeconds)) {
     const seconds = Math.max(0, snapshot.officialEtaSeconds - officialAge);
     if (seconds > 0) candidates.push({seconds, label: '官方下一班', key: 'official'});
   }
   for (const bus of snapshot.vehicles || []) {
+    if (trackAdviceOnlyEl.checked && trackedBusId() && bus.id !== trackedBusId()) continue;
     if (bus.atStop || bus.crossDirection || bus.confidence === 'low' ||
         elapsedSeconds(bus.lastSeen) > 90) continue;
     const seconds = remainingVehicleWindow(bus)[0];
@@ -2001,7 +2214,8 @@ function scheduleStatus() {
     ? `${savedSchedule.voice_model || 'tts-1'} / ${savedSchedule.voice_name || 'anne'}`
     : `eSpeak ${savedSchedule?.voice_name || 'cmn'}`;
   const language = savedSchedule?.voice_language === 'en' ? 'English' : '中文';
-  const format = savedSchedule?.voice_format === 'verbose' ? '詳細播報' : '簡短播報';
+  const format = savedSchedule?.voice_format === 'track' ? `追蹤 ${savedSchedule.tracked_bus_id || '未選車輛'}`
+    : savedSchedule?.voice_format === 'verbose' ? '詳細播報' : '簡短播報';
   scheduleStateEl.textContent = savedSchedule?.enabled
     ? `已設定 ${routes[routeId]?.name || routeId} 每天 ${savedSchedule.time} 開始，在${stop?.name || `站牌 ${savedSchedule.stop_id}`}持續 ${savedSchedule.duration_minutes || 60} 分鐘 · ${savedSchedule.mode === 'alert' ? `到站提醒 ${savedSchedule.alert_threshold_minutes || 5} 分鐘門檻` : `每 ${savedSchedule.briefing_interval_minutes || 5} 分鐘播報`} · ${format} · ${language} · ${voice}。`
     : '排程未啟用';
@@ -2021,6 +2235,13 @@ function announce(snapshot) {
   }
   const eta = snapshot.officialEtaSeconds;
   const threshold = alertThresholdMinutes() * 60;
+  if (voiceFormatEl.value === 'track') {
+    const bus = trackedVehicle(snapshot);
+    if (!bus || bus.crossDirection && !bus.atStop ||
+        !(bus.atStop || remainingVehicleWindow(bus)[0] <= threshold) || announcedVehicles.has(bus.id)) return;
+    if (speak(trackedVoiceText(snapshot))) announcedVehicles.set(bus.id, Date.now());
+    return;
+  }
   const key = `${snapshot.routeId}:${snapshot.direction}:${snapshot.stop.id}:${snapshot.closedLoop}:${threshold}`;
   if (alertScope !== key) { resetAlertState(); alertScope = key; }
   const now = Date.now();
@@ -2048,7 +2269,7 @@ function syncVoiceMode() {
   const engine = voiceModelEl.value === 'api' ? '本機 TTS'
     : voiceModelEl.value.startsWith('espeak:') ? 'eSpeak' : '瀏覽器語音';
   voiceSettingsSummaryEl.textContent = `${schedule} · ${voiceLanguageEl.value === 'en' ? 'English' : '中文'}`;
-  voiceSettingsEngineEl.textContent = `${voiceFormatEl.value === 'verbose' ? '詳細' : '簡短'} · ${engine}`;
+  voiceSettingsEngineEl.textContent = `${voiceFormatEl.value === 'track' ? '追蹤車輛' : voiceFormatEl.value === 'verbose' ? '詳細' : '簡短'} · ${engine}`;
   document.querySelector('#alert-settings').hidden = briefing;
   document.querySelector('#briefing-settings').hidden = !briefing;
   if (voiceError || activeUtterance || activeAudio || pendingAudio) return;
@@ -2057,7 +2278,8 @@ function syncVoiceMode() {
     ? /^en/i.test(v.lang) : /^(zh|cmn)/i.test(v.lang));
   const localChoice = voiceModelEl.value === 'api' || voiceModelEl.value.startsWith('espeak:');
   voiceStateEl.className = 'voice-state';
-  voiceStateEl.textContent = !latestSnapshot ? '正在載入站牌 · 可先試播'
+  voiceStateEl.textContent = voiceFormatEl.value === 'track' && !trackedBusId() ? '請先從來車清單選擇追蹤車輛'
+    : !latestSnapshot ? '正在載入站牌 · 可先試播'
     : voiceEnabled ? (briefing ? '已啟用；依設定間隔播報' : '已啟用；每輛車進入門檻時提醒')
     : localChoice ? '尚未啟用 · 可按「試播」檢查本機語音'
         : voices.length ? `尚未啟用 · ${hasLanguageVoice ? '所選語言語音可用' : '未找到對應語音，請先試播'}`
@@ -2066,6 +2288,15 @@ function syncVoiceMode() {
 
 function speakCurrentMode() {
   if (!latestSnapshot) return;
+  if (voiceFormatEl.value === 'track' && voiceModeEl.value !== 'briefing') {
+    if (speak(trackedVoiceText(latestSnapshot))) {
+      const bus = trackedVehicle(latestSnapshot);
+      if (bus && (!bus.crossDirection || bus.atStop) &&
+          (bus.atStop || remainingVehicleWindow(bus)[0] <= alertThresholdMinutes() * 60))
+        announcedVehicles.set(bus.id, Date.now());
+    }
+    return;
+  }
   if (voiceModeEl.value === 'briefing') {
     if (speak(briefingText(latestSnapshot))) {
       lastBriefingAt = Date.now();
@@ -2119,6 +2350,7 @@ function render(data, {preview = false} = {}) {
     : eta !== null ? '此時間只代表下一班，由官方預估'
       : data.officialStatus ? `官方回報「${data.officialStatus}」，目前沒有本站的官方到站時間。`
         : '官方目前未提供本站到站時間。';
+  renderTrackedBus(data);
   renderLeaveAdvice(data);
   renderTravelGuidance();
   document.querySelector('#vehicle-count').textContent = `本方向 ${directlyApproaching.length} · 下一輪 ${nextCircuit}`;
@@ -2192,7 +2424,12 @@ function render(data, {preview = false} = {}) {
         (vehicle.calibrationSamples >= 5 ? ` · 參照 ${vehicle.calibrationSamples} 次實際到站` : '') +
         ` · 推估信心${{high: '較高', medium: '中等', low: '較低'}[vehicle.confidence] || '未知'}`);
     details.append(summary, detailText);
-    row.append(left, away, details); groups.get(nextGroup ? 'next' : 'direct').append(row);
+    const track = document.createElement('button'); track.type = 'button'; track.className = 'vehicle-track';
+    track.textContent = trackedBusId() === vehicle.id ? '追蹤中 ✓' : '追蹤這輛';
+    track.setAttribute('aria-pressed', String(trackedBusId() === vehicle.id));
+    track.setAttribute('aria-label', `${trackedBusId() === vehicle.id ? '停止追蹤' : '追蹤'} ${vehicle.id}`);
+    track.addEventListener('click', () => selectTrackedBus(vehicle.id));
+    row.append(left, away, track, details); groups.get(nextGroup ? 'next' : 'direct').append(row);
   }
   if (!activeUtterance && !activeAudio && !pendingAudio) voicePreviewEl.textContent = `播報內容：${briefingText(data)}`;
   if (!preview) announce(data);
@@ -2205,6 +2442,7 @@ function beginSelection() {
   const name = station?.name || '所選站牌';
   renderScope();
   latestSnapshot = null;
+  renderTrackedBus(null);
   if ((locationStopKey && locationStopKey !== currentStopKey()) ||
       (locationRequestKey && locationRequestKey !== currentStopKey())) {
     locationWalkMinutes = null;
@@ -2327,7 +2565,23 @@ document.querySelector('#jump-to-stop').addEventListener('click', () => {
   selected?.scrollIntoView?.({block: 'center', behavior: 'smooth'});
   selected?.focus?.({preventScroll: true});
 });
-stopEl.addEventListener('change', () => {syncStopSelection(true); renderSelectionSummary(); renderScope(); update({selected: true, fresh: true});});
+stopEl.addEventListener('change', () => {syncStopSelection(true); renderSelectionSummary(); renderScope(); syncSavedTripCurrentState(); update({selected: true, fresh: true});});
+function syncScopeHelpButton() {
+  if (!arrivalScopeHelpEl || !scopeHelpToggleEl) return;
+  scopeHelpToggleEl.setAttribute('aria-expanded', String(arrivalScopeHelpEl.open));
+  const action = arrivalScopeHelpEl.open
+    ? (uiI18n?.language === 'en' ? 'Hide why this option is needed' : '收合選項說明')
+    : (uiI18n?.language === 'en' ? 'Show why this option is needed' : '顯示為什麼需要這個選項');
+  scopeHelpToggleEl.setAttribute('aria-label', action);
+  scopeHelpToggleEl.title = action;
+}
+scopeHelpToggleEl?.addEventListener('click', () => {
+  arrivalScopeHelpEl.open = !arrivalScopeHelpEl.open;
+  syncScopeHelpButton();
+});
+arrivalScopeHelpEl?.addEventListener('toggle', syncScopeHelpButton);
+window.addEventListener('aheadway:languagechange', syncScopeHelpButton);
+syncScopeHelpButton();
 closedEl.addEventListener('change', () => {
   localStorage.setItem(routeStorage('closed-loop'), closedEl.checked ? '1' : '0');
   renderScope();
@@ -2401,13 +2655,16 @@ voiceModelEl.addEventListener('change', () => {
 apiModelEl.addEventListener('change', () => localStorage.setItem('orange5-api-model', apiModelEl.value.trim() || 'tts-1'));
 apiVoiceEl.addEventListener('change', () => localStorage.setItem('orange5-api-voice', apiVoiceEl.value.trim() || 'anne'));
 if (!publicMode) document.querySelector('#schedule-save').addEventListener('click', async () => {
+  if (scheduleEnabledEl.checked && voiceFormatEl.value === 'track' && !trackedBusId()) {
+    scheduleStateEl.textContent = '請先從來車清單選擇追蹤車輛。'; return;
+  }
   const selected = voiceModelEl.value;
   const payload = {enabled: scheduleEnabledEl.checked, time: scheduleTimeEl.value, route_id: activeRoute,
     direction: Number(directionEl.value), stop_id: Number(stopEl.value), closed_loop: closedEl.checked,
     mode: voiceModeEl.value, duration_minutes: Math.max(1, Math.min(720, Math.round(Number(scheduleDurationEl.value) || 60))),
     briefing_interval_minutes: Math.max(1, Math.min(60, Math.round(Number(briefingIntervalEl.value) || 5))),
     alert_threshold_minutes: alertThresholdMinutes(),
-    voice_format: voiceFormatEl.value,
+    voice_format: voiceFormatEl.value, tracked_bus_id: voiceFormatEl.value === 'track' ? trackedBusId() : '',
     voice_language: voiceLanguageEl.value,
     voice_engine: selected === 'api' ? 'api' : 'espeak',
     voice_model: apiModelEl.value.trim() || 'tts-1',
@@ -2423,8 +2680,8 @@ if (!publicMode) document.querySelector('#schedule-save').addEventListener('clic
     scheduleStatus();
   } catch (error) { scheduleStateEl.textContent = `排程儲存失敗：${error.message}`; }
 });
-document.querySelector('#refresh').addEventListener('click', () => update({selected: true, fresh: true}));
-const disclosureCards = [...document.querySelectorAll('main details:not(.route-picker):not(.route-picker-help)')];
+const disclosureCards = [...document.querySelectorAll('#selection-card, #arrival-summary, #approach-board, #departure-card, #route-view, #voice-card')];
+const visibleDisclosureCards = () => disclosureCards.filter(card => !card.hidden && card.getClientRects().length > 0);
 const optionalDisclosureCards = [document.querySelector('#departure-card'), routePanelEl,
   document.querySelector('#voice-card')].filter(Boolean);
 const optionalDisclosureKey = 'aheadway-optional-disclosures-v1';
@@ -2443,7 +2700,7 @@ function saveOptionalDisclosureState() {
   try { localStorage.setItem(optionalDisclosureKey, JSON.stringify(savedOptionalDisclosureState)); } catch (_) {}
 }
 function syncDisclosureToggle() {
-  const expanded = disclosureCards.every(card => card.hidden || card.open);
+  const expanded = visibleDisclosureCards().every(card => card.open);
   const english = uiI18n?.language === 'en';
   const action = expanded
     ? (english ? 'Collapse all sections' : '全部收合')
@@ -2463,8 +2720,8 @@ disclosureCards.forEach(card => card.addEventListener('toggle', () => {
   if (optionalDisclosureCards.includes(card)) saveOptionalDisclosureState();
 }));
 disclosureToggleEl.addEventListener('click', () => {
-  const expanded = disclosureCards.every(card => card.hidden || card.open);
-  disclosureCards.forEach(card => { if (!card.hidden) card.open = !expanded; });
+  const expanded = visibleDisclosureCards().every(card => card.open);
+  visibleDisclosureCards().forEach(card => { card.open = !expanded; });
   saveOptionalDisclosureState();
   syncDisclosureToggle();
 });
@@ -2527,6 +2784,7 @@ routeQueryEl.addEventListener('keydown', event => {
   if (event.key === 'Enter') { event.preventDefault(); searchRouteCatalog(); }
 });
 routeRemoveEl.addEventListener('click', () => {
+  if (pendingTripRemoval) closeSavedTripRemoval();
   if (!activeRoute) return;
   const opening = routeRemoveConfirmEl.hidden;
   closeRouteRemoval();
@@ -2562,6 +2820,9 @@ document.querySelector('#route-remove-accept').addEventListener('click', () => {
   for (const controller of arrivalsControllers) controller.abort();
   arrivalsControllers = [];
   const removed = activeRoute;
+  for (const key of Object.keys(localStorage)) {
+    if (key.startsWith(`bus-tracker-tracked-${removed}:`)) localStorage.removeItem(key);
+  }
   addedRouteIds.splice(index, 1);
   localStorage.setItem('bus-tracker-added-routes', JSON.stringify(addedRouteIds));
   savedTrips = savedTrips.filter(trip => trip.routeId !== removed);

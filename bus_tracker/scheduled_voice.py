@@ -42,7 +42,20 @@ def spoken_route(snapshot, language):
     return {"橘5": "橘五", "908": "九零八", "921": "九二一"}.get(snapshot.get("route"), snapshot.get("route", "橘五"))
 
 
-def report_text(snapshot, language="zh", voice_format="verbose"):
+def report_text(snapshot, language="zh", voice_format="verbose", tracked_bus_id=""):
+    if voice_format == "track":
+        bus = next((vehicle for vehicle in snapshot["vehicles"] if vehicle["id"] == tracked_bus_id), None)
+        route = spoken_route(snapshot, language)
+        stop = english_name(snapshot["stop"].get("nameEn") or snapshot["stop"].get("name")) if language == "en" else snapshot["stop"]["name"]
+        if not bus:
+            return (f"{route}, {stop}. Tracked bus {tracked_bus_id} is not currently in the live vehicle list."
+                    if language == "en" else f"{route}，{stop}。追蹤車輛{tracked_bus_id}目前未出現在即時車輛清單。")
+        arrival = ("at the stop" if bus.get("atStop") else f"estimated in {bus_eta_words(bus, 'en')}") if language == "en" else ("已在本站" if bus.get("atStop") else f"推估{bus_eta_words(bus, 'zh')}抵達")
+        conditional = bus.get("crossDirection") and not bus.get("atStop")
+        return ((f"{route}, {stop}. Tracked bus {bus['id']} is {arrival}." +
+                 (" It must turn back at the terminal and may end service there." if conditional else "")) if language == "en" else
+                (f"{route}，{stop}。追蹤車輛{bus['id']}{arrival}。" +
+                 ("此車須在終點折返續行，也可能在終點停駛。" if conditional else "")))
     eta = snapshot["officialEtaSeconds"]
     buses = snapshot["vehicles"]
     direct = [bus for bus in buses if not bus.get("crossDirection") or bus.get("atStop")]
@@ -199,7 +212,7 @@ def run_session(settings, *, cache=None, speak=None, clock=None, sleep=None, cur
                                       settings.get("route_id", ROUTE_ID))
             now = clock()
             if last_briefing is None or (settings.get("mode", "briefing") == "briefing" and now - last_briefing >= interval):
-                speak(report_text(snapshot, language, settings.get("voice_format", "short")))
+                speak(report_text(snapshot, language, settings.get("voice_format", "short"), settings.get("tracked_bus_id", "")))
                 last_briefing = clock()
                 if settings.get("mode") == "alert":
                     official_announced = snapshot["officialEtaSeconds"] is not None and snapshot["officialEtaSeconds"] <= threshold
@@ -207,6 +220,16 @@ def run_session(settings, *, cache=None, speak=None, clock=None, sleep=None, cur
                                       (bus.get("atStop") or (bus.get("estimatedEtaSeconds") is not None and
                                                                bus["estimatedEtaSeconds"] <= threshold))})
             elif settings.get("mode") == "alert":
+                if settings.get("voice_format") == "track":
+                    bus = next((vehicle for vehicle in snapshot["vehicles"] if vehicle["id"] == settings.get("tracked_bus_id")), None)
+                    if bus and not bus.get("crossDirection") and bus["id"] not in announced and (bus.get("atStop") or
+                            (bus.get("estimatedEtaSeconds") is not None and bus["estimatedEtaSeconds"] <= threshold)):
+                        speak(report_text(snapshot, language, "track", settings["tracked_bus_id"]))
+                        announced[bus["id"]] = now
+                    remaining = deadline - clock()
+                    if remaining > 0:
+                        sleep(min(30, remaining))
+                    continue
                 for plate, seen in list(announced.items()):
                     if now - seen > 600:
                         del announced[plate]

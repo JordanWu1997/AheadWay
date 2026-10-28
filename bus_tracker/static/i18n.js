@@ -6,6 +6,22 @@
   const en = {
     label: 'English', short: 'EN', htmlLang: 'en',
     exact: {
+      'TRACKED BUS · 追蹤車輛':'TRACKED BUS',
+      '停止追蹤':'Stop tracking','追蹤這輛':'Track this bus','追蹤中 ✓':'Tracking ✓',
+      '只按追蹤車輛計算':'Use tracked bus for departure advice',
+      '只改本頁建議和前往站牌警告；背景手機通知仍依已固定的站牌與所有符合條件的來車發送。':'Only this page’s advice and walking warnings use the tracked bus. Background phone alerts still use the pinned stop and all eligible buses.',
+      '只播報追蹤車輛':'Tracked bus only','追蹤車輛':'Tracked bus',
+      '追蹤車輛暫無資料':'Tracked bus unavailable','已抵達站牌':'At the stop',
+      '追蹤車輛目前未出現在即時車輛清單；無法建議出發時間。':'The tracked bus is absent from live data, so a departure time cannot be advised.',
+      '追蹤車輛已抵達所選站牌；請確認是否還能搭乘。':'The tracked bus has arrived. Check whether boarding is still possible.',
+      '追蹤車輛可能趕不上；請查看逐車到站範圍。':'You may miss the tracked bus. Check its estimated arrival range.',
+      '目前未在沿線車輛清單中；可能離線、已離站或已結束營運。請勿依舊資料出發。':'Not in the live vehicle list. It may be offline, past the stop, or out of service. Do not leave based on an old estimate.',
+      '已抵達所選站牌 · 逐車位置，非官方下一班時間':'At this stop · vehicle position, not the official next-bus ETA',
+      ' · 須折返續行，不保證繼續載客':' · must turn back; service is not guaranteed',
+      ' · 非官方下一班時間':' · separate from the official next-bus ETA',
+      '請先從來車清單選擇追蹤車輛':'Choose a bus from the vehicle list first',
+      '請先從來車清單選擇追蹤車輛。':'Choose a bus from the vehicle list first.',
+      '到站提醒或定時播報須保持此頁開啟；鎖屏或切換 App 時語音可能暫停。手機背景通知不會朗讀；每日排程只在設定排程的電腦播放。':'Keep this page open for arrival speech or briefings. Speech may pause when the screen locks or you switch apps. Phone background alerts are notifications without speech; daily schedules play on the configured computer.',
       '放大文字':'Use larger text','恢復標準字體':'Use standard text size','即時資料':'Live data','作者 Jordan ·':'By Jordan ·','下一班，':'The next bus, ','還有下幾班。':'and the ones after.',
       '先加入你要搭的公車路線':'Add your first bus route',
       '搜尋臺北／新北市公車路線，再選擇方向與上車站牌。AheadWay 會顯示下一班、後續來車與建議出發時間。':'Search for a Taipei or New Taipei bus route, then choose a direction and stop. AheadWay shows the next bus, following buses, and when to leave.',
@@ -27,10 +43,14 @@
       '移除路線':'Remove route',
       '下一步：確認行車方向，再選擇上車站牌，即可查看下一班與後續來車。':'Next: confirm the direction and choose a boarding stop to see upcoming buses.',
       '移除目前路線分頁':'Remove current route tab','路線與站牌':'Route & stop','載入中…':'Loading…',
-      '常用行程':'Saved trips','顯示其餘行程':'Show more trips','行車方向':'Direction',
+      '常用行程':'Saved trips','顯示其餘行程':'Show more trips','移除常用行程':'Remove saved trip','行車方向':'Direction',
       '往捷運景安站':'To Jingan MRT Station','往板橋':'To Banqiao','往三峽':'To Sanxia',
-      '上車站牌':'Boarding stop','☆ 儲存常用':'☆ Save trip','載入站牌中…':'Loading stops…','更新':'Refresh',
-      '計算哪些來車？':'Which buses are included?','正在載入所選站牌…':'Loading the selected stop…',
+      '上車站牌':'Boarding stop','☆ 儲存常用':'☆ Save trip','點選上方「儲存常用」，即可儲存目前路線、方向與上車站牌，方便下次快速切換。':'Tap “Save trip” above to save this route, direction, and stop for quick access next time.','儲存目前路線、方向與上車站牌為常用行程':'Save this route, direction, and stop as a saved trip','載入站牌中…':'Loading stops…','更新':'Refresh',
+      '正在載入所選站牌…':'Loading the selected stop…','為什麼需要這個選項？':'Why is this option needed?','顯示為什麼需要這個選項':'Show why this option is needed','納入反方向來車':'Include buses from the opposite direction','估算折返車':'Estimate returning buses',
+      '反方向的公車要先抵達終點並折返，下一輪才可能經過本站。開啟後會納入這些車；它們可能在終點停駛，因此到站時間較不確定。':'Buses heading the opposite way must reach the terminal and turn back before they can pass this stop on the next circuit. Include them if useful, but some may end service at the terminal and their arrival times are less certain.',
+      '納入可能折返續行的車輛；到站時間較不確定':'Include buses that may turn back and continue; arrival times are less certain.',
+      '此設定只影響逐車推估、出發建議與定時語音。官方下一班時間不變；折返車不觸發到站提醒或手機通知。':'This setting affects vehicle estimates, departure advice, and scheduled briefings. It does not change the official next-bus estimate; returning buses do not trigger arrival or phone alerts.',
+      '儲存目前路線、行車方向與上車站牌，之後可從上方捷徑直接切換。':'Save this route, direction, and boarding stop, then switch back using the shortcuts above.','儲存為常用行程':'Save trip',
       '也估算另一方向的下一輪公車':'Include buses returning from the other direction',
       '須跑完原方向並折返續行；到站時間較不確定':'They must finish their trip and turn around, so arrivals are less certain.',
       '影響逐車到站、出發建議與定時語音；官方下一班時間不變。下一輪車不觸發到站提醒或手機通知。':'Applies to vehicle arrivals, departure advice, and scheduled briefings. The official next arrival stays the same. Returning buses do not trigger arrival alerts or phone notifications.',
@@ -120,6 +140,8 @@
       '不保證續行':'may end service','路線與動態':'route and live data'
     },
     phrases: {
+      '逐車推估 ':'Vehicle estimate: ', '追蹤車輛目前未出現在即時車輛清單':'The tracked bus is absent from live data',
+      '推估約 ':'estimated in about ', '追蹤車輛':'Tracked bus ',
       '移除 ':'Remove ',' 路線？':' route?',' 路線':' route',
       '這會移除本瀏覽器的路線分頁':'This removes the route tab from this browser',
       '及 ':' and ',' 筆常用行程':' saved trips',
@@ -287,6 +309,7 @@
     return match ? `${match[2]} ${match[1] === '上午' ? 'AM' : 'PM'}` : value;
   };
   en.patterns = [
+      [/^追蹤車輛 · (.+)$/, (_, engine) => `Tracked bus · ${message(engine)}`],
       [/^(.+?) 定位 · 直線約 (\d+) 公尺；含繞路與定位誤差，步行約 (\d+) 分鐘。非導航路線。$/,
         (_, time, metres, minutes) => `${timeLabelEn(time)} location · ${metres} m straight-line distance. Walking estimate: ${minutes} min, including detours and GPS error. Not a navigation route.`],
       [/^步行約 (\d+) 分鐘；(.+?)約 (\d+) 分鐘後到站；預留 2 分鐘緩衝。請查看後續車或官方最新狀態。$/,

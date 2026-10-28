@@ -28,11 +28,11 @@
       <h1 id="first-route-title">先加入你要搭的公車路線</h1>
       <p>搜尋臺北／新北市公車路線，再選擇方向與上車站牌。AheadWay 會顯示下一班、後續來車與建議出發時間。</p>
       <ol><li><strong>找路線</strong><span>輸入中文或英文路線名稱，或貼上官方 route.jsp 連結。</span></li><li><strong>選站牌</strong><span>選擇行車方向與上車站牌。</span></li><li><strong>看來車</strong><span>查看即時到站與後續車輛，按需要開啟提醒。</span></li></ol>
-      <button id="first-route-add" type="button">＋ 加入第一條路線</button>
-      <small>路線與常用行程只儲存在此瀏覽器。</small>
+      <div class="first-route-action"><small>路線與常用行程只儲存在此瀏覽器。</small><button id="first-route-add" type="button">＋ 加入第一條路線</button></div>
     </section>
 
     <div class="route-tabs-shell requires-route"><button id="route-back" class="route-step" type="button" aria-label="顯示前面的公車路線" hidden disabled>←</button><nav class="route-tabs" role="tablist" aria-label="公車路線"></nav><button id="route-more" class="route-step" type="button" aria-label="顯示更多公車路線" hidden disabled>→</button><button id="route-remove" class="route-remove" type="button" aria-label="移除目前路線" title="移除目前路線" aria-controls="route-remove-confirm" aria-expanded="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></svg><span class="route-remove-label">移除路線</span></button><button id="route-add" class="route-add" type="button" aria-label="加入路線" aria-controls="route-picker" aria-expanded="false"><span class="route-add-mark" aria-hidden="true">＋</span><span class="route-add-label">加入路線</span></button><button id="disclosure-toggle" class="disclosure-toggle" type="button" aria-label="全部展開" title="全部展開" aria-pressed="false" data-no-i18n><svg class="disclosure-icon-down" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 6 6 6-6M6 12l6 6 6-6"/></svg><svg class="disclosure-icon-up" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 18 6-6 6 6M6 12l6-6 6 6"/></svg><span class="disclosure-toggle-label">全部展開</span></button></div>
+    <section class="trip-bar quick-trips requires-route" aria-label="常用行程" hidden><div id="saved-trips" class="saved-trips"></div><button id="trips-more" type="button" hidden aria-expanded="false">顯示其餘行程</button><div id="trip-remove-confirm" class="trip-remove-confirm" role="group" aria-labelledby="trip-remove-title" hidden><strong id="trip-remove-title"></strong><p id="trip-remove-description"></p><div><button id="trip-remove-cancel" type="button">取消</button><button id="trip-remove-accept" type="button">移除常用行程</button></div></div></section>
     <details class="route-picker" id="route-picker">
       <summary><span>搜尋公車路線</span><span class="disclosure-icon" aria-hidden="true"></span></summary>
       <div class="route-picker-body">
@@ -48,19 +48,21 @@
     <details id="selection-card" class="selection-card requires-route" open>
       <summary><span class="selection-card-title"><span class="eyebrow">TRIP & STOP</span><strong>路線與站牌</strong></span><span id="selection-summary">載入中…</span><span class="disclosure-icon" aria-hidden="true"></span></summary>
       <div class="selection-card-body">
-      <section class="trip-bar" aria-label="常用行程"><strong>常用行程</strong><div id="saved-trips" class="saved-trips"></div><button id="trips-more" type="button" hidden aria-expanded="false">顯示其餘行程</button></section>
-
-      <section class="controls" aria-label="選擇站牌">
+      <section class="controls selection-fields" aria-label="選擇行程與來車範圍">
       <div class="control"><label for="direction">行車方向</label><select id="direction"><option value="0">往捷運景安站</option><option value="1">往板橋</option></select></div>
-      <div class="control grow"><div class="stop-label-row"><label for="stop">上車站牌</label><button id="save-trip" type="button" aria-label="儲存目前站牌為常用行程">☆ 儲存常用</button></div><select id="stop"><option>載入站牌中…</option></select></div>
-      <button id="refresh" class="refresh" type="button" aria-label="重新整理">↻ <span>更新</span></button>
+      <div class="control grow"><label for="stop">上車站牌</label><select id="stop"><option>載入站牌中…</option></select></div>
+      <div class="control scope-control"><div class="scope-label-row"><span class="field-label">納入反方向來車</span><button id="scope-help-toggle" class="scope-help-toggle" type="button" aria-label="顯示為什麼需要這個選項" title="為什麼需要這個選項？" aria-controls="arrival-scope" aria-expanded="false"><span aria-hidden="true">?</span></button></div><div class="scope-option-row"><label class="loop-control" for="closed-loop"><input id="closed-loop" type="checkbox" checked><span class="switch" aria-hidden="true"></span><span class="scope-option-text">估算折返車</span></label></div></div>
       </section>
       <p id="stop-selection-hint" class="stop-selection-hint" role="status" hidden>下一步：確認行車方向，再選擇上車站牌，即可查看下一班與後續來車。</p>
-      <section class="arrival-scope" aria-labelledby="arrival-scope-heading">
-      <div class="arrival-scope-copy"><div class="eyebrow">ARRIVAL SCOPE</div><h2 id="arrival-scope-heading">計算哪些來車？</h2><p id="scope-effect" role="status" aria-live="polite">正在載入所選站牌…</p></div>
-      <label class="loop-control" for="closed-loop"><input id="closed-loop" type="checkbox" checked><span class="switch" aria-hidden="true"></span><span><strong>也估算另一方向的下一輪公車</strong><small>須跑完原方向並折返續行；到站時間較不確定</small></span></label>
-      <p class="arrival-scope-note">影響逐車到站、出發建議與定時語音；官方下一班時間不變。下一輪車不觸發到站提醒或手機通知。</p>
-      </section>
+      <details id="arrival-scope" class="arrival-scope">
+        <summary>為什麼需要這個選項？<span class="disclosure-icon" aria-hidden="true"></span></summary>
+        <div class="arrival-scope-content">
+          <p class="arrival-scope-why">反方向的公車要先抵達終點並折返，下一輪才可能經過本站。開啟後會納入這些車；它們可能在終點停駛，因此到站時間較不確定。</p>
+          <p id="scope-effect" role="status" aria-live="polite">正在載入所選站牌…</p>
+          <p class="arrival-scope-note">此設定只影響逐車推估、出發建議與定時語音。官方下一班時間不變；折返車不觸發到站提醒或手機通知。</p>
+        </div>
+      </details>
+      <div class="save-trip-row"><small id="save-trip-help" class="save-trip-help">儲存目前路線、行車方向與上車站牌，之後可從上方捷徑直接切換。</small><button id="save-trip" type="button" aria-label="儲存目前路線、方向與上車站牌為常用行程" aria-describedby="save-trip-help"><span class="save-trip-icon" aria-hidden="true">☆</span><span>儲存為常用行程</span></button></div>
       </div>
     </details>
 
@@ -71,6 +73,7 @@
         <div class="arrival-meta"><p id="data-freshness" class="data-freshness">正在讀取資料時間…</p><a href="technical-report.html">資料說明 ↗</a></div>
         <div id="message" class="message" role="status">正在取得公車資訊…</div>
         <div id="eta-card" class="eta-card" hidden><div><div class="card-label">官方下一班預估</div><div id="eta" class="eta">—</div><div id="eta-detail" class="eta-detail"></div></div><div class="eta-icon">🚌</div></div>
+        <div id="tracked-bus" class="tracked-bus" role="status" hidden><div><span class="tracked-bus-label">TRACKED BUS · 追蹤車輛</span><strong id="tracked-bus-title"></strong><p id="tracked-bus-detail"></p></div><button id="tracked-bus-clear" type="button">停止追蹤</button></div>
       </details>
       <details id="approach-board" class="approach-board major-card" aria-labelledby="approach-heading" open>
         <summary class="list-head"><div><div class="eyebrow">ALL DETECTED BUSES</div><h3 id="approach-heading">本方向來車與後續車</h3></div><div class="summary-end"><span id="vehicle-count">—</span><span class="disclosure-icon" aria-hidden="true"></span></div></summary>
@@ -82,10 +85,10 @@
       </details>
       <details class="leave-card major-card" id="departure-card">
         <summary class="leave-summary"><div class="leave-heading"><div><div class="eyebrow">DEPARTURE ADVICE</div><h3>建議出發時間</h3></div><div class="summary-end"><span id="leave-brief">等待到站預估</span><span class="disclosure-icon" aria-hidden="true"></span></div></div></summary>
-        <div class="leave-content"><div class="leave-guidance"><p id="leave-advice">載入到站預估後顯示</p><small class="leave-note">預留步行時間與 2 分鐘緩衝；另一方向下一輪僅供參考，須確認仍繼續行駛。</small></div>
+        <div class="leave-content"><div class="leave-guidance"><label class="track-advice-toggle" for="track-advice-only"><input id="track-advice-only" type="checkbox"><span class="switch" aria-hidden="true"></span><span>只按追蹤車輛計算</span></label><p id="track-advice-note" hidden>只改本頁建議和前往站牌警告；背景手機通知仍依已固定的站牌與所有符合條件的來車發送。</p><p id="leave-advice">載入到站預估後顯示</p><small class="leave-note">預留步行時間與 2 分鐘緩衝；另一方向下一輪僅供參考，須確認仍繼續行駛。</small></div>
         <div class="walk-settings">
           <div class="location-field"><span class="walk-caption">步行估算方式</span><label class="location-toggle" for="use-location"><input id="use-location" type="checkbox" aria-describedby="location-help"><span class="switch" aria-hidden="true"></span><span>使用目前位置</span></label><small id="location-help" class="location-help">使用目前位置只取得一次座標來估算步行時間；換站時重新取得。座標留在瀏覽器，不會傳到伺服器。持續定位只在「前往站牌模式」啟用。</small></div>
-          <label class="walk-field for="walk-minutes"><span>步行到站（分鐘）</span><span id="walk-source" class="walk-source">手動設定</span><input id="walk-minutes" type="number" min="0" max="60" step="1" value="5"></label>
+          <label class="walk-field" for="walk-minutes"><span>步行到站（分鐘）</span><span id="walk-source" class="walk-source">手動設定</span><input id="walk-minutes" type="number" min="0" max="60" step="1" value="5"></label>
           <div class="location-status-row"><span id="location-state" class="location-state" role="status">目前以手動分鐘估算步行時間。</span><button id="location-refresh" type="button" hidden>重新定位</button></div>
         </div>
         <details class="push-card" id="mobile-reminder" aria-label="手機出發提醒" hidden>
@@ -138,20 +141,20 @@
     <details id="voice-card" class="notify major-card requires-route">
       <summary class="notify-heading"><div><div class="eyebrow">VOICE NOTIFIER</div><h2>語音提醒</h2></div><div class="summary-end"><span id="voice-state" class="voice-state" role="status">尚未啟用</span><span class="disclosure-icon" aria-hidden="true"></span></div></summary>
       <div class="notify-controls">
-        <p class="notify-help">可選到站提醒或定時播報；手動播放需保持頁面開啟。</p><div class="voice-primary"><button id="voice" type="button" aria-pressed="false" disabled>啟用語音</button><button id="voice-test" class="voice-test" type="button">試播目前資訊</button></div>
         <details id="voice-settings" class="voice-settings"><summary><strong>語音設定</strong><span class="voice-settings-info"><span id="voice-settings-label">到站提醒 5 分鐘 · 中文</span><span id="voice-settings-engine">簡短 · 本機 TTS</span></span><span class="disclosure-icon" aria-hidden="true"></span></summary>
         <div class="voice-settings-grid">
           <div class="voice-field"><label for="voice-mode">語音模式</label><select id="voice-mode"><option value="alert">到站提醒</option><option value="briefing">定時播報</option></select></div>
           <div class="voice-field"><label for="voice-language">播報語言</label><select id="voice-language"><option value="zh">中文</option><option value="en">English</option></select></div>
           <div id="alert-settings" class="voice-field"><label for="threshold">接近門檻</label><select id="threshold"><option value="5">5 分鐘</option><option value="3">3 分鐘</option><option value="1">1 分鐘</option><option value="10">10 分鐘</option><option value="custom">其他／自訂分鐘</option></select><label class="custom-threshold-label" for="custom-threshold" hidden>自訂接近門檻（1–60 分鐘）<input id="custom-threshold" type="number" min="1" max="60" step="1" value="7" inputmode="numeric"></label></div>
           <div id="briefing-settings" class="voice-field" hidden><label for="briefing-interval">播報間隔（分鐘）</label><input id="briefing-interval" type="number" min="1" max="60" step="1" value="5"></div>
-          <div class="voice-field"><label for="voice-format">播報內容</label><select id="voice-format"><option value="short">簡短 · 只報各車到站時間</option><option value="verbose">詳細 · 車牌與下一站</option></select></div>
+          <div class="voice-field"><label for="voice-format">播報內容</label><select id="voice-format"><option value="short">簡短 · 只報各車到站時間</option><option value="verbose">詳細 · 車牌與下一站</option><option value="track">只播報追蹤車輛</option></select></div>
           <div class="voice-field"><label for="voice-model">朗讀語音</label><select id="voice-model"><option value="api">本機 TTS 伺服器</option><option value="auto">瀏覽器自動選擇</option><option value="espeak:cmn">eSpeak · 標準中文</option></select></div>
         </div>
         <details id="api-voice-settings" class="advanced-settings"><summary><span>進階語音設定</span><span class="disclosure-icon" aria-hidden="true"></span></summary><label for="api-model">TTS 模型</label><input id="api-model" type="text" value="tts-1" maxlength="80"><label for="api-voice">聲音名稱</label><input id="api-voice" type="text" value="anne" maxlength="80"><small>連接 localhost:8001；已測試 anne，可輸入此伺服器支援的其他聲音名稱。</small></details>
-        <div class="schedule-settings"><strong>每日語音排程</strong><div class="schedule-fields"><label for="schedule-time">每天啟動時間<input id="schedule-time" type="time" value="07:30"></label><label for="schedule-duration">持續播報（分鐘）<input id="schedule-duration" type="number" min="1" max="720" step="1" value="60"></label></div><label class="schedule-check"><input id="schedule-enabled" type="checkbox"> 每天定時啟動</label><button id="schedule-save" class="voice-test" type="button">儲存排程</button><p id="schedule-state" role="status">尚未設定排程</p><small>儲存時的站牌、模式、間隔或接近門檻、語言與語音會寫入此電腦的 cron。開始後依模式持續播報，即使關閉頁面也會繼續。選瀏覽器語音時，cron 使用對應語言的 eSpeak 標準語音。</small></div>
-        <p id="voice-preview" class="voice-preview"></p>
         </details>
+        <p id="voice-preview" class="voice-preview"></p>
+        <div class="voice-action-row"><p class="notify-help">到站提醒或定時播報須保持此頁開啟；鎖屏或切換 App 時語音可能暫停。手機背景通知不會朗讀；每日排程只在設定排程的電腦播放。</p><div class="voice-primary"><button id="voice-test" class="voice-test" type="button">試播目前資訊</button><button id="voice" type="button" aria-pressed="false" disabled>啟用語音</button></div></div>
+        <details class="schedule-settings"><summary><strong>每日語音排程</strong><span class="disclosure-icon" aria-hidden="true"></span></summary><div class="schedule-settings-body"><div class="schedule-fields"><label for="schedule-time">每天啟動時間<input id="schedule-time" type="time" value="07:30"></label><label for="schedule-duration">持續播報（分鐘）<input id="schedule-duration" type="number" min="1" max="720" step="1" value="60"></label></div><label class="schedule-check"><input id="schedule-enabled" type="checkbox"> 每天定時啟動</label><div class="schedule-action-row"><p id="schedule-state" role="status">尚未設定排程</p><button id="schedule-save" type="button">儲存排程</button></div><small>儲存時的站牌、模式、間隔或接近門檻、語言與語音會寫入此電腦的 cron。開始後依模式持續播報，即使關閉頁面也會繼續。選瀏覽器語音時，cron 使用對應語言的 eSpeak 標準語音。</small></div></details>
       </div>
     </details>
     <figure class="brand-banner"><a href="BANNER.jpeg?v=411fed9d" target="_blank" rel="noopener noreferrer" aria-label="查看完整 AheadWay 形象橫幅"><img src="BANNER.jpeg?v=411fed9d" width="3584" height="1184" loading="lazy" decoding="async" alt="AheadWay 橫幅：臺北城市天際線、兩輛公車與不只下一班的標語"></a><figcaption><span>AheadWay · 形象視覺</span><span><a href="LOGO.jpeg?v=1fa489af" target="_blank" rel="noopener noreferrer">完整標誌 ↗</a> · <a href="BANNER.jpeg?v=411fed9d" target="_blank" rel="noopener noreferrer">完整橫幅 ↗</a></span></figcaption></figure>
