@@ -327,7 +327,8 @@ function selectedPushTarget() {
   if (!station) return null;
   return {routeId: activeRoute, routeName: routes[activeRoute]?.name || String(activeRoute),
     direction: Number(station.direction), stopId: Number(station.id), stopName: station.name,
-    closedLoop: closedEl.checked, walkMinutes: currentWalkMinutes()};
+    closedLoop: closedEl.checked, walkMinutes: currentWalkMinutes(),
+    trackedBusId: trackAdviceOnlyEl.checked ? trackedBusId() : ''};
 }
 function pushTargetMatchesSelection() {
   return pushTarget && pushTarget.routeId === activeRoute &&
@@ -339,19 +340,20 @@ function savePushTarget(target) {
   localStorage.setItem(pushTargetKey, JSON.stringify(target));
   renderPushTarget();
 }
+function pushFilterLabel(target) { return target?.trackedBusId ? `只追蹤 ${target.trackedBusId}` : '本站所有符合條件來車'; }
 function renderMobileReminderSummary() {
   const mode = mobileMode === 'plan' ? '計畫模式' : '前往站牌模式';
   let notification = '背景通知未啟用';
   if (localStorage.getItem(pushPendingRemoveKey) === '1') notification = '正在關閉通知';
   else if (!pushRetryEl.hidden) notification = '通知同步需重試';
   else if (localStorage.getItem(pushEnabledKey) === '1' && pushTarget)
-    notification = `通知：${pushTarget.routeName || pushTarget.routeId} ${pushTarget.stopName || ''}`;
+    notification = `通知：${pushTarget.routeName || pushTarget.routeId} ${pushTarget.stopName || ''} · ${pushFilterLabel(pushTarget)}`;
   else if (pushToggleEl.disabled) notification = '背景通知不可用';
   mobileModeSummaryEl.textContent = `${mode} / ${notification}`;
 }
 function renderPushTarget() {
   pushTargetEl.textContent = pushTarget
-    ? `提醒目標：${pushTarget.routeName || pushTarget.routeId}・${pushTarget.stopName || `站牌 ${pushTarget.stopId}`} · 步行 ${pushTarget.walkMinutes} 分鐘` +
+    ? `提醒目標：${pushTarget.routeName || pushTarget.routeId}・${pushTarget.stopName || `站牌 ${pushTarget.stopId}`} · ${pushFilterLabel(pushTarget)} · 步行 ${pushTarget.walkMinutes} 分鐘` +
       (!addedRouteIds.includes(pushTarget.routeId)
         ? '（此路線分頁已移除，通知仍會發送）' : '')
     : '尚未啟用；啟用後會固定目前選擇的站牌。';
@@ -362,7 +364,8 @@ function renderPushTarget() {
 function pushPayload(subscription, revision, target = pushTarget) {
   return {action: 'save', subscription: subscription.toJSON(), route_id: target.routeId,
     direction: target.direction, stop_id: target.stopId,
-    closed_loop: target.closedLoop, walk_minutes: target.walkMinutes, revision};
+    closed_loop: target.closedLoop, walk_minutes: target.walkMinutes,
+    tracked_bus_id: target.trackedBusId || '', revision};
 }
 function syncPushSettings(force = false) {
   if (!publicMode || localStorage.getItem(pushEnabledKey) !== '1') return;
@@ -373,8 +376,10 @@ function syncPushSettings(force = false) {
   }
   if (pushTargetMatchesSelection()) {
     const walkMinutes = currentWalkMinutes();
-    if (pushTarget.walkMinutes !== walkMinutes || pushTarget.closedLoop !== closedEl.checked)
-      savePushTarget({...pushTarget, walkMinutes, closedLoop: closedEl.checked});
+    const trackedBusId = trackAdviceOnlyEl.checked ? window.localStorage.getItem(trackedBusKey()) || '' : '';
+    if (pushTarget.walkMinutes !== walkMinutes || pushTarget.closedLoop !== closedEl.checked ||
+        (pushTarget.trackedBusId || '') !== trackedBusId)
+      savePushTarget({...pushTarget, walkMinutes, closedLoop: closedEl.checked, trackedBusId});
   } else if (!force) {
     renderPushTarget();
     return;
@@ -404,7 +409,7 @@ function syncPushSettings(force = false) {
     pushSyncAbort = controller;
     await postPush(pushPayload(subscription, serverRevision), controller);
     if (revision !== pushSyncRevision) return;
-    pushStateEl.textContent = `已固定 ${pushTarget.routeName || pushTarget.routeId} ${pushTarget.stopName || ''} · 步行 ${pushTarget.walkMinutes} 分鐘；關閉頁面仍可通知。`;
+    pushStateEl.textContent = `已固定 ${pushTarget.routeName || pushTarget.routeId} ${pushTarget.stopName || ''} · ${pushFilterLabel(pushTarget)} · 步行 ${pushTarget.walkMinutes} 分鐘；關閉頁面仍可通知。`;
     pushRetryEl.hidden = true;
     pushToggleEl.textContent = '關閉手機通知';
     renderMobileReminderSummary();
@@ -473,9 +478,9 @@ document.querySelector('#push-toggle').addEventListener('click', async () => {
     localStorage.setItem(pushEnabledKey, '1');
     savePushTarget(target);
     button.textContent = '關閉手機通知';
-    pushStateEl.textContent = `已固定 ${target.routeName} ${target.stopName} · 步行 ${target.walkMinutes} 分鐘。`;
+    pushStateEl.textContent = `已固定 ${target.routeName} ${target.stopName} · ${pushFilterLabel(target)} · 步行 ${target.walkMinutes} 分鐘。`;
     if (pushTargetMatchesSelection() && (target.walkMinutes !== currentWalkMinutes() ||
-        target.closedLoop !== closedEl.checked)) syncPushSettings();
+        target.closedLoop !== closedEl.checked || target.trackedBusId !== (trackAdviceOnlyEl.checked ? trackedBusId() : ''))) syncPushSettings();
   } catch (error) {
     if (localStorage.getItem(pushPendingRemoveKey) === '1') {
       button.textContent = '重試關閉手機通知';
@@ -1723,7 +1728,7 @@ function selectTrackedBus(id) {
   resetAlertState(); lastBriefingAt = 0; lastBriefingKey = '';
   for (const button of vehiclesEl.querySelectorAll('.vehicle-track')) {
     const selected = button.closest('.vehicle')?.dataset.busId === trackedBusId();
-    button.textContent = selected ? '追蹤中 ✓' : '追蹤這輛';
+    button.querySelector('span').textContent = selected ? '追蹤中' : '追蹤';
     button.setAttribute('aria-pressed', String(selected));
     button.setAttribute('aria-label', `${selected ? '停止追蹤' : '追蹤'} ${button.closest('.vehicle')?.dataset.busId}`);
   }
@@ -1735,12 +1740,14 @@ function selectTrackedBus(id) {
       voicePreviewEl.textContent = `播報內容：${briefingText(latestSnapshot)}`;
   }
   syncVoiceMode();
+  syncPushSettings();
 }
 trackedBusClearEl.addEventListener('click', () => selectTrackedBus(trackedBusId()));
 trackAdviceOnlyEl.addEventListener('change', () => {
   localStorage.setItem(`${trackedBusKey()}-advice`, trackAdviceOnlyEl.checked ? '1' : '0');
   document.querySelector('#track-advice-note').hidden = !trackAdviceOnlyEl.checked;
   if (latestSnapshot) { renderLeaveAdvice(latestSnapshot); renderTravelGuidance(); }
+  syncPushSettings();
 });
 
 function briefingText(snapshot) {
@@ -2425,11 +2432,13 @@ function render(data, {preview = false} = {}) {
         ` · 推估信心${{high: '較高', medium: '中等', low: '較低'}[vehicle.confidence] || '未知'}`);
     details.append(summary, detailText);
     const track = document.createElement('button'); track.type = 'button'; track.className = 'vehicle-track';
-    track.textContent = trackedBusId() === vehicle.id ? '追蹤中 ✓' : '追蹤這輛';
+    track.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg><span></span>';
+    track.querySelector('span').textContent = trackedBusId() === vehicle.id ? '追蹤中' : '追蹤';
     track.setAttribute('aria-pressed', String(trackedBusId() === vehicle.id));
     track.setAttribute('aria-label', `${trackedBusId() === vehicle.id ? '停止追蹤' : '追蹤'} ${vehicle.id}`);
     track.addEventListener('click', () => selectTrackedBus(vehicle.id));
-    row.append(left, away, track, details); groups.get(nextGroup ? 'next' : 'direct').append(row);
+    heading.append(track);
+    row.append(left, away, details); groups.get(nextGroup ? 'next' : 'direct').append(row);
   }
   if (!activeUtterance && !activeAudio && !pendingAudio) voicePreviewEl.textContent = `播報內容：${briefingText(data)}`;
   if (!preview) announce(data);

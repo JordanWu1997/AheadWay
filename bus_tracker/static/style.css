@@ -943,19 +943,49 @@ body.large-text .scope-help-toggle span{width:24px;height:24px;font-size:16px}
   body.large-text .masthead-actions .live-pill:after{font-size:16px}
 }
 
-/* A selected vehicle is a secondary estimate, visually separate from the official ETA. */
-.tracked-bus{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 20px;border-top:1px solid #f3d4c8;background:#fff5f0;color:#7d3825}
-.tracked-bus[hidden],.track-advice-toggle[hidden]{display:none}
-.tracked-bus>div{min-width:0}.tracked-bus-label{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;color:#a94830}
-.tracked-bus strong{display:block;margin-top:3px;font-size:18px;color:#713321}.tracked-bus p{margin:3px 0 0;font-size:13px;line-height:1.5;color:#794e40}
-.tracked-bus button{flex:none;min-height:44px;padding:8px 13px;border:1px solid #c86b4d;border-radius:10px;background:#fff;color:#95432d;font:inherit;font-size:13px;font-weight:750;cursor:pointer}
-.vehicle-track{grid-column:2;justify-self:end;min-height:38px;padding:7px 12px;border:1px solid var(--ui-border);border-radius:9px;background:var(--ui-soft);color:var(--ui-action);font:inherit;font-size:13px;font-weight:750;cursor:pointer}
-.vehicle-track:hover{background:var(--ui-soft-active)}.vehicle-track[aria-pressed="true"]{background:var(--ui-ink);border-color:var(--ui-ink);color:#fff}
+/* Tracked vehicle: a separate estimate, with the same action placement at every width. */
+.tracked-bus{display:block;padding:15px 20px;border-top:1px solid #f3d4c8;background:#fff5f0;color:#7d3825}
+.tracked-bus[hidden],.track-advice-toggle[hidden],#track-advice-note[hidden]{display:none}
+.tracked-bus-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.tracked-bus-head>div{min-width:0}
+.tracked-bus-label{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;color:#a94830}
+.tracked-bus strong{display:block;margin-top:3px;font-size:18px;color:#713321}
+.tracked-bus>p{margin:5px 0 0;font-size:13px;line-height:1.5;color:#794e40}
+.tracked-bus button{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:none;min-height:44px;padding:6px 10px;border:1px solid #c86b4d;border-radius:10px;background:#fff;color:#95432d;font:inherit;font-size:13px;font-weight:750;cursor:pointer}
+.tracked-bus button svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.vehicle:has(.vehicle-track){grid-template-columns:minmax(0,1fr) auto}
+.vehicle:has(.vehicle-track) .vehicle-main{display:contents}
+.vehicle:has(.vehicle-track) .vehicle-heading{grid-column:1/-1;grid-row:1;min-width:0;flex-wrap:wrap}
+.vehicle:has(.vehicle-track) .vehicle-location{grid-column:1;grid-row:2;margin:0}
+.vehicle:has(.vehicle-track) .away{grid-column:2;grid-row:2;align-self:start}
+.vehicle:has(.vehicle-track) .vehicle-detail{grid-row:3}
+.vehicle-track{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:none;margin-left:auto;min-height:44px;padding:6px 10px;border:1px solid var(--ui-border);border-radius:9px;background:var(--ui-soft);color:var(--ui-action);font:inherit;font-size:13px;font-weight:750;white-space:nowrap;cursor:pointer}
+.vehicle-track:hover{background:var(--ui-soft-active)}
+.vehicle-track[aria-pressed="true"]{background:var(--ui-ink);border-color:var(--ui-ink);color:#fff}
+.vehicle-track svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8}
 .vehicle-track:focus-visible,.tracked-bus button:focus-visible{outline:3px solid #f6ac8d;outline-offset:2px}
 .track-advice-toggle{display:flex;align-items:center;gap:9px;width:max-content;max-width:100%;margin:0 0 12px;padding:8px 11px;border:1px solid var(--ui-border);border-radius:10px;background:var(--ui-soft);color:var(--ui-action);font-size:13px;font-weight:750;cursor:pointer}
-.track-advice-toggle input{position:absolute;opacity:0;width:1px;height:1px}.track-advice-toggle .switch{position:relative;flex:none;width:36px;height:20px;border-radius:99px;background:#c5d4c9}.track-advice-toggle .switch:after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .16s}.track-advice-toggle input:checked+.switch{background:#397c59}.track-advice-toggle input:checked+.switch:after{transform:translateX(16px)}.track-advice-toggle input:focus-visible+.switch{outline:3px solid #f6ac8d;outline-offset:2px}
-@media(max-width:650px){.tracked-bus{align-items:flex-start;flex-direction:column;padding:15px 17px}.vehicle-track{grid-column:1/-1;justify-self:stretch}.tracked-bus button{width:100%}}
-body.large-text .tracked-bus-label,body.large-text .tracked-bus p,body.large-text .vehicle-track,body.large-text .track-advice-toggle{font-size:16px!important}
+.track-advice-toggle input{position:absolute;opacity:0;width:1px;height:1px}
+.track-advice-toggle .switch{position:relative;flex:none;width:36px;height:20px;border-radius:99px;background:#c5d4c9}
+.track-advice-toggle .switch:after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .16s}
+.track-advice-toggle input:checked+.switch{background:#397c59}
+.track-advice-toggle input:checked+.switch:after{transform:translateX(16px)}
+.track-advice-toggle input:focus-visible+.switch{outline:3px solid #f6ac8d;outline-offset:2px}
+#track-advice-note{margin:0 0 12px;color:var(--ui-secondary);font-size:13px;line-height:1.55}
+@media(min-width:651px) and (max-width:900px){
+  .vehicle:has(.vehicle-track) .away{max-width:190px}
+  .vehicle:has(.vehicle-track) .away small{overflow-wrap:anywhere}
+}
+@media(max-width:650px){
+  .vehicle:has(.vehicle-track) .vehicle-location{grid-column:1/-1}
+  .vehicle:has(.vehicle-track) .away{grid-column:1/-1;grid-row:3;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;max-width:none;min-width:0;text-align:left}
+  .vehicle:has(.vehicle-track) .away strong{flex:0 1 auto}
+  .vehicle:has(.vehicle-track) .away small{flex:0 1 48%;min-width:0;margin:0;text-align:right;overflow-wrap:anywhere}
+  .vehicle:has(.vehicle-track) .vehicle-detail{grid-row:4}
+  .tracked-bus{padding:15px 17px}
+  .tracked-bus-head button{width:44px;min-width:44px;padding:0}
+  .tracked-bus-head button span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+}
+body.large-text :is(.tracked-bus-label,.tracked-bus>p,.tracked-bus button,.vehicle-track,.track-advice-toggle,#track-advice-note){font-size:16px!important}
 body.large-text .tracked-bus strong{font-size:21px}
-@media(min-width:651px){.vehicle:has(.vehicle-track){grid-template-columns:minmax(0,1fr) auto auto}.vehicle-track{grid-column:3;grid-row:1;align-self:center}}
-#track-advice-note{margin:0 0 12px;color:var(--ui-secondary);font-size:13px;line-height:1.55}#track-advice-note[hidden]{display:none}body.large-text #track-advice-note{font-size:16px}
+.leave-guidance #track-advice-note{font-weight:500;line-height:1.5}

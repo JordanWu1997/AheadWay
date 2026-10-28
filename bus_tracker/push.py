@@ -5,6 +5,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import sqlite3
 import threading
 import time
@@ -79,6 +80,9 @@ class PushService:
                 route_id INTEGER NOT NULL, direction INTEGER NOT NULL, stop_id INTEGER NOT NULL,
                 closed_loop INTEGER NOT NULL, walk_minutes INTEGER NOT NULL,
                 last_key TEXT NOT NULL DEFAULT '', last_sent INTEGER NOT NULL DEFAULT 0)""")
+            columns = {row[1] for row in db.execute("PRAGMA table_info(subscriptions)")}
+            if "tracked_bus_id" not in columns:
+                db.execute("ALTER TABLE subscriptions ADD COLUMN tracked_bus_id TEXT NOT NULL DEFAULT ''")
             db.execute("""CREATE TABLE IF NOT EXISTS subscription_versions (
                 endpoint TEXT PRIMARY KEY, revision INTEGER NOT NULL, updated_at INTEGER NOT NULL)""")
         os.chmod(self.db_path, 0o600)
@@ -111,6 +115,9 @@ class PushService:
         direction = int(data["direction"])
         stop_id = int(data["stop_id"])
         walk = int(data["walk_minutes"])
+        tracked_bus_id = data.get("tracked_bus_id", "")
+        if not isinstance(tracked_bus_id, str) or (tracked_bus_id and not re.fullmatch(r"[A-Za-z0-9-]{1,40}", tracked_bus_id)):
+            raise ValueError("Invalid tracked bus ID")
         if direction not in (0, 1) or not 0 <= walk <= 60:
             raise ValueError("Invalid push settings")
         revision = self._revision(data.get("revision", 0))
@@ -122,19 +129,20 @@ class PushService:
             exists = db.execute("SELECT * FROM subscriptions WHERE endpoint=?", (endpoint,)).fetchone()
             if count >= 64 and not exists:
                 raise ValueError("Notification capacity reached")
-            same = exists and (exists["route_id"], exists["direction"], exists["stop_id"]) == (
-                route_id, direction, stop_id)
+            same = exists and (exists["route_id"], exists["direction"], exists["stop_id"],
+                               exists["closed_loop"], exists["tracked_bus_id"]) == (
+                route_id, direction, stop_id, int(bool(data.get("closed_loop", True))), tracked_bus_id)
             last_key = exists["last_key"] if same else ""
             last_sent = exists["last_sent"] if same else 0
             db.execute("""INSERT INTO subscriptions
-                (endpoint,p256dh,auth,route_id,direction,stop_id,closed_loop,walk_minutes,last_key,last_sent)
-                VALUES (?,?,?,?,?,?,?,?,?,?)
+                (endpoint,p256dh,auth,route_id,direction,stop_id,closed_loop,walk_minutes,tracked_bus_id,last_key,last_sent)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)
                 ON CONFLICT(endpoint) DO UPDATE SET p256dh=excluded.p256dh,auth=excluded.auth,
                 route_id=excluded.route_id,direction=excluded.direction,stop_id=excluded.stop_id,
                 closed_loop=excluded.closed_loop,walk_minutes=excluded.walk_minutes,
-                last_key=excluded.last_key,last_sent=excluded.last_sent""",
+                tracked_bus_id=excluded.tracked_bus_id,last_key=excluded.last_key,last_sent=excluded.last_sent""",
                 (endpoint, p256dh, auth, route_id, direction, stop_id,
-                 int(bool(data.get("closed_loop", True))), walk, last_key, last_sent))
+                 int(bool(data.get("closed_loop", True))), walk, tracked_bus_id, last_key, last_sent))
             self._record_revision(db, endpoint, revision)
         return True
 
@@ -183,7 +191,7 @@ class PushService:
             current = db.execute("SELECT * FROM subscriptions WHERE endpoint=?",
                                  (row["endpoint"],)).fetchone()
         return bool(current) and all(current[key] == row[key] for key in
-                                     ("route_id", "direction", "stop_id", "closed_loop", "walk_minutes"))
+                                     ("route_id", "direction", "stop_id", "closed_loop", "walk_minutes", "tracked_bus_id"))
 
     def state(self, endpoint, key, sent=None):
         with self.connect() as db:
@@ -240,7 +248,7 @@ class PushService:
         return True
 
 
-def alert_candidate(snapshot, walk, now=None):
+def alert_candidate(snapshot, walk, now=None, tracked_bus_id=""):
     """Return the approaching bus to notify for, or None when there is time."""
     now = time.time() if now is None else now
     fetched = snapshot.get("feedFetchedAt") or {}
@@ -254,7 +262,8 @@ def alert_candidate(snapshot, walk, now=None):
         age = max(0, bus.get("dataAgeSeconds", 999))
         return max(0, lower - age), max(0, upper - age)
 
-    candidates = [v for v in snapshot.get("vehicles", []) if not v.get("atStop") and
+    candidates = [v for v in snapshot.get("vehicles", []) if (not tracked_bus_id or v.get("id") == tracked_bus_id) and
+                  not v.get("atStop") and
                   not v.get("crossDirection") and
                   v.get("dataAgeSeconds", 999) <= 90 and v.get("confidence") != "low" and
                   remaining_window(v)[0] <= needed and remaining_window(v)[1] > walk * 60]
@@ -263,6 +272,8 @@ def alert_candidate(snapshot, walk, now=None):
         late = remaining_window(bus)[0] <= walk * 60
         advice = "部分推估可能已來不及，請確認即時到站狀態。" if late else "建議現在出發。"
         return bus["id"], f"{bus['id']} 推估接近 {snapshot['stop']['name']}，{advice}"
+    if tracked_bus_id:
+        return None  # Never substitute the official ETA or a different bus for a pinned vehicle.
     if eta is not None:
         fetched_at = datetime.fromisoformat(fetched["EstimateTime"]).timestamp()
         remaining = max(0, eta - max(0, now - fetched_at))
@@ -284,7 +295,8 @@ def push_loop(service, snapshot_for):
                 if key not in snapshots:
                     snapshots[key] = snapshot_for(*key)
                 snapshot = snapshots[key]
-                candidate = alert_candidate(snapshot, row["walk_minutes"])
+                candidate = alert_candidate(snapshot, row["walk_minutes"],
+                                            tracked_bus_id=row.get("tracked_bus_id", ""))
                 if not candidate:
                     continue
                 bus_key, body = candidate

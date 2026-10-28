@@ -73,7 +73,7 @@
         <div class="arrival-meta"><p id="data-freshness" class="data-freshness">正在讀取資料時間…</p><a href="technical-report.html">資料說明 ↗</a></div>
         <div id="message" class="message" role="status">正在取得公車資訊…</div>
         <div id="eta-card" class="eta-card" hidden><div><div class="card-label">官方下一班預估</div><div id="eta" class="eta">—</div><div id="eta-detail" class="eta-detail"></div></div><div class="eta-icon">🚌</div></div>
-        <div id="tracked-bus" class="tracked-bus" role="status" hidden><div><span class="tracked-bus-label">TRACKED BUS · 追蹤車輛</span><strong id="tracked-bus-title"></strong><p id="tracked-bus-detail"></p></div><button id="tracked-bus-clear" type="button">停止追蹤</button></div>
+        <div id="tracked-bus" class="tracked-bus" role="status" hidden><div class="tracked-bus-head"><div><span class="tracked-bus-label">TRACKED BUS · 追蹤車輛</span><strong id="tracked-bus-title"></strong></div><button id="tracked-bus-clear" type="button" aria-label="停止追蹤" title="停止追蹤"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5 5 19"/></svg><span>停止追蹤</span></button></div><p id="tracked-bus-detail"></p></div>
       </details>
       <details id="approach-board" class="approach-board major-card" aria-labelledby="approach-heading" open>
         <summary class="list-head"><div><div class="eyebrow">ALL DETECTED BUSES</div><h3 id="approach-heading">本方向來車與後續車</h3></div><div class="summary-end"><span id="vehicle-count">—</span><span class="disclosure-icon" aria-hidden="true"></span></div></summary>
@@ -85,7 +85,7 @@
       </details>
       <details class="leave-card major-card" id="departure-card">
         <summary class="leave-summary"><div class="leave-heading"><div><div class="eyebrow">DEPARTURE ADVICE</div><h3>建議出發時間</h3></div><div class="summary-end"><span id="leave-brief">等待到站預估</span><span class="disclosure-icon" aria-hidden="true"></span></div></div></summary>
-        <div class="leave-content"><div class="leave-guidance"><label class="track-advice-toggle" for="track-advice-only"><input id="track-advice-only" type="checkbox"><span class="switch" aria-hidden="true"></span><span>只按追蹤車輛計算</span></label><p id="track-advice-note" hidden>只改本頁建議和前往站牌警告；背景手機通知仍依已固定的站牌與所有符合條件的來車發送。</p><p id="leave-advice">載入到站預估後顯示</p><small class="leave-note">預留步行時間與 2 分鐘緩衝；另一方向下一輪僅供參考，須確認仍繼續行駛。</small></div>
+        <div class="leave-content"><div class="leave-guidance"><label class="track-advice-toggle" for="track-advice-only"><input id="track-advice-only" type="checkbox"><span class="switch" aria-hidden="true"></span><span>只按追蹤車輛計算</span></label><p id="track-advice-note" hidden>啟用手機通知後，同站只追這輛；換站不改已固定目標。車輛消失或未折返時，不改用其他車提醒。</p><p id="leave-advice">載入到站預估後顯示</p><small class="leave-note">預留步行時間與 2 分鐘緩衝；另一方向下一輪僅供參考，須確認仍繼續行駛。</small></div>
         <div class="walk-settings">
           <div class="location-field"><span class="walk-caption">步行估算方式</span><label class="location-toggle" for="use-location"><input id="use-location" type="checkbox" aria-describedby="location-help"><span class="switch" aria-hidden="true"></span><span>使用目前位置</span></label><small id="location-help" class="location-help">使用目前位置只取得一次座標來估算步行時間；換站時重新取得。座標留在瀏覽器，不會傳到伺服器。持續定位只在「前往站牌模式」啟用。</small></div>
           <label class="walk-field" for="walk-minutes"><span>步行到站（分鐘）</span><span id="walk-source" class="walk-source">手動設定</span><input id="walk-minutes" type="number" min="0" max="60" step="1" value="5"></label>
@@ -104,7 +104,7 @@
             <div class="travel-actions"><button id="travel-refresh" class="secondary-action" type="button">重新定位</button><button id="travel-action" class="secondary-action" type="button">停止前往模式</button></div>
             <p class="mobile-limit">前往警告只在此頁運作；下方背景通知仍可獨立使用。</p>
           </section>
-          <div class="phone-push-controls"><strong>關頁後的出發通知（選用）</strong><p>提醒目標會固定；瀏覽其他路線不會切換。啟用時瀏覽器會詢問通知權限，可隨時關閉。iPhone／iPad 請先加入主畫面。</p>
+          <div class="phone-push-controls"><strong>關頁後的出發通知（選用）</strong><p>通知固定在所選站牌；開啟只追蹤車輛時另固定車牌。同站改選會更新，瀏覽其他站不變。iPhone／iPad 須先加入主畫面。</p>
             <div class="push-target-row"><span id="push-target">尚未設定提醒目標</span><button id="push-target-switch" type="button" hidden>改為提醒目前站牌</button></div>
             <span id="push-state" role="status">尚未啟用</span>
             <div class="push-actions"><button id="push-retry" type="button" hidden>重試同步</button><button id="push-toggle" type="button">啟用手機通知</button></div>
