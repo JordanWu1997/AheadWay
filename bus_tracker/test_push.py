@@ -78,7 +78,12 @@ class PushTests(unittest.TestCase):
         self.assertIn("BUS-2", body)
         self.assertNotIn("OTHER", body)
         tracked["crossDirection"] = True
-        self.assertIsNone(alert_candidate(snapshot, 5, now, "BUS-2"))
+        key, body = alert_candidate(snapshot, 5, now, "BUS-2")
+        self.assertEqual(key, "BUS-2")
+        self.assertIn("折返續行", body)
+        self.assertNotIn("OTHER", body)
+        self.assertNotEqual(alert_candidate(snapshot, 5, now)[0], "BUS-2",
+                            "opposite-direction buses are not used for unpinned alerts")
         tracked["crossDirection"] = False
         tracked["confidence"] = "low"
         self.assertIsNone(alert_candidate(snapshot, 5, now, "BUS-2"))

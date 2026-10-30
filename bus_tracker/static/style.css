@@ -338,11 +338,6 @@ body.large-text .first-route h1{font-size:clamp(32px,5vw,44px)!important;line-he
 .route-remove-confirm[hidden]{display:none}.route-remove-confirm strong{font-size:16px}.route-remove-confirm p{margin:6px 0 14px;color:#65756d;font-size:13px;line-height:1.5}
 .route-remove-confirm>div{display:flex;justify-content:flex-end;gap:8px}.route-remove-confirm button{min-height:38px;padding:7px 13px;border:1px solid #c7d8cd;border-radius:8px;background:#fff;color:#28594b;font:inherit;font-size:13px;font-weight:750;cursor:pointer}
 .route-remove-confirm #route-remove-accept{border-color:#a4402e;background:#a4402e;color:#fff}
-.trip-remove-confirm{flex:1 0 100%;max-width:440px;margin:2px 0 0;padding:14px;text-align:left;border:1px solid #efc9bd;border-radius:13px;background:#fff7f4;color:#173d32}
-.trip-remove-confirm[hidden]{display:none!important}.trip-remove-confirm strong{font-size:15px}.trip-remove-confirm p{margin:6px 0 12px;color:#65756d;font-size:13px;line-height:1.5}
-.trip-remove-confirm>div{display:flex;justify-content:flex-end;gap:8px}.trip-remove-confirm button{min-height:38px;padding:7px 13px;border:1px solid #c7d8cd;border-radius:8px;background:#fff;color:#28594b;font:inherit;font-size:13px;font-weight:750;cursor:pointer}
-.trip-remove-confirm #trip-remove-accept{border-color:#a4402e;background:#a4402e;color:#fff}
-@media(max-width:650px){.trip-remove-confirm{max-width:none}}
 @media(max-width:650px){.first-route{margin-top:10px;padding:22px 18px}.first-route ol{grid-template-columns:1fr;gap:8px}.first-route li{grid-template-columns:28px 1fr;padding:10px 12px}.route-remove-confirm{max-width:none}}
 .selection-card,.results,.results .approach-board,.results .leave-card,.route-panel,.notify,.brand-banner{margin-top:var(--card-gap)}
 .route-picker[open]{margin:var(--card-gap) 0 0}
@@ -817,19 +812,29 @@ body.large-text .masthead .brand-logo img{position:static;width:100%;height:100%
 .quick-trips{--quick-trip-inset:11px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:8px 0 12px;padding:4px 0;background:transparent;border:0;border-radius:0;box-shadow:none}
 .quick-trips[hidden]{display:none!important}
 .quick-trips .saved-trips{display:flex;flex:1 1 380px;flex-wrap:wrap;align-items:center;gap:7px;min-width:0}
+.quick-trips .saved-trips:empty{display:none}
+.quick-trips #save-trip{display:inline-flex;align-items:center;justify-content:center;gap:5px;margin-left:auto;min-height:42px;padding:7px 12px;border:1px solid var(--ui-action);border-radius:10px;background:var(--ui-action);color:#fff;font:inherit;font-size:13px;font-weight:800;white-space:nowrap;cursor:pointer}
+.quick-trips #save-trip:hover{background:#315f50}
+.quick-trips #save-trip:disabled{border-color:var(--ui-border);background:var(--ui-soft);color:var(--ui-secondary);cursor:not-allowed}
+.quick-trips #save-trip .save-trip-icon{font-size:20px;line-height:1}
+.quick-trips #save-trip:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px}
 .quick-trips .saved-trip{max-width:100%;min-width:0;border:1px solid var(--ui-border);border-radius:10px;background:var(--ui-soft);transition:background-color .12s,border-color .12s}
 .quick-trips .saved-trip>button:first-child{min-width:0;max-width:100%;min-height:38px;padding:8px var(--quick-trip-inset);border:0;border-radius:9px 0 0 9px;background:var(--ui-soft);color:var(--ui-action);overflow-wrap:anywhere;text-align:left;line-height:1.35;font-weight:750;cursor:pointer;transition:background-color .12s,color .12s}
 .quick-trips .saved-trip:hover{border-color:#86b79b;background:var(--ui-soft-active)}
 .quick-trips .saved-trip:hover>button:first-child{background:var(--ui-soft-active)}
 .quick-trips .saved-trip>button:first-child:focus-visible,.quick-trips .saved-trip .remove-trip:focus-visible{position:relative;z-index:1;outline:3px solid var(--focus-ring);outline-offset:2px}
 .quick-trips .saved-trip>button:first-child:active{background:#d4ebdc}
-.quick-trips .saved-trip .remove-trip{flex:none;min-width:34px;min-height:36px;padding:6px 9px;border:0;border-radius:0 9px 9px 0;background:transparent;color:#8a6259;cursor:pointer;transition:background-color .12s,color .12s}
-.quick-trips .saved-trip .remove-trip:hover,.quick-trips .saved-trip .remove-trip[aria-expanded="true"]{background:#fff0e8;color:#a33e2b}
+.quick-trips .saved-trip .remove-trip{display:grid;place-items:center;flex:none;min-width:38px;min-height:38px;padding:6px 9px;border:0;border-left:1px solid var(--ui-border);border-radius:0 9px 9px 0;background:transparent;color:var(--ui-action);cursor:pointer;transition:background-color .12s,color .12s}
+.quick-trips .saved-trip .remove-trip svg{display:block;width:19px;height:19px}
+.quick-trips .saved-trip .remove-trip:hover{background:var(--ui-soft-active);color:var(--ui-action)}
+.quick-trips .saved-trip.confirm-remove .remove-trip{min-width:78px;padding-inline:9px;background:#e4f1e8;color:var(--ui-action);font-size:12px;font-weight:850;white-space:nowrap}
+.quick-trips .saved-trip.confirm-remove .remove-trip:hover{background:#d3e8da}
 .quick-trips .saved-trip.is-current{background:var(--ui-action)}
 .quick-trips .saved-trip.is-current>button:first-child,.quick-trips .saved-trip.is-current:hover>button:first-child{background:var(--ui-action);color:#fff;font-weight:850}
 .quick-trips .saved-trip.is-current>button:first-child:before{content:"✓";display:inline-block;margin-inline-end:7px;color:#c7e7d2;font-weight:900}
-.quick-trips .saved-trip.is-current .remove-trip{color:#d4e7dc}
-.quick-trips .saved-trip.is-current .remove-trip:hover{background:#ef744c;color:#fff}
+.quick-trips .saved-trip.is-current .remove-trip{border-left-color:#ffffff35;color:#d4e7dc}
+.quick-trips .saved-trip.is-current .remove-trip:hover{background:#315f50;color:#fff}
+.quick-trips .saved-trip.is-current.confirm-remove .remove-trip{background:#dceee1;color:#173d32}
 .quick-trips .saved-trip.is-current:hover{border-color:var(--ui-action);background:var(--ui-action)}
 .quick-trips .saved-trip.is-pending{background:var(--ui-soft-active)}
 .quick-trips .saved-trip.is-pending>button:first-child{background:var(--ui-soft-active);color:var(--ui-action)}
@@ -989,3 +994,698 @@ body.large-text .scope-help-toggle span{width:24px;height:24px;font-size:16px}
 body.large-text :is(.tracked-bus-label,.tracked-bus>p,.tracked-bus button,.vehicle-track,.track-advice-toggle,#track-advice-note){font-size:16px!important}
 body.large-text .tracked-bus strong{font-size:21px}
 .leave-guidance #track-advice-note{font-weight:500;line-height:1.5}
+
+/* The last voice control needs the same inset when advanced TTS fields are absent. */
+.voice-settings-grid{padding-bottom:14px}
+@media(max-width:650px){.voice-settings-grid{padding-bottom:12px}}
+.voice-settings #api-voice-settings{margin-top:2px}
+
+/* Keep departure advice readable before the optional tracked-bus choice. */
+.leave-guidance .track-advice-toggle{margin:14px 0 0;min-height:44px;padding:9px 12px}
+.leave-guidance #track-advice-note{margin:7px 0 0}
+.leave-guidance .leave-note{margin-top:12px}
+
+/* Walking mode has one primary judgment and one clearly separate reference. */
+.travel-reference-option{margin:15px 0 0}
+.travel-reference-option .track-advice-toggle{margin:0;min-height:44px;padding:9px 12px}
+.travel-reference-option .track-advice-toggle span:last-child{color:inherit;font-size:inherit}
+.travel-reference-option p{margin:7px 2px 0;color:var(--ui-secondary);font-size:13px;font-weight:400;line-height:1.5}
+.travel-return-result{margin:10px 0 0;padding:12px 14px;border:1px solid #ecd1c2;border-radius:10px;background:#fff8f4;color:#784635;font-size:13px;line-height:1.5}
+.travel-return-result[hidden]{display:none}
+.travel-actions{margin-top:15px}
+body.large-text .travel-reference-option p,body.large-text .travel-return-result,body.large-text .travel-reference-option .track-advice-toggle{font-size:16px!important}
+
+/* Returning buses use a warm action and ETA within their warm cards. */
+.vehicle-group.next .vehicle .away strong,.vehicle-group.next .vehicle-detail summary{color:#91462e}
+.vehicle-group.next .vehicle .away small,.vehicle-group.next .vehicle-location{color:#776961}
+.vehicle-group.next .vehicle-track{background:#fff4ed;border-color:#dfbba8;color:#91462e}
+.vehicle-group.next .vehicle-track:hover{background:#fbe7dc}
+.vehicle-group.next .vehicle-track[aria-pressed="true"]{background:#91462e;border-color:#91462e;color:#fff}
+
+/* Choices share one visual grammar: a whole clickable chip and a visible check. */
+:is(.scope-control .loop-control,.location-toggle,.track-advice-toggle,.schedule-settings .schedule-check){display:inline-flex;align-items:center;gap:9px;min-height:44px;padding:9px 12px;border:1px solid var(--ui-border);border-radius:10px;background:var(--ui-soft);color:var(--ui-action);cursor:pointer}
+:is(.scope-control .loop-control,.location-toggle,.track-advice-toggle,.schedule-settings .schedule-check):has(input:checked){background:#e5f3eb;border-color:#8fc4a6;color:var(--ui-ink)}
+:is(.scope-control .loop-control,.location-toggle,.track-advice-toggle,.schedule-settings .schedule-check):hover{border-color:#8fc4a6;background:#edf7f0}
+:is(.scope-control .loop-control,.location-toggle,.track-advice-toggle,.schedule-settings .schedule-check) input{position:absolute;opacity:0;width:1px;height:1px;margin:0;padding:0}
+:is(.scope-control .loop-control,.location-toggle,.track-advice-toggle,.schedule-settings .schedule-check) .switch{display:grid;place-items:center;position:relative;flex:none;width:21px;height:21px;border:1.5px solid #8aa99a;border-radius:6px;background:#fff;transition:none}
+:is(.scope-control .loop-control,.location-toggle,.track-advice-toggle,.schedule-settings .schedule-check) .switch:after{content:"✓";position:static;display:block;width:auto;height:auto;border:0;border-radius:0;background:none;color:#fff;font-size:15px;font-weight:800;line-height:1;opacity:0;transform:none;transition:none}
+:is(.scope-control .loop-control,.location-toggle,.track-advice-toggle,.schedule-settings .schedule-check) input:checked+.switch{background:var(--ui-ink);border-color:var(--ui-ink)}
+:is(.scope-control .loop-control,.location-toggle,.track-advice-toggle,.schedule-settings .schedule-check) input:checked+.switch:after{opacity:1;transform:none}
+:is(.scope-control .loop-control,.location-toggle,.track-advice-toggle,.schedule-settings .schedule-check) input:focus-visible+.switch{outline:3px solid var(--focus-ring);outline-offset:3px}
+.scope-control .loop-control .switch,.location-field .location-toggle .switch{width:21px;height:21px}
+.location-field .location-toggle .switch:after{width:auto;height:auto}
+.schedule-settings .schedule-check{width:max-content;max-width:100%;margin:14px 0}
+
+/* Phone reminder: mode, live judgment, optional reference, then background alerts. */
+.leave-card .mobile-modes{gap:8px;margin:0 0 12px}
+.leave-card .mobile-modes button{display:inline-flex;align-items:center;justify-content:center;min-width:0;min-height:46px;padding:10px 8px;border-radius:10px;font-size:14px;line-height:1.3;white-space:normal}
+.leave-card .mobile-modes button[aria-pressed="true"]:before{content:"✓";margin-right:6px;font-weight:800}
+.leave-card .mobile-mode-panel>p:first-child{margin:0 0 12px}
+.leave-card .travel-result{margin:0}
+.travel-reference-option{margin:14px 0 0}
+.travel-reference-option .track-advice-toggle{margin:0}
+.travel-reference-option p{margin:6px 0 0}
+.travel-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}
+.leave-card .travel-actions button{width:100%;min-width:0;min-height:44px;margin:0;padding:9px 8px;white-space:normal}
+.leave-card .push-card .mobile-limit{margin:9px 0 0}
+.phone-push-controls{display:grid;grid-template-columns:1fr;gap:8px;align-items:start;margin-top:18px;padding:14px;border:1px solid var(--ui-border);border-radius:12px;background:#f7faf8}
+.phone-push-controls>*{grid-column:1!important;grid-row:auto!important}
+.phone-push-controls>strong{font-size:14px;line-height:1.4}
+.phone-push-controls>p,.phone-push-controls>#push-state{margin:0}
+.phone-push-controls .push-target-row{margin:2px 0}
+.phone-push-controls .push-target-row[hidden]{display:none}
+.phone-push-controls>.push-actions{display:grid;grid-template-columns:1fr;width:100%;margin:2px 0 0}
+.phone-push-controls>.push-actions button{width:100%;min-height:46px;margin:0}
+@media(max-width:360px){.travel-actions{grid-template-columns:1fr}}
+
+/* Keep native reading order: vehicle information, track action, then estimate details. */
+.vehicle:has(.vehicle-track) .vehicle-heading{grid-column:1;grid-row:1}
+.vehicle:has(.vehicle-track)>.vehicle-track{grid-column:2;grid-row:1;align-self:center}
+.vehicle:has(.vehicle-track) .vehicle-detail{grid-column:1/-1;grid-row:3}
+@media(max-width:650px){
+  .vehicle:has(.vehicle-track) .vehicle-heading{grid-column:1/-1;grid-row:1}
+  .vehicle:has(.vehicle-track)>.vehicle-track{grid-column:1/-1;grid-row:4;justify-self:stretch;width:100%;margin:4px 0 0;min-height:44px}
+  .vehicle:has(.vehicle-track) .vehicle-detail{grid-column:1/-1;grid-row:5}
+}
+
+/* One-time walking inputs belong to planning, not continuous walking mode. */
+.leave-content .walk-settings[hidden]{display:none!important}
+
+/* A fixed trip bar must not cover the destination after a jump or mode change. */
+@media(max-width:650px){
+  :is(#selection-card,#arrival-summary,#approach-board,#departure-card,#mobile-reminder,
+    .mobile-modes,#travel-panel,#route-view,#route-body,#voice-card,.vehicle,.route-stop){scroll-margin-top:72px}
+  .route-tabs-shell :is(.route-add,.route-remove,.disclosure-toggle,.route-step){min-width:44px;width:44px;height:44px;min-height:44px;flex-basis:44px}
+  .quick-trips .saved-trip .remove-trip{min-width:44px;min-height:44px}
+  .scope-help-toggle,body.large-text .scope-help-toggle{width:44px;min-width:44px;height:44px;min-height:44px;flex-basis:44px}
+}
+
+/* The status occupies the control group while open, and the header while closed. */
+.voice-action-row{display:grid;grid-template-columns:1fr;gap:9px;margin-top:14px;padding-bottom:14px}
+.voice-control-group{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+#voice-action-status-slot{display:block;min-width:0;flex:1}
+.voice-control-group .voice-state{display:block;max-width:100%;margin:0;padding:0;border:0;background:transparent;color:var(--ui-muted);font-size:13px;line-height:1.45;font-weight:650;overflow-wrap:anywhere}
+.voice-control-group .voice-state.speaking{color:#237851}
+.voice-control-group .voice-state.error{color:#a23d30}
+.voice-action-row .voice-control-group .voice-primary{display:flex;align-items:center;justify-content:flex-end;flex:none;gap:8px;margin:0;padding:0;border:0}
+.voice-action-row .voice-control-group .voice-primary button{min-width:150px}
+.voice-action-row .notify-help{grid-column:auto;grid-row:auto;margin:0!important;max-width:none!important}
+@media(max-width:650px){
+  .voice-control-group{display:grid;grid-template-columns:1fr;gap:8px}
+  .voice-action-row .voice-control-group .voice-primary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+  .voice-action-row .voice-control-group .voice-primary button{min-width:0;width:100%;min-height:46px}
+}
+
+/* The full headline links to the compact dashboard. */
+.notify-heading .summary-end{width:60%;max-width:60%;flex:0 1 60%;justify-content:flex-end;margin-left:auto}
+.hero-title-row{display:block;flex:1 1 auto;min-width:0}
+.hero-title-row h1{min-width:0}
+.hero-dashboard-link{color:inherit;text-decoration:none;border-radius:8px;cursor:pointer;text-decoration-skip-ink:auto}
+.hero-dashboard-link:hover{text-decoration:underline;text-decoration-color:#8ab69b;text-decoration-thickness:2px;text-underline-offset:5px}
+.hero-dashboard-link:focus-visible{outline:3px solid var(--focus-ring);outline-offset:4px}
+@media(max-width:650px){.hero-title-row{width:100%}}
+.eta-card .eta-icon{display:grid;place-items:center;flex:none;text-decoration:none;color:inherit;cursor:pointer;transition:background-color .12s,transform .12s}
+.eta-card .eta-icon:hover{background:#ffffff25;transform:translateY(-2px)}
+.eta-card .eta-icon:focus-visible{outline:3px solid var(--focus-ring);outline-offset:3px}
+
+/* First-level cards open from the whole heading; saving stays beside the trip title. */
+.major-card>summary .disclosure-icon,.route-panel>summary .disclosure-icon{display:none}
+.selection-card>summary{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:8px 12px}
+.selection-card-title{display:grid;grid-template-columns:44px minmax(0,max-content);grid-template-rows:auto auto;align-items:center;justify-content:start;gap:3px 8px}
+.selection-card-title .eyebrow{grid-column:2;grid-row:1}
+.selection-card-title strong{grid-column:2;grid-row:2}
+.selection-card>summary #selection-summary{grid-column:2;grid-row:1}
+.selection-card>summary #save-trip{grid-column:1;grid-row:1/3;display:inline-grid;place-items:center;width:44px;min-width:44px;height:44px;min-height:44px;padding:0;border:1px solid var(--ui-border);border-radius:10px;background:var(--ui-soft);color:var(--ui-action);font:inherit;cursor:pointer}
+.selection-card>summary #save-trip .save-trip-icon{font-size:29px;line-height:1}
+.selection-card>summary #save-trip:hover:not(:disabled){background:#e5f3eb;border-color:#8fc4a6}
+.selection-card>summary #save-trip.is-saved{border-color:#a8ceaf;background:#e5f3eb;color:var(--ui-ink)}
+.selection-card>summary #save-trip:disabled:not(.is-saved){border-color:var(--ui-border);background:var(--ui-soft);color:var(--ui-muted);cursor:default}
+.quick-trips .saved-trip.confirm-remove .remove-trip,.quick-trips .saved-trip.confirm-remove .remove-trip:hover{min-width:38px;padding:6px 9px;background:#fce8e2;color:#ab3e2d}
+.quick-trips .saved-trip.is-current.confirm-remove .remove-trip,.quick-trips .saved-trip.is-current.confirm-remove .remove-trip:hover{background:#fce8e2;color:#ab3e2d}
+.location-field .location-toggle{display:inline-flex;width:fit-content;max-width:100%;min-height:44px;gap:8px;padding:8px 10px;white-space:nowrap}
+.location-status-row #location-refresh{display:inline-grid;place-items:center;flex:none;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;border:1px solid var(--ui-border);border-radius:10px;background:var(--ui-soft);color:var(--ui-action)}
+.location-status-row #location-refresh[hidden]{display:none}
+.location-status-row #location-refresh:hover{background:#e5f3eb;border-color:#8fc4a6}
+.location-status-row #location-refresh svg{width:22px;height:22px}
+.scope-label-row{gap:0}
+.scope-help-toggle,body.large-text .scope-help-toggle{display:flex;align-items:center;justify-content:flex-start;width:44px;min-width:44px;height:44px;min-height:44px;flex-basis:44px;margin-left:3px}
+.scope-help-toggle span,body.large-text .scope-help-toggle span{width:24px;height:24px;border-color:#a7c5b0;background:#fff;color:var(--ui-action);font-size:15px;line-height:1}
+.notify-controls #voice-preview:not(:empty)+.voice-action-row{margin-top:6px}
+
+
+/* One star toggles the current trip; saved chips only select a trip. */
+.selection-card>summary #save-trip{border:0;background:transparent;color:var(--ui-action)}
+.selection-card>summary #save-trip.is-saved{border:0;background:transparent;color:var(--ui-action)}
+.selection-card>summary #save-trip:hover:not(:disabled){border:0;background:var(--ui-soft-active)}
+.quick-trips .saved-trip>button:first-child{border-radius:9px}
+
+/* Only the active stop control is coral; a retry stays a secondary action. */
+.leave-card .travel-actions #travel-action.is-stop-action{border-color:#a94332;background:#a94332;color:#fff;font-weight:800}
+.leave-card .travel-actions #travel-action.is-stop-action:hover{border-color:#933727;background:#933727;color:#fff}
+.leave-card .travel-actions #travel-action.is-stop-action:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px}
+.voice-action-row{gap:6px;margin-top:6px;padding-bottom:10px}
+.notify-controls .voice-control-group .voice-state{text-align:left}
+.voice-action-row .notify-help{margin:2px 0 0!important}
+@media(max-width:650px){
+  .selection-card>summary{grid-template-columns:minmax(165px,1fr) minmax(0,1fr);grid-template-rows:auto;gap:8px}
+  .selection-card>summary #selection-summary{grid-column:2;grid-row:1;text-align:right}
+  .selection-card-title{gap:2px 6px}
+  .selection-card-title strong{font-size:18px}
+  .voice-control-group{gap:5px}
+  .quick-trips .saved-trip.confirm-remove .remove-trip,.quick-trips .saved-trip.confirm-remove .remove-trip:hover{min-width:44px}
+}
+@media(min-width:361px) and (max-width:650px){
+  .location-field{display:grid;grid-template-columns:max-content minmax(0,1fr);align-items:start;gap:6px 10px}
+  .location-field .walk-caption{grid-column:1/-1;grid-row:1}
+  .location-field .location-toggle{grid-column:1;grid-row:2}
+  .location-field .location-help{grid-column:2;grid-row:2;margin-top:0}
+}
+@media(max-width:360px){
+  .selection-card>summary{grid-template-columns:1fr;gap:4px}
+  .selection-card>summary #selection-summary{grid-column:1;grid-row:2;text-align:right}
+}
+@media(max-width:650px){
+  body.large-text .selection-card>summary{grid-template-columns:1fr;gap:4px}
+  body.large-text .selection-card>summary #selection-summary{grid-column:1;grid-row:2;text-align:right}
+}
+@media(min-width:801px){
+  .leave-content{grid-template-columns:minmax(0,1fr);gap:16px}
+  .leave-content .leave-guidance{grid-column:1;grid-row:1}
+  .leave-content .walk-settings{grid-column:1;grid-row:2;grid-template-columns:minmax(0,1fr) minmax(170px,240px);gap:12px 20px;padding-top:15px;border-top:1px solid var(--ui-border)}
+  .leave-content .push-card{grid-column:1;grid-row:auto}
+  .location-field{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap}
+  .location-field .walk-caption{margin:0}
+  .location-field .location-help{flex-basis:100%;margin-top:0}
+  .voice-control-group{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px}
+  .voice-control-group .voice-state{text-align:left}
+}
+
+/* Keep the selected arrival scope visible while its explanation stays optional. */
+.selection-card .scope-effect{margin:9px 0 0;color:var(--ui-secondary);font-size:13px;line-height:1.45}
+body.large-text .selection-card .scope-effect{font-size:16px!important;line-height:1.5}
+
+/* Voice actions lead into settings; the live state always remains in the heading. */
+.notify-controls .voice-action-row{display:block;margin:0 0 12px;padding:12px 0;border-bottom:1px solid var(--ui-border)}
+.notify-controls .voice-control-group{display:flex;justify-content:flex-end}
+.notify-controls .voice-action-row .voice-primary{display:flex;justify-content:flex-end;gap:8px;width:auto;margin:0;padding:0;border:0}
+.notify-controls .voice-action-row .voice-primary button{min-width:150px}
+.notify-controls .voice-settings{margin-top:0}
+.notify-controls #voice-preview{margin:12px 0 0}
+.notify-controls .notify-help{margin:9px 0 12px!important}
+@media(max-width:650px){
+  .notify-heading .summary-end{max-width:52%;width:52%;flex-basis:52%}
+  .notify-controls .voice-action-row .voice-primary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+  .notify-controls .voice-action-row .voice-primary button{width:100%;min-width:0;min-height:44px}
+}
+
+/* Walking minutes and location method share one row; only the help and status need another line. */
+.leave-content .walk-settings{display:grid;grid-template-columns:minmax(94px,130px) minmax(0,1fr);gap:9px 12px;align-items:start}
+.walk-settings .walk-field{min-width:0;display:flex;flex-direction:column;align-items:stretch;gap:6px;margin:0}
+.walk-settings .walk-field>span:first-child{white-space:nowrap}
+.walk-settings .walk-field input{order:2;width:100%;max-width:115px;margin:0;min-height:44px}
+.walk-settings .walk-source{order:3;min-height:15px;white-space:nowrap}
+.walk-settings .location-field{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0}
+.walk-settings .location-field .walk-caption{display:block;margin:0;min-height:15px}
+.location-option-row{display:flex;align-items:center;gap:4px;max-width:100%}
+.walk-settings .location-field .location-toggle{grid-column:auto;grid-row:auto;max-width:100%;min-height:44px;margin:0;padding:7px 9px;gap:6px;white-space:nowrap}
+.location-help-toggle{display:grid;place-items:center;flex:none;width:38px;height:44px;padding:0;border:0;background:transparent;color:var(--ui-action);cursor:pointer}
+.location-help-toggle span{display:grid;place-items:center;width:24px;height:24px;border:1px solid #a7c5b0;border-radius:50%;background:#fff;font-size:15px;font-weight:700;line-height:1}
+.location-help-toggle:focus-visible{outline:3px solid var(--focus-ring);outline-offset:0;border-radius:8px}
+.walk-settings .location-help{grid-column:1/-1;grid-row:auto;margin:0;color:var(--ui-secondary);font-size:13px;line-height:1.5}
+.walk-settings .location-help[hidden]{display:none}
+.walk-settings .location-status-row{grid-column:1/-1;display:block;min-width:0}
+.walk-settings .location-status-row #location-refresh{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;height:auto;min-height:36px;padding:4px 0;border:0;border-radius:6px;background:transparent;color:var(--ui-secondary);font:inherit;font-size:13px;font-weight:500;line-height:1.45;text-align:left;white-space:normal;cursor:pointer}
+.walk-settings .location-status-row #location-refresh:hover:not(:disabled){background:var(--ui-soft);color:var(--ui-action)}
+.walk-settings .location-status-row #location-refresh:disabled{cursor:default}
+.walk-settings .location-status-row .location-state{flex:1;display:block;min-height:0;color:inherit;font:inherit;line-height:inherit}
+.walk-settings .location-status-row #location-refresh svg{display:block;flex:none;width:18px;height:18px}
+.walk-settings .location-status-row #location-refresh:disabled svg{display:none}
+@media(max-width:650px){.leave-content .walk-settings{grid-template-columns:minmax(94px,115px) minmax(0,1fr)}}
+@media(max-width:360px){.leave-content .walk-settings{grid-template-columns:1fr}.walk-settings .walk-field input{max-width:110px}}
+body.large-text .leave-content .walk-settings{grid-template-columns:1fr}
+
+/* The save action follows the title without leading the whole card. */
+.selection-card-title{grid-template-columns:minmax(0,max-content) 38px;grid-template-rows:auto auto;align-items:center;gap:2px 6px}
+.selection-card-title .eyebrow{grid-column:1/-1;grid-row:1}
+.selection-card-title strong{grid-column:1;grid-row:2}
+.selection-card>summary #save-trip{grid-column:2;grid-row:2;width:38px;min-width:38px;height:38px;min-height:38px;border-radius:9px}
+.selection-card>summary #save-trip .save-trip-icon{font-size:21px;line-height:1}
+@media(max-width:650px){.selection-card>summary #save-trip .save-trip-icon{font-size:18px}}
+
+/* The location estimate is a heading for the refreshable detail below it. */
+.walk-settings .walk-source{grid-column:1/-1;order:0;margin-top:2px;min-height:0;color:var(--ui-action);font-size:15px;font-weight:800;line-height:1.35}
+.walk-settings[data-mode="manual"] .walk-source{color:var(--ui-secondary)}
+.walk-settings .location-status-row #location-refresh{min-height:0;padding:1px 0 4px}
+.walk-settings .location-status-row #location-refresh:not(:disabled) .location-state{text-decoration:underline;text-decoration-color:#b4cfc0;text-underline-offset:3px}
+
+/* The location choice should end at its text, with the help target beside it. */
+.walk-settings .location-field .location-toggle{width:max-content;padding:6px 7px;gap:5px}
+.walk-settings .location-field .location-toggle .switch{flex:none}
+.location-option-row{gap:2px}
+.location-help-toggle{width:32px}
+
+/* Spoken content is read before playback actions, with settings below them. */
+.notify-controls #voice-preview{margin:12px 0 0}
+.notify-controls #voice-preview:not(:empty)+.voice-action-row{margin-top:6px}
+
+/* Keep the location choice as narrow as its check and label. */
+.walk-settings .location-field .location-toggle{min-width:0;width:max-content;max-width:100%;padding-inline:7px;flex:0 0 auto}
+
+/* One title and bookmark form the save control. */
+.selection-card-title{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto}
+.selection-card-title .eyebrow{grid-column:1;grid-row:1}
+.selection-card>summary #save-trip{grid-column:1;grid-row:2;display:inline-flex;align-items:center;justify-content:flex-start;gap:5px;width:max-content;max-width:100%;min-width:0;height:auto;min-height:38px;padding:0 2px;border:0;border-radius:6px;background:transparent;color:var(--ui-ink);font:inherit;text-align:left}
+.selection-card>summary #save-trip strong{grid-column:auto;grid-row:auto;color:inherit;white-space:nowrap}
+.selection-card>summary #save-trip .save-trip-icon{display:block;flex:none;width:21px;height:21px;fill:none;stroke:var(--ui-action)}
+.selection-card>summary #save-trip.is-saved .save-trip-icon{fill:var(--ui-action)}
+.selection-card>summary #save-trip:hover:not(:disabled){border:0;background:transparent;color:var(--ui-action)}
+.selection-card>summary #save-trip:hover:not(:disabled) strong{text-decoration:underline;text-underline-offset:3px}
+.selection-card>summary #save-trip.is-saved{border:0;background:transparent;color:var(--ui-ink)}
+.selection-card>summary #save-trip:disabled:not(.is-saved){border:0;background:transparent}
+@media(max-width:650px){.selection-card>summary #save-trip .save-trip-icon{width:18px;height:18px}}
+
+/* The help opens immediately below its question mark heading. */
+.selection-card .scope-control>.arrival-scope{width:100%;margin:0 0 9px;padding:0;border:0}
+.selection-card .scope-control>.arrival-scope .arrival-scope-content{margin:0}
+@media(min-width:741px){
+  .selection-card .selection-fields{grid-template-rows:24px auto;row-gap:0}
+  .selection-card .selection-fields .scope-control{display:contents}
+  .selection-card .selection-fields>.control:not(.scope-control){grid-row:1/3;align-self:start}
+  .selection-card .scope-label-row{grid-column:3;grid-row:1;align-self:center;min-height:0;height:24px}
+  .selection-card .scope-label-row .field-label{margin:0 0 0 3px}
+  .selection-card .scope-help-toggle{width:24px;min-width:24px;height:24px;min-height:24px;flex-basis:24px;margin-left:0;padding:0;justify-content:center}
+  .selection-card .scope-help-toggle span{width:22px;height:22px}
+  .selection-card .scope-option-row{grid-column:3;grid-row:2;align-self:start}
+  .selection-card .scope-option-row .loop-control{min-height:49px}
+  .selection-card .scope-control>.arrival-scope{grid-column:1/-1;grid-row:3;margin:12px 0 0}
+  .selection-card .scope-control>.arrival-scope .arrival-scope-content{padding:12px 14px}
+}
+
+/* Keep both departure choices together on phones and large screens. */
+.leave-choice-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0 6px}
+.leave-choice-row .track-advice-toggle{margin:0}
+
+/* Route tabs open this setup menu; the closed menu takes no page space. */
+#selection-card.route-setup-menu:not([open]){display:none!important}
+#selection-card.route-setup-menu[open]{margin:8px 0 14px;border-color:#b7d4c1;box-shadow:0 14px 30px #173d3219}
+.route-setup-menu>summary{cursor:pointer}
+.route-setup-menu .selection-card-title strong{display:block}
+.route-setup-menu .setup-save-trip{display:block;width:100%;min-height:48px;margin-top:14px;padding:10px 16px;border:1px solid var(--ui-action);border-radius:10px;background:var(--ui-action);color:#fff;font:inherit;font-size:15px;font-weight:800;cursor:pointer}
+.route-setup-menu .setup-save-trip:hover:not(:disabled){background:#28594b}
+.route-setup-menu .setup-save-trip.is-saved{border-color:#a94332;background:#a94332;color:#fff}
+.route-setup-menu .setup-save-trip.is-saved:hover{background:#933727}
+.route-setup-menu .setup-save-trip:disabled{opacity:.55;cursor:default}
+.route-setup-menu .setup-save-trip:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px}
+
+.arrival-title-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px}
+.arrival-title-row .stop-direction{color:var(--ui-secondary);font-size:14px;font-weight:750;line-height:1.35}
+
+.walk-settings .plan-buffer-field{grid-column:1;grid-row:2}
+.walk-settings .plan-buffer-field input{padding:6px 10px;border:1px solid var(--ui-border);border-radius:9px;background:#fff;color:var(--ui-ink);font:inherit;font-size:15px}
+@media(max-width:360px){.walk-settings .plan-buffer-field{grid-row:auto}}
+body.large-text .walk-settings .plan-buffer-field{grid-row:auto}
+.walk-settings .location-status-row .location-state{display:block;color:var(--ui-secondary);font-size:13px;line-height:1.45}
+.leave-card .travel-actions{grid-template-columns:1fr}
+@media(min-width:741px){
+  .selection-card .scope-option-row .scope-help-toggle{flex:0 0 40px;width:40px;min-width:40px;height:40px;min-height:40px;align-self:center}
+}
+
+/* Main-page display choices use the same action, selected and danger roles as route controls. */
+.display-preferences{display:grid;gap:10px;margin:12px 0 0}
+.display-settings,.display-presets{border:1px solid var(--ui-card-border);border-radius:14px;background:#fff;color:var(--ui-ink)}
+.display-settings>summary{display:flex;align-items:center;gap:10px;min-height:48px;padding:10px 16px;list-style:none;cursor:pointer;color:var(--ui-action);font-size:14px;font-weight:800}
+.display-settings>summary::-webkit-details-marker{display:none}
+.display-settings>summary .display-count{margin-left:auto;color:var(--ui-secondary);font-size:12px;font-weight:650;white-space:nowrap}
+.display-settings>summary .disclosure-icon{display:grid;place-items:center;flex:none;width:30px;height:30px;font-size:15px}
+.display-settings>summary:focus-visible,.display-settings button:focus-visible,.display-settings input:focus-visible,.display-presets button:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px}
+.display-settings-body{padding:14px 16px 16px;border-top:1px solid var(--ui-card-border)}
+.display-settings-body>p:first-child{margin:0 0 12px;color:var(--ui-secondary);font-size:13px;line-height:1.5}
+.display-choices,.display-preset-list{display:flex;flex-wrap:wrap;gap:8px}
+.display-choice,.display-preset{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:8px 12px;border:1px solid var(--ui-border);border-radius:10px;background:var(--ui-soft);color:var(--ui-action);font:inherit;font-size:13px;font-weight:750;line-height:1.3;cursor:pointer}
+.display-choice[aria-pressed="true"],.display-preset[aria-pressed="true"]{border-color:#85c49f;background:var(--ui-soft-active);color:var(--ui-action)}
+.display-choice-mark{display:inline-grid;place-items:center;width:18px;height:18px;border:1.5px solid currentColor;border-radius:5px;font-size:13px;line-height:1;color:transparent}
+.display-choice[aria-pressed="true"] .display-choice-mark{background:var(--ui-action);border-color:var(--ui-action);color:#fff}
+.display-save{margin-top:16px}.display-save label{margin:0 0 7px;color:var(--ui-secondary);font-size:13px;font-weight:750}.display-save>div{display:flex;gap:8px}
+.display-save input{flex:1;min-width:0;min-height:44px;padding:8px 12px;border:1px solid var(--ui-border);border-radius:9px;background:#fff;color:var(--ui-ink);font:inherit;font-size:14px}
+.display-save button{flex:none;min-height:44px;padding:8px 14px;border:1px solid var(--ui-action);border-radius:9px;background:var(--ui-action);color:#fff;font:inherit;font-size:13px;font-weight:800;cursor:pointer}
+.display-message{min-height:1.4em;margin:9px 0 0;color:var(--ui-secondary);font-size:13px;line-height:1.4}
+.display-presets{padding:12px 16px}.display-presets[hidden]{display:none}.display-presets>strong{display:block;margin-bottom:9px;font-size:13px;color:var(--ui-secondary)}
+.display-preset-pair{display:inline-flex;min-width:0;border:1px solid var(--ui-border);border-radius:10px;overflow:hidden;background:var(--ui-soft)}
+.display-preset-pair .display-preset{min-width:0;border:0;border-radius:0;padding:8px 11px}
+.display-preset-remove{display:grid;place-items:center;min-width:44px;min-height:44px;padding:0 8px;border:0;border-left:1px solid var(--ui-border);background:transparent;color:var(--ui-action);font:inherit;font-size:20px;font-weight:700;cursor:pointer}
+.display-preset-remove[data-pending="true"]{background:#a94332;color:#fff}
+@media(max-width:650px){.display-settings>summary{padding:9px 12px}.display-settings-body{padding:13px 12px}.display-presets{padding:11px 12px}.display-save>div{flex-wrap:wrap}.display-save button{min-width:112px}}
+
+/* Selected tabs disclose route settings; inactive tabs only change routes. */
+.route-tabs-shell .route-tabs button[aria-selected="true"]{display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.route-tabs-shell .route-tabs button[aria-selected="true"]::after{content:none}
+.route-tabs-shell .route-tabs button[aria-selected="true"][aria-expanded="true"]::after{margin-top:3px;transform:rotate(225deg)}
+.route-tabs-shell .route-tabs button:not([aria-selected="true"]):hover{background:var(--ui-soft-active);color:var(--ui-action)}
+.route-tabs-shell .route-tabs button[aria-selected="true"][aria-expanded="true"]{box-shadow:0 0 0 2px #9bc5aa inset}
+/* Comparable toolbar icons share one size and semantic action color. */
+.route-tabs-shell :is(.route-add-mark,.route-remove svg,.disclosure-toggle svg){width:20px;height:20px;flex:none;color:var(--ui-action)}
+.route-tabs-shell .route-add-mark{display:inline-grid;place-items:center;font-size:20px;line-height:1}
+.route-tabs-shell .route-remove:hover svg,.route-tabs-shell .route-remove[aria-expanded="true"] svg{color:#a94332}
+.map-zoom-controls button{color:var(--ui-action)}
+.display-hide-official #eta-card,.display-hide-official #message,.display-hide-following #approach-board,.display-hide-leave #departure-card,.display-hide-tracked #tracked-bus,.display-hide-data .arrival-meta,.display-hide-data #updated,.display-hide-arrival #arrival-summary{display:none!important}
+
+.display-preset-remove svg{display:block;width:20px;height:20px;flex:none}
+.eta-card .eta-icon,.eta-card .eta-icon:hover{cursor:default;transform:none;background:#ffffff14}
+
+.display-hide-official:not(.display-hide-arrival) #message.error{display:block!important}
+
+/* Route tools share the tab row on desktop and an optional second row on phones. */
+.route-tabs-shell .route-tools{display:flex;align-items:stretch;justify-content:flex-end;gap:6px;flex:none;min-width:0}
+.route-tabs-shell .display-settings-toggle,.route-tabs-shell .route-tools-toggle{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:none;min-width:42px;min-height:42px;padding:0 10px;border:1px solid var(--ui-border);border-radius:10px;background:#fff;color:var(--ui-action);font:inherit;font-size:13px;font-weight:800;cursor:pointer}
+.route-tabs-shell .display-settings-toggle svg,.route-tabs-shell .route-tools-toggle svg{display:block;flex:none;width:20px;height:20px}
+.route-tabs-shell .display-settings-toggle:hover,.route-tabs-shell .route-tools-toggle:hover,.route-tabs-shell .display-settings-toggle[aria-expanded="true"],.route-tabs-shell .route-tools-toggle[aria-expanded="true"]{background:var(--ui-soft-active)}
+.route-tabs-shell .display-settings-toggle:focus-visible,.route-tabs-shell .route-tools-toggle:focus-visible{outline:3px solid var(--focus-ring);outline-offset:1px}
+.route-tabs-shell .route-tools-toggle{display:none}
+.display-settings:not([open]){display:none}
+.display-settings[open]{display:block;scroll-margin-top:72px}
+@media(max-width:650px){
+  .route-tabs-shell{flex-wrap:wrap}
+  .route-tabs-shell .route-tools-toggle{display:inline-flex;order:1;flex:0 0 44px;width:44px;height:44px;min-width:44px;min-height:44px;padding:0}
+  .route-tabs-shell .route-tools-toggle[aria-expanded="true"] svg{transform:rotate(180deg)}
+  .route-tabs-shell .route-tools{display:none;order:2;flex:1 0 100%;width:100%;justify-content:space-between;gap:6px;padding-top:6px;border-top:1px solid var(--ui-border)}
+  .route-tabs-shell .route-tools.is-open{display:flex}
+  .route-tabs-shell .route-tools :is(.route-add,.route-remove,.disclosure-toggle,.display-settings-toggle){display:inline-flex;align-items:center;justify-content:center;flex:1 1 0;width:auto;min-width:44px;min-height:44px;height:44px;padding:0}
+  .route-tabs-shell .route-tools .route-remove[hidden]{display:none}
+  .route-tabs-shell .route-tools :is(.route-add-label,.route-remove-label,.disclosure-toggle-label,.display-settings-toggle span){display:none}
+  .display-settings>summary{min-height:50px}
+}
+
+.display-preferences:has(> #display-settings:not([open])){display:none}
+
+@media(max-width:650px){
+  .route-tabs-shell .route-tabs{flex-basis:0!important;align-self:stretch}
+  .route-tabs-shell .route-tabs button{min-height:44px}
+}
+
+/* Keep the desktop toolbar compact: names remain available as tooltips and accessible labels. */
+.route-tabs-shell .route-tools :is(.route-add,.route-remove,.disclosure-toggle,.display-settings-toggle){display:inline-flex;align-items:center;justify-content:center;flex:0 0 44px;width:44px;min-width:44px;height:44px;min-height:44px;padding:0}
+.route-tabs-shell .route-tools .route-remove[hidden]{display:none}
+.route-tabs-shell .route-tools :is(.route-add-label,.route-remove-label,.disclosure-toggle-label,.display-settings-toggle span){display:none}
+@media(max-width:650px){.route-tabs-shell .route-tools :is(.route-add,.route-remove,.disclosure-toggle,.display-settings-toggle){flex:1 1 0;width:auto}}
+
+/* Route setup is a toolbar action; tabs now only select routes. */
+.route-tabs-shell .trip-stop-toggle{display:inline-flex;align-items:center;justify-content:center;flex:0 0 44px;width:44px;min-width:44px;height:44px;min-height:44px;padding:0;border:1px solid var(--ui-border);border-radius:10px;background:#fff;color:var(--ui-action);font:inherit;cursor:pointer}
+.route-tabs-shell .trip-stop-toggle svg{display:block;flex:none;width:20px;height:20px}
+.route-tabs-shell .trip-stop-toggle:hover,.route-tabs-shell .trip-stop-toggle[aria-expanded="true"]{background:var(--ui-soft-active)}
+.route-tabs-shell .trip-stop-toggle:focus-visible{outline:3px solid var(--focus-ring);outline-offset:1px}
+@media(max-width:650px){.route-tabs-shell .route-tools .trip-stop-toggle{flex:1 1 0;width:auto;min-width:44px}}
+
+/* Numeric inputs use one typographic scale on both phone and desktop. */
+.leave-content .walk-settings #walk-minutes,.leave-content .walk-settings #plan-buffer{box-sizing:border-box;min-height:44px;padding:8px 10px;border:1px solid var(--ui-border);border-radius:9px;background:#fff;color:var(--ui-ink);font-family:inherit;font-size:16px;font-weight:750;line-height:1.25;letter-spacing:0;font-variant-numeric:tabular-nums}
+
+/* Departure guidance carries the same visual weight as the official arrival card. */
+.leave-guidance #leave-advice{margin:0 0 14px;padding:18px 20px;border-radius:14px;background:var(--ui-ink);color:#fff;font-size:clamp(21px,2.6vw,27px);font-weight:800;line-height:1.4;overflow-wrap:anywhere}
+@media(max-width:650px){.leave-guidance #leave-advice{padding:16px;font-size:clamp(20px,5.2vw,24px)}}
+
+/* The recommendation spans the full card, matching the official arrival estimate. */
+.leave-card .leave-content{display:block;padding:0}
+.leave-card .leave-content .leave-guidance{display:block;min-width:0}
+.leave-card .leave-content #leave-advice{margin:0;padding:22px 25px;border-radius:0;background:var(--ui-ink);color:#fff;font-size:clamp(22px,2.8vw,30px);line-height:1.4;font-weight:800}
+.leave-card .departure-settings,.leave-card .leave-content .push-card{display:block;margin:16px 20px 18px}
+.leave-card .departure-settings{border:1px solid var(--ui-card-border);border-radius:10px;background:#fff;overflow:hidden}
+.leave-card .departure-settings>summary{display:grid;grid-template-columns:minmax(0,1fr) 32px;grid-template-rows:auto auto;column-gap:12px;align-items:center;min-height:65px;padding:12px 14px;background:var(--ui-soft);list-style:none;cursor:pointer}
+.leave-card .departure-settings>summary::-webkit-details-marker{display:none}
+.leave-card .departure-settings>summary strong{grid-column:1;grid-row:1;color:var(--ui-ink);font-size:15px;line-height:1.35}
+.leave-card .departure-settings>summary>span:not(.disclosure-icon){grid-column:1;grid-row:2;color:var(--ui-secondary);font-size:12px;line-height:1.4}
+.leave-card .departure-settings>summary .disclosure-icon{grid-column:2;grid-row:1/3;align-self:center}
+.leave-card .departure-settings>summary:focus-visible{outline:3px solid var(--focus-ring);outline-offset:-3px;border-radius:10px}
+.leave-card .departure-settings-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,365px);gap:18px 24px;padding:16px 14px}
+.leave-card .departure-settings-body .departure-options{min-width:0}
+.leave-card .departure-settings-body .walk-settings{grid-column:auto;grid-row:auto;min-width:0}
+.leave-card .departure-settings-body .leave-note{display:block;margin-top:8px;color:var(--ui-secondary);font-size:13px;line-height:1.5}
+.leave-card .leave-content .push-card[hidden]{display:none}
+@media(max-width:800px){.leave-card .departure-settings-body{grid-template-columns:1fr}.leave-card .departure-settings-body .walk-settings{border-top:1px solid var(--ui-card-border);padding-top:14px}}
+@media(max-width:650px){.leave-card .leave-content #leave-advice{padding:20px 22px;font-size:clamp(22px,5.5vw,26px)}.leave-card .departure-settings,.leave-card .leave-content .push-card{margin:13px 14px 14px}.leave-card .departure-settings-body{gap:14px;padding:14px 12px}}
+.leave-card .departure-settings:not([open])>summary .disclosure-icon:after{transform:translateY(-2px) rotate(45deg)}
+
+/* Only the unused phone tab bar background opens the tools. */
+@media(max-width:650px){.route-tabs-shell .route-tabs{cursor:pointer}}
+/* The departure time is a primary status, like the following-bus count. */
+.leave-heading #leave-brief{color:var(--ui-muted);font-size:12px;font-weight:700;line-height:1.45;font-variant-numeric:normal}
+
+/* The recommendation itself discloses the two optional departure panels. */
+.leave-card .departure-more{display:block}
+.leave-card .departure-more>summary{display:block;min-width:0;padding:22px 25px;background:var(--ui-ink);color:#fff;list-style:none;cursor:pointer}
+.leave-card .departure-more>summary::-webkit-details-marker{display:none}
+.leave-card .departure-more:not([open])>summary{border-radius:0 0 15px 15px}
+.leave-card .departure-more>summary:hover{background:#215345}
+.leave-card .departure-more>summary:focus-visible{outline:3px solid var(--focus-ring);outline-offset:-3px}
+.leave-card .leave-content .departure-more #leave-advice{margin:0;padding:0;border-radius:0;background:transparent;color:inherit;font-size:clamp(22px,2.8vw,30px);line-height:1.4;font-weight:800}
+.departure-more-content{display:flow-root}
+@media(max-width:650px){.leave-card .departure-more>summary{padding:20px 22px}.leave-card .leave-content .departure-more #leave-advice{font-size:clamp(22px,5.5vw,26px)}}
+
+/* Keep the primary add-route action beside the phone toolbar chevron. */
+.route-tabs-shell>.route-add{display:inline-flex;align-items:center;justify-content:center;flex:0 0 44px;width:44px;min-width:44px;height:44px;min-height:44px;margin:0;padding:0;border:1px solid var(--ui-border);border-radius:10px;background:#fff;color:var(--ui-action)}
+.route-tabs-shell>.route-add .route-add-label{display:none}
+.route-tabs-shell>.route-add .route-add-mark{font-size:20px;line-height:1}
+@media(max-width:650px){.route-tabs-shell>.route-add{order:1}}
+
+/* Saved routes identify the group; a held chip can be dragged into a new position. */
+.quick-trips .saved-trips-intro{display:flex;flex-direction:column;justify-content:center;gap:2px;flex:none;min-height:38px;color:var(--ui-ink)}
+.quick-trips .saved-trips-intro strong{font-size:13px;line-height:1.2}
+.quick-trips .saved-trips-intro small{margin:0;color:var(--ui-secondary);font-size:11px;line-height:1.2}
+.quick-trips .saved-trip.is-current>button:first-child:before{content:none}
+.quick-trips .saved-trip>button:first-child{border-radius:9px;touch-action:pan-x pan-y;user-select:none;-webkit-user-select:none}
+@media(max-width:650px){.quick-trips .saved-trips-intro{width:100%;min-height:0}.quick-trips .saved-trip>button:first-child{min-height:44px}}
+/* The setup query is the explicit close-and-refresh action. */
+.route-setup-menu .query-trip-hint{margin:12px 0 8px;color:var(--ui-secondary);font-size:13px;line-height:1.45}
+.route-setup-menu .setup-query-trip{display:block;width:100%;min-height:48px;padding:10px 16px;border:1px solid var(--ui-action);border-radius:10px;background:var(--ui-action);color:#fff;font:inherit;font-size:15px;font-weight:800;cursor:pointer}
+.route-setup-menu .setup-query-trip:hover:not(:disabled){background:#28594b}
+.route-setup-menu .setup-query-trip:disabled{opacity:.55;cursor:default}
+.route-setup-menu .setup-query-trip:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px}
+
+/* The saved-route heart replaces the data link without moving the freshness text. */
+.arrival-meta .arrival-save-trip{display:grid;place-items:center;flex:none;width:44px;height:44px;margin:-9px -8px -9px 0;padding:0;border:0;border-radius:10px;background:transparent;color:var(--ui-action);cursor:pointer}
+.arrival-meta .arrival-save-trip svg{display:block;width:24px;height:24px;fill:none;stroke:currentColor}
+.arrival-meta .arrival-save-trip.is-saved svg{fill:currentColor}
+.arrival-meta .arrival-save-trip:hover:not(:disabled){background:var(--ui-soft-active)}
+.arrival-meta .arrival-save-trip:disabled{opacity:.45;cursor:default}
+.arrival-meta .arrival-save-trip:focus-visible{outline:3px solid var(--focus-ring);outline-offset:1px}
+.display-hide-data #data-freshness{display:none!important}
+.display-hide-data .arrival-meta{display:flex!important}
+
+
+/* The detected-bus disclosure is part of the arrival card. */
+.arrival-summary #approach-board{display:block;margin:0;padding:0;border:0;border-top:1px solid var(--ui-border);border-radius:0;background:#fff;box-shadow:none;overflow:hidden}
+.arrival-summary #approach-board .list-head{min-height:68px;padding:13px 20px}
+.arrival-summary #approach-board .approach-content{padding:0 20px 18px}
+.arrival-summary #eta-card{cursor:pointer;user-select:none}
+.arrival-summary #eta-card:hover{background:#205044}
+.arrival-summary #eta-card:focus-visible{outline:3px solid var(--focus-ring);outline-offset:-4px}
+.arrival-meta .arrival-voice-shortcut{display:grid;place-items:center;flex:none;width:44px;height:44px;margin:-9px 0 -9px 0;padding:0;border:0;border-radius:10px;background:transparent;color:var(--ui-action);cursor:pointer}
+.arrival-meta .arrival-voice-shortcut svg{display:block;width:23px;height:23px}
+.arrival-meta .arrival-voice-shortcut:hover{background:var(--ui-soft-active)}
+.arrival-meta .arrival-voice-shortcut:focus-visible{outline:3px solid var(--focus-ring);outline-offset:1px}
+.notify-controls .voice-settings{margin:14px 0 0}
+.notify-controls #voice-preview{margin:12px 0 0}
+.notify-controls #voice-preview:empty{display:none}
+.notify-controls .voice-action-row{margin:6px 0 12px;padding:8px 0 12px}
+@media(max-width:650px){.arrival-summary #approach-board .list-head{padding:12px 14px}.arrival-summary #approach-board .approach-content{padding:0 14px 16px}.arrival-meta{gap:3px}.notify-controls .voice-settings{margin-top:12px}}
+
+
+/* Preserve the official estimate's visual hierarchy in large-text mode. */
+body.large-text .arrival-summary #eta-card .card-label{font-size:18px!important;line-height:1.35}
+body.large-text .arrival-summary #eta-card #eta{font-size:52px!important;line-height:1.18;overflow-wrap:anywhere}
+body.large-text .arrival-summary #eta-card #eta-detail{font-size:18px!important;line-height:1.5}
+@media(max-width:650px){
+  body.large-text .arrival-summary #eta-card #eta{font-size:42px!important}
+  body.large-text .arrival-summary #eta-card .card-label,
+  body.large-text .arrival-summary #eta-card #eta-detail{font-size:17px!important}
+}
+
+/* A held route can be moved without changing what a normal tap does. */
+.route-tabs button{touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.quick-trips .saved-trip>button:first-child{touch-action:none;user-select:none;-webkit-user-select:none}
+.route-tabs .is-reordering,.saved-trips .is-reordering{opacity:.38;outline:2px dashed var(--ui-action);outline-offset:2px}
+.route-drag-ghost{position:fixed;z-index:2000;transform:translate(-50%,-50%);max-width:min(230px,calc(100vw - 28px));padding:10px 14px;border:1px solid #9ec9ad;border-radius:10px;background:var(--ui-action);color:#fff;box-shadow:0 12px 25px #173d3244;font:inherit;font-size:15px;font-weight:800;line-height:1.3;text-align:center;pointer-events:none;user-select:none;overflow-wrap:anywhere}
+
+/* Direct route controls and compact arrival shortcuts. */
+.route-tabs-shell{flex-wrap:nowrap!important}
+.route-tabs-shell>.route-remove,.route-tabs-shell>.disclosure-toggle{display:inline-flex;align-items:center;justify-content:center;flex:0 0 44px;width:44px;min-width:44px;height:44px;min-height:44px;margin:0;padding:0;border:1px solid var(--ui-border);border-radius:10px;background:#fff;color:var(--ui-action)}
+.route-tabs-shell>.route-remove[hidden]{display:none!important}
+.route-tabs-shell>.route-remove .route-remove-label,.route-tabs-shell>.disclosure-toggle .disclosure-toggle-label{display:none}
+.route-tabs-shell>.route-remove svg,.route-tabs-shell>.disclosure-toggle svg{width:20px;height:20px}
+@media(max-width:650px){.route-tabs-shell>.route-remove,.route-tabs-shell>.route-add,.route-tabs-shell>.disclosure-toggle{order:0}}
+.masthead-actions .display-settings-toggle{display:grid;place-items:center;flex:none;width:44px;height:40px;padding:0;border:1px solid #c7dbcd;border-radius:9px;background:#fff;color:var(--ui-action);cursor:pointer}
+.masthead-actions .display-settings-toggle svg{width:21px;height:21px}.masthead-actions .display-settings-toggle span{display:none}
+.display-language{display:flex;align-items:center;gap:12px;margin-bottom:14px}.display-language strong{font-size:14px;color:var(--ui-secondary)}
+.arrival-meta .trip-stop-toggle{display:grid;place-items:center;flex:none;width:44px;height:44px;margin:-9px 0;padding:0;border:0;border-radius:10px;background:transparent;color:var(--ui-action);cursor:pointer}
+.arrival-meta .trip-stop-toggle svg{width:23px;height:23px}.arrival-meta .trip-stop-toggle:hover,.arrival-meta .trip-stop-toggle[aria-expanded=true]{background:var(--ui-soft-active)}
+.selection-card .scope-control>.arrival-scope[open]{margin-top:18px}
+.display-hide-route #route-view,.display-hide-voice #voice-card{display:none!important}
+body.large-text .leave-card .departure-more #leave-advice{font-size:32px!important;line-height:1.4}
+body.large-text .tracking-context{font-size:18px!important;line-height:1.4}
+@media(max-width:650px){body.large-text .leave-card .departure-more #leave-advice{font-size:26px!important}.arrival-meta{gap:0}.arrival-meta .trip-stop-toggle,.arrival-meta .arrival-voice-shortcut,.arrival-meta .arrival-save-trip{width:40px;min-width:40px}}
+.journey-finder{margin:18px 0;border:1px solid var(--ui-card-border);border-radius:18px;background:#fff;overflow:hidden}.journey-finder>summary{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;color:var(--ui-ink);font-size:18px;font-weight:800;cursor:pointer;list-style:none}.journey-finder>summary::-webkit-details-marker{display:none}.journey-finder-body{padding:0 22px 22px}.journey-finder-body>p{color:var(--ui-secondary);line-height:1.5}.journey-fields{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end}.journey-fields label{display:grid;gap:6px;color:var(--ui-secondary);font-weight:750}.journey-fields input{width:100%;min-width:0;min-height:46px;padding:9px 12px;border:1px solid var(--ui-border);border-radius:9px;font:inherit}.journey-fields button,.journey-card button{min-height:46px;padding:9px 15px;border:0;border-radius:9px;background:var(--ui-action);color:#fff;font:inherit;font-weight:800;cursor:pointer}.journey-suggestions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.journey-suggestions:empty{display:none}.journey-suggestions button{padding:6px 10px;border:1px solid var(--ui-border);border-radius:8px;background:var(--ui-soft);color:var(--ui-action);font:inherit;cursor:pointer}.journey-results{display:grid;gap:10px}.journey-card{display:grid;grid-template-columns:1fr auto;gap:7px 15px;padding:15px;border:1px solid var(--ui-border);border-radius:12px}.journey-card strong{color:var(--ui-ink);font-size:18px}.journey-card p{grid-column:1;grid-row:2;margin:0;color:var(--ui-secondary);line-height:1.4}.journey-card button{grid-column:2;grid-row:1/3;align-self:center}.journey-card small{grid-column:1;color:var(--ui-secondary)}
+@media(max-width:700px){.journey-fields{grid-template-columns:1fr}.journey-card{grid-template-columns:1fr}.journey-card button{grid-column:1;grid-row:auto}.journey-finder-body{padding:0 15px 18px}.journey-finder>summary{padding:15px}}
+
+.journey-suggestions{align-items:center}.journey-suggestions strong{margin-right:2px;color:var(--ui-secondary);font-size:13px}
+
+/* Preferences align with the adjacent text-size control. */
+.masthead-actions .display-settings-toggle{width:40px;height:38px;min-width:40px;min-height:38px}
+.masthead-actions .display-settings-toggle svg{width:18px;height:18px}
+body.large-text .masthead-actions .display-settings-toggle{width:40px;height:40px;min-width:40px;min-height:40px}
+.display-settings-body .display-language{display:block;margin-bottom:18px}
+.display-settings-body :is(.display-language,.display-information)>strong{display:block;margin-bottom:10px;color:var(--ui-ink);font-size:16px;font-weight:800}
+.display-settings-body .language-toggle{display:inline-flex;max-width:100%;gap:3px;padding:3px;border:1px solid var(--ui-border);border-radius:10px;background:var(--ui-soft)}
+.display-settings-body .language-toggle button{min-width:90px;min-height:40px;padding:7px 12px;border:0;border-radius:8px;background:transparent;color:var(--ui-action);font:inherit;font-size:14px;font-weight:750;cursor:pointer}
+.display-settings-body .language-toggle button[aria-pressed="true"]{background:var(--ui-action);color:#fff}
+.display-information{padding-top:16px;border-top:1px solid var(--ui-card-border)}
+.display-settings-body .display-message:empty{display:none}
+.route-search-modes{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 18px}
+.route-search-modes button{min-height:44px;padding:8px 14px;border:1px solid var(--ui-border);border-radius:9px;background:var(--ui-soft);color:var(--ui-action);font:inherit;font-weight:800;cursor:pointer}
+.route-search-modes button[aria-pressed="true"]{border-color:var(--ui-action);background:var(--ui-action);color:#fff}
+.route-picker-body #route-search-panel[hidden],.route-picker-body #stop-search-panel[hidden]{display:none!important}
+.route-picker-body #stop-search-panel .journey-results{margin-top:10px}
+.route-picker-body #stop-search-panel .journey-card{background:#fff}
+
+/* Match the neighbouring large-text control at phone widths. */
+@media(max-width:650px){.masthead-actions .display-settings-toggle{width:44px;height:44px;min-width:44px;min-height:44px}}
+@media(max-width:650px){body.large-text .masthead-actions .display-settings-toggle{width:44px;height:44px;min-width:44px;min-height:44px}}
+
+@media(max-width:360px){
+  body.large-text .masthead-actions .display-settings-toggle,
+  body.large-text .masthead-actions .text-size-toggle{width:40px;height:40px;min-width:40px;min-height:40px}
+}
+
+@media(max-width:360px){
+  .masthead-actions .display-settings-toggle,
+  .masthead-actions .text-size-toggle,
+  body.large-text .masthead-actions .display-settings-toggle,
+  body.large-text .masthead-actions .text-size-toggle{width:40px;height:40px;min-width:40px;min-height:40px}
+}
+
+/* The gear follows the text-size button in both font modes. */
+.masthead-actions .display-settings-toggle,
+.masthead-actions .text-size-toggle{width:44px;height:44px;min-width:44px;min-height:44px}
+body.large-text .masthead-actions .display-settings-toggle,
+body.large-text .masthead-actions .text-size-toggle{width:44px;height:44px;min-width:44px;min-height:44px}
+@media(max-width:360px){
+  .masthead-actions .display-settings-toggle,
+  .masthead-actions .text-size-toggle,
+  body.large-text .masthead-actions .display-settings-toggle,
+  body.large-text .masthead-actions .text-size-toggle{width:40px;height:40px;min-width:40px;min-height:40px}
+}
+/* Route setup now follows the arrival card. Keep it accessible before a stop is chosen. */
+body.awaiting-stop .results{display:block}
+body.awaiting-stop .results>:not(#arrival-summary){display:none!important}
+body.awaiting-stop #arrival-summary>:not(summary):not(#selection-card){display:none!important}
+
+/* Header buttons share the live-data pill's visual height at each breakpoint. */
+.masthead-actions .display-settings-toggle,
+.masthead-actions .text-size-toggle{width:31px;height:31px;min-width:31px;min-height:31px}
+body.large-text .masthead-actions .display-settings-toggle,
+body.large-text .masthead-actions .text-size-toggle{width:40px;height:40px;min-width:40px;min-height:40px}
+@media(min-width:900px){
+  .masthead-actions .display-settings-toggle,.masthead-actions .text-size-toggle{width:38px;height:38px;min-width:38px;min-height:38px}
+  body.large-text .masthead-actions .display-settings-toggle,body.large-text .masthead-actions .text-size-toggle{width:40px;height:40px;min-width:40px;min-height:40px}
+}
+@media(max-width:650px){
+  .masthead-actions .display-settings-toggle,.masthead-actions .text-size-toggle{width:30px;height:30px;min-width:30px;min-height:30px}
+  body.large-text .masthead-actions .display-settings-toggle,body.large-text .masthead-actions .text-size-toggle{width:44px;height:44px;min-width:44px;min-height:44px}
+}
+@media(max-width:360px){
+  .masthead-actions .display-settings-toggle,.masthead-actions .text-size-toggle{width:28px;height:28px;min-width:28px;min-height:28px}
+  body.large-text .masthead-actions .display-settings-toggle,body.large-text .masthead-actions .text-size-toggle{width:40px;height:40px;min-width:40px;min-height:40px}
+}
+@media(max-width:650px){.masthead-actions .display-settings-toggle svg{width:16px;height:16px}}
+#arrival-summary{scroll-margin-top:76px}
+/* Stop results use the same compact buttons as route-name results. */
+#stop-search-results.route-results{grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:7px;margin:9px 0}
+#stop-search-results .stop-route-result{display:block;min-height:72px;text-align:left}
+#stop-search-results .stop-route-result strong{display:block;color:var(--ui-ink);font-size:14px;line-height:1.35}
+#stop-search-results .stop-route-result span{display:block;margin-top:4px;color:var(--ui-secondary);font-size:12px;line-height:1.4}
+#stop-search-results .stop-route-result:hover{background:var(--ui-soft-active)}
+#stop-search-results .stop-route-result:disabled{opacity:.65;cursor:wait}
+@media(max-width:650px){#stop-search-results.route-results{grid-template-columns:1fr}}
+
+/* Route search help uses the same question mark affordance as loop estimation. */
+.route-picker-help>summary{justify-content:flex-start;gap:3px}
+.route-picker-help .route-help-icon,body.large-text .route-picker-help .route-help-icon{pointer-events:none;display:inline-flex;align-items:center;justify-content:center;flex:0 0 28px;width:28px;height:28px;min-height:28px;margin:0}
+.route-picker-help .route-help-icon span,body.large-text .route-picker-help .route-help-icon span{width:22px;height:22px;display:grid;place-items:center;border:1px solid var(--ui-border);border-radius:50%;background:#fff;color:var(--ui-action);font-size:14px;font-weight:800;line-height:1}
+.route-picker-help[open] .route-help-icon span{border-color:var(--ui-action);background:var(--ui-action);color:#fff}
+.route-picker-help>div{padding:2px 2px 8px}
+
+/* Route and stop setup expands inside Arrival Information, before the official ETA. */
+.arrival-summary>#selection-card.route-setup-menu[open]{margin:0 20px 16px;border-radius:12px}
+@media(max-width:650px){.arrival-summary>#selection-card.route-setup-menu[open]{margin:0 14px 14px}}
+
+/* Departure planning stays available on desktop; push subscription is phone-only. */
+.phone-push-controls[hidden]{display:none!important}
+.plan-departure{margin:14px 0 0;padding:14px;border:1px solid var(--ui-border);border-radius:12px;background:var(--ui-soft)}
+.plan-departure>strong{display:block;margin-bottom:10px;color:var(--ui-ink);font-size:15px}
+.plan-purpose-modes,.plan-time-modes,.plan-time-actions{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.leave-card .push-card .plan-purpose-modes button,.leave-card .push-card .plan-time-modes button,.leave-card .push-card .plan-time-actions button{min-height:42px;margin:0;padding:8px 12px;border:1px solid var(--ui-border);border-radius:9px;background:#fff;color:var(--ui-action);font:inherit;font-size:14px;font-weight:750;cursor:pointer}
+.leave-card .push-card .plan-purpose-modes button[aria-pressed="true"],.leave-card .push-card .plan-time-modes button[aria-pressed="true"],.leave-card .push-card #plan-time-set{border-color:var(--ui-action);background:var(--ui-action);color:#fff}
+.leave-card .push-card .plan-purpose-modes button[aria-pressed="false"],.leave-card .push-card .plan-time-modes button[aria-pressed="false"]{border-color:var(--ui-border);background:#fff;color:var(--ui-action)}
+.leave-card .push-card .plan-departure label span{color:var(--ui-secondary);font-size:inherit}
+.plan-departure .plan-purpose-help{margin:0 0 12px;color:var(--ui-secondary);font-size:14px;line-height:1.5}
+.plan-departure label{display:grid;gap:6px;margin:0 0 12px;color:var(--ui-secondary);font-size:14px}
+.plan-departure label[hidden]{display:none!important}
+.plan-departure input{width:min(100%,260px);min-height:44px;padding:9px 12px;border:1px solid var(--ui-border);border-radius:9px;background:#fff;color:var(--ui-ink);font:inherit;font-size:16px}
+.plan-departure #plan-time-status{margin:0;color:var(--ui-secondary);font-size:14px;line-height:1.5}
+.notify-controls>.schedule-settings{margin:0 0 14px}
+.notify-controls>.schedule-settings[hidden]{display:none!important}
+body.large-text .plan-departure>strong{font-size:18px}
+body.large-text .plan-departure label,body.large-text .plan-departure #plan-time-status,body.large-text .plan-purpose-modes button,body.large-text .plan-time-modes button,body.large-text .plan-time-actions button{font-size:16px}
+body.large-text .leave-card .push-card .plan-purpose-modes button,body.large-text .leave-card .push-card .plan-time-modes button,body.large-text .leave-card .push-card .plan-time-actions button{font-size:16px}
+
+/* Native date and time fields expose the browser calendar and clock pickers. */
+.plan-date-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.plan-date-fields[hidden]{display:none!important}
+.plan-date-fields label{min-width:0}
+.plan-date-fields input{width:100%;min-width:0;max-width:none;color-scheme:light;cursor:pointer}
+@media(max-width:560px){.plan-date-fields{gap:8px}.plan-date-fields input{padding-inline:6px;font-size:14px}}
+@media(max-width:360px){.leave-card .leave-content .push-card{margin-inline:0}.leave-card .push-card .push-content{padding-inline:10px}.plan-departure{padding:8px}.plan-date-fields input{padding-inline:2px;font-size:13px}}
+.plan-time-actions{display:block}
+.leave-card .push-card .plan-time-actions #plan-time-set{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:48px;margin:0;font-size:15px}
+.leave-card .push-card .plan-time-actions #plan-time-set[aria-pressed="true"]{border-color:#a94332;background:#a94332;color:#fff}
+.leave-card .push-card .plan-time-actions #plan-time-set[aria-pressed="true"]:hover{border-color:#933727;background:#933727}
+.plan-time-actions #plan-time-set svg{display:block;flex:none;width:19px;height:19px}
+.plan-time-actions #plan-time-set .plan-action-clear-icon{display:none}
+.plan-time-actions #plan-time-set[aria-pressed="true"] .plan-action-set-icon{display:none}
+.plan-time-actions #plan-time-set[aria-pressed="true"] .plan-action-clear-icon{display:block}
+.leave-card .push-card .plan-time-actions #plan-time-set .plan-action-label{color:inherit;font-size:inherit}
+
+/* Separate hour and minute steppers make a duration distinct from clock time. */
+.plan-timer-fields{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:end;gap:8px;margin:0 0 12px}
+.plan-timer-fields[hidden]{display:none!important}
+.plan-time-unit{min-width:0}
+.plan-time-unit label{display:block;margin:0 0 6px}
+.plan-time-stepper{display:grid;grid-template-columns:40px minmax(0,1fr) 40px;gap:3px;align-items:center}
+.plan-departure .plan-time-stepper input{width:100%;min-width:0;max-width:none;text-align:center;font-variant-numeric:tabular-nums;appearance:textfield;-moz-appearance:textfield}
+.plan-time-stepper input::-webkit-inner-spin-button,.plan-time-stepper input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.leave-card .push-card .plan-time-stepper button{display:grid;place-items:center;min-width:0;min-height:44px;margin:0;padding:0;border:1px solid var(--ui-border);border-radius:9px;background:#fff;color:var(--ui-action);font:inherit;font-size:21px;font-weight:700;line-height:1}
+.leave-card .push-card .plan-time-stepper button:hover{background:var(--ui-soft-active)}
+.leave-card .push-card .plan-timer-colon{align-self:end;padding:0 0 10px;color:var(--ui-action);font-size:24px;font-weight:800}
+@media(max-width:360px){.plan-time-stepper{grid-template-columns:34px minmax(0,1fr) 34px}.plan-timer-fields{gap:4px}}
+
+@media(max-width:560px){.plan-timer-fields{grid-template-columns:1fr;gap:10px}.plan-timer-colon{display:none}.plan-time-stepper{grid-template-columns:44px minmax(0,1fr) 44px;gap:6px}}
+
+.plan-match-result[hidden]{display:none!important}
+.plan-departure .plan-match-result{margin:12px 0 0;padding:13px 15px}
+.plan-departure .plan-match-result strong{color:var(--ui-action);font-size:14px}
+.plan-departure .plan-match-result[data-level="miss"] strong{color:#a33e2b}
+.plan-departure #plan-match-status{margin:7px 0 0;color:var(--ui-secondary);font-size:14px;font-weight:500;line-height:1.5}
+.plan-departure #plan-match-status:empty{display:none}
+.plan-alternatives[hidden]{display:none!important}
+.plan-alternatives{margin:12px 0 0;padding:12px;border:1px solid #efb09e;border-radius:10px;background:#fff2ed;color:var(--ui-ink)}
+.plan-alternatives>strong{display:block;color:#a93f2c;font-size:15px}
+.plan-alternatives p{margin:5px 0 10px;color:var(--ui-secondary);font-size:14px;line-height:1.5}
+.plan-alternative-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.leave-card .push-card .plan-alternative-actions button{min-height:44px;margin:0;padding:8px 10px;border:1px solid var(--ui-border);border-radius:9px;background:#fff;color:var(--ui-action);font:inherit;font-size:14px;font-weight:800;cursor:pointer}
+.plan-alternative-actions button[hidden]{display:none!important}
+.leave-card .push-card .plan-alternative-actions button[data-recommended="true"]{order:-1;border-color:var(--ui-action);background:var(--ui-action);color:#fff}
+.leave-card .push-card .plan-alternative-actions button:disabled{border-color:var(--ui-border);background:var(--ui-soft);color:var(--ui-secondary);cursor:default}
+.plan-alternative-actions button[data-recommended="true"]::before{content:attr(data-recommended-label);display:block;margin:0 0 3px;color:#dceee6;font-size:11px;font-weight:750;letter-spacing:.03em}
+body.large-text .plan-departure .plan-purpose-help,body.large-text .plan-departure #plan-match-status,body.large-text .plan-alternatives p,body.large-text .plan-alternative-actions button{font-size:16px}
+body.large-text .leave-card .push-card .plan-alternative-actions button{font-size:16px}
+@media(max-width:560px){.plan-alternative-actions{grid-template-columns:1fr}}
+.plan-match-toast[hidden]{display:none!important}
+.plan-match-toast{position:fixed;left:max(18px,calc((100vw - 600px)/2));right:max(18px,calc((100vw - 600px)/2));bottom:18px;z-index:70;padding:16px 18px;border:1px solid #89baa2;border-radius:14px;background:var(--ui-ink);color:#fff;box-shadow:0 12px 36px #173d3250}
+.plan-match-toast strong{display:block;font-size:18px}.plan-match-toast p{margin:7px 0 12px;color:#e1f2e9;line-height:1.5}.plan-match-toast button{min-height:36px;padding:6px 14px;border:1px solid #d7f1e1;border-radius:8px;background:#fff;color:var(--ui-ink);font:inherit;font-weight:750;cursor:pointer}

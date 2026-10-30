@@ -11,6 +11,8 @@ import time
 
 from .tracker import ROUTE_ID, FeedCache, ordered_stops, route_info
 from .catalog import search_routes, selected_routes
+from .journeys import find_stop_routes
+from .tracker import ROUTES, refresh_route_catalog
 from .speech_audio import ESPEAK_VOICES, render_wav, render_api_wav
 from .schedule import read_schedule, save_schedule
 
@@ -86,6 +88,13 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/catalog":
                 args = parse_qs(url.query)
                 return self.reply(200, search_routes(args.get("q", [""])[0]))
+            if path == "/api/stop-routes":
+                args = parse_qs(url.query)
+                query = args.get("q", [""])[0].strip()
+                if not 1 <= len(query) <= 80:
+                    raise ValueError("Enter a stop name under 80 characters")
+                refresh_route_catalog()
+                return self.reply(200, find_stop_routes(CACHE, ROUTES, query))
             if path == "/api/stops":
                 args = parse_qs(url.query)
                 route_id = int(args.get("route_id", [ROUTE_ID])[0])
@@ -121,7 +130,7 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(200, CACHE.snapshot(stop_id, direction, loop_value == "1",
                                                           route_id, refresh=True))
                 return self.reply(200, CACHE.snapshot(stop_id, direction, loop_value == "1", route_id))
-            if path in ("/", "/app.js", "/i18n.js", "/style.css", "/sw.js", "/manifest.webmanifest", "/icon.svg",
+            if path in ("/", "/app.js", "/i18n.js", "/style.css", "/dashboard.html", "/sw.js", "/manifest.webmanifest", "/icon.svg",
                         "/LOGO.jpeg", "/BANNER.jpeg",
                         "/technical-report.html", "/technical-report.md", "/technical-report.pdf", "/technical-report.css"):
                 file = STATIC / ("index.html" if path == "/" else path.lstrip("/"))

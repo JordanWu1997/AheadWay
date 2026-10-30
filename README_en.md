@@ -44,6 +44,7 @@ These Playwright screenshots show the running dashboard with **橘5 → toward B
 - **Helps plan when to leave.** Combine bus arrivals with a manually entered walk time or a rough browser-location estimate, including a configurable two-minute buffer.
 - **Speaks the live board.** Use Chinese or English voice alerts and periodic briefings through browser speech, eSpeak, or a local OpenAI-compatible TTS server. The owner dashboard can schedule daily voice reports.
 - **Supports phone reminders.** On a supported HTTPS deployment, Web Push can send a text departure notification after the page closes. It does not provide background voice playback.
+- **Custom display.** Choose which next-bus, following-bus, departure, tracked-bus, and data cards appear on the main page. Save up to eight presets with their route and stop.
 - **Lets riders add routes.** Start with an empty route list, then search for a route or paste an official Taipei route link. Added route tabs and preferences are stored in that browser.
 
 ## Why use it

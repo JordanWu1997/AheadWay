@@ -13,13 +13,23 @@
   <main>
     <header class="masthead">
       <div class="brand-block"><div class="brand"><a class="brand-logo" href="LOGO.jpeg?v=1fa489af" target="_blank" rel="noopener noreferrer" aria-label="查看完整 AheadWay 標誌"><img src="LOGO.jpeg?v=1fa489af" width="2048" height="2048" alt="" decoding="async"></a><span class="brand-ahead">Ahead</span><span class="brand-way">Way</span></div></div>
-      <div class="masthead-actions"><div class="language-toggle" role="group" aria-label="網站語言"><button type="button" data-language="zh-TW" aria-label="繁體中文" aria-pressed="true"><span lang="zh-Hant">中</span></button><button type="button" data-language="en" aria-label="English" aria-pressed="false">EN</button></div><button id="text-size-toggle" class="text-size-toggle" type="button" aria-label="放大文字" title="放大文字" aria-pressed="false"><span aria-hidden="true">A<sup>+</sup></span></button><span id="live-status" class="live-pill" role="status" aria-label="尚未選擇站牌" data-state="idle"><span class="dot" aria-hidden="true"></span><span id="live-status-text" data-no-i18n>尚未選擇站牌</span></span></div>
+      <div class="masthead-actions"><button id="display-settings-toggle" class="display-settings-toggle" type="button" aria-controls="display-settings" aria-expanded="false" aria-label="偏好設定" title="偏好設定"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.4 2.8h3.2l.5 2.2a7 7 0 0 1 1.6.9l2.1-.7 1.6 2.8-1.7 1.5a7 7 0 0 1 0 1.9l1.7 1.5-1.6 2.8-2.1-.7a7 7 0 0 1-1.6.9l-.5 2.2h-3.2l-.5-2.2a7 7 0 0 1-1.6-.9l-2.1.7-1.6-2.8 1.7-1.5a7 7 0 0 1 0-1.9L4.6 8l1.6-2.8 2.1.7a7 7 0 0 1 1.6-.9z" transform="translate(0 1.5)"/><circle cx="12" cy="12" r="2.5"/></svg><span>顯示設定</span></button><button id="text-size-toggle" class="text-size-toggle" type="button" aria-label="放大文字" title="放大文字" aria-pressed="false"><span aria-hidden="true">A<sup>+</sup></span></button><span id="live-status" class="live-pill" role="status" aria-label="尚未選擇站牌" data-state="idle"><span class="dot" aria-hidden="true"></span><span id="live-status-text" data-no-i18n>尚未選擇站牌</span></span></div>
       <div class="author-line">作者 Jordan · <a class="contact-link" href="mailto:jordankhwu@gmail.com" aria-label="用 Gmail 寄信給 Jordan：jordankhwu@gmail.com" title="jordankhwu@gmail.com"><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7v11h3V9.4" fill="none" stroke="#4285f4" stroke-width="2.4" stroke-linejoin="round"/><path d="M21 7v11h-3V9.4" fill="none" stroke="#34a853" stroke-width="2.4" stroke-linejoin="round"/><path d="M3.8 6.5 12 13l8.2-6.5" fill="none" stroke="#ea4335" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Gmail ↗</a> · <a class="contact-link" href="https://github.com/JordanWu1997" target="_blank" rel="noopener noreferrer" aria-label="Jordan 的 GitHub 個人頁面"><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .8a11.2 11.2 0 0 0-3.54 21.82c.56.1.77-.24.77-.54v-2.08c-3.13.68-3.79-1.33-3.79-1.33-.51-1.3-1.25-1.65-1.25-1.65-1.02-.7.08-.69.08-.69 1.13.08 1.73 1.16 1.73 1.16 1 .1.78.02 2.37-.08.24-.73.39-1.23.72-1.51-2.5-.28-5.13-1.25-5.13-5.56 0-1.23.44-2.23 1.16-3.01-.12-.29-.5-1.43.11-2.98 0 0 .95-.3 3.08 1.15A10.7 10.7 0 0 1 12 6.01c.95 0 1.9.13 2.79.38 2.13-1.45 3.08-1.15 3.08-1.15.61 1.55.23 2.69.11 2.98.72.78 1.16 1.78 1.16 3.01 0 4.32-2.63 5.28-5.14 5.55.4.35.75 1.02.75 2.06v3.24c0 .3.21.65.77.54A11.2 11.2 0 0 0 12 .8Z"/></svg>GitHub ↗</a> · <a class="contact-link" href="https://github.com/JordanWu1997/AheadWay" target="_blank" rel="noopener noreferrer" aria-label="AheadWay 專案 GitHub 儲存庫"><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v16H6.5A2.5 2.5 0 0 0 4 20.5zM4 5v15.5A1.5 1.5 0 0 0 5.5 22H20M8 6h8M8 9h8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/></svg>Project ↗</a></div>
     </header>
     <button id="tracking-context" class="tracking-context" type="button" hidden aria-label="返回目前追蹤站牌選擇"></button>
 
+    <section class="display-preferences" aria-label="偏好設定">
+      <details id="display-settings" class="display-settings"><summary><span>偏好設定</span><span id="display-count" class="display-count"></span><span class="disclosure-icon" aria-hidden="true"></span></summary>
+        <div class="display-settings-body">
+          <div class="display-language"><strong>顯示語言</strong><div class="language-toggle" role="group" aria-label="顯示語言"><button type="button" data-language="zh-TW" aria-label="中文" aria-pressed="true"><span lang="zh-Hant">中文</span></button><button type="button" data-language="en" aria-label="English" aria-pressed="false">English</button></div></div>
+          <div class="display-information"><strong>顯示資訊</strong><div id="display-choices" class="display-choices" role="group" aria-label="顯示資訊"></div></div>
+          <p id="display-message" class="display-message" role="status" aria-live="polite"></p>
+        </div>
+      </details>
+    </section>
+
     <section class="hero requires-route">
-      <h1><span class="route-badge"></span> 下一班，<em>還有下幾班。</em></h1>
+      <div class="hero-title-row"><h1><span class="route-badge"></span> 下一班，<em>還有下幾班。</em></h1></div>
       <div class="eyebrow" id="hero-route-id"></div>
     </section>
 
@@ -32,88 +42,136 @@
     </section>
 
     <div class="route-tabs-shell requires-route"><button id="route-back" class="route-step" type="button" aria-label="顯示前面的公車路線" hidden disabled>←</button><nav class="route-tabs" role="tablist" aria-label="公車路線"></nav><button id="route-more" class="route-step" type="button" aria-label="顯示更多公車路線" hidden disabled>→</button><button id="route-remove" class="route-remove" type="button" aria-label="移除目前路線" title="移除目前路線" aria-controls="route-remove-confirm" aria-expanded="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></svg><span class="route-remove-label">移除路線</span></button><button id="route-add" class="route-add" type="button" aria-label="加入路線" aria-controls="route-picker" aria-expanded="false"><span class="route-add-mark" aria-hidden="true">＋</span><span class="route-add-label">加入路線</span></button><button id="disclosure-toggle" class="disclosure-toggle" type="button" aria-label="全部展開" title="全部展開" aria-pressed="false" data-no-i18n><svg class="disclosure-icon-down" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 6 6 6-6M6 12l6 6 6-6"/></svg><svg class="disclosure-icon-up" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 18 6-6 6 6M6 12l6-6 6 6"/></svg><span class="disclosure-toggle-label">全部展開</span></button></div>
-    <section class="trip-bar quick-trips requires-route" aria-label="常用行程" hidden><div id="saved-trips" class="saved-trips"></div><button id="trips-more" type="button" hidden aria-expanded="false">顯示其餘行程</button><div id="trip-remove-confirm" class="trip-remove-confirm" role="group" aria-labelledby="trip-remove-title" hidden><strong id="trip-remove-title"></strong><p id="trip-remove-description"></p><div><button id="trip-remove-cancel" type="button">取消</button><button id="trip-remove-accept" type="button">移除常用行程</button></div></div></section>
+    <section class="trip-bar quick-trips requires-route" aria-label="常用行程" hidden><div class="saved-trips-intro"><strong>常用路線</strong><small>長按拖曳排序</small></div><div id="saved-trips" class="saved-trips"></div><button id="trips-more" type="button" hidden aria-expanded="false">顯示其餘行程</button></section>
+    <p id="route-order-status" class="sr-only" role="status" aria-live="polite"></p>
     <details class="route-picker" id="route-picker">
       <summary><span>搜尋公車路線</span><span class="disclosure-icon" aria-hidden="true"></span></summary>
       <div class="route-picker-body">
-        <label for="route-query">路線名稱或官方連結</label>
+        <div class="route-search-modes" role="group" aria-label="搜尋方式"><button id="search-by-route" type="button" aria-pressed="true">用路線搜尋</button><button id="search-by-stop" type="button" aria-pressed="false">用站牌搜尋</button></div>
+        <label id="search-query-label" for="route-query">路線名稱或官方連結</label>
         <div class="route-picker-search"><input id="route-query" type="search" autocomplete="off" placeholder="例如 橘5、Orange 5、908，或貼上 route.jsp 連結"><button id="route-find" type="button">搜尋</button></div>
-        <p id="route-picker-status" role="status">輸入路線名稱或貼上官方連結後搜尋。</p>
-        <div id="route-results" class="route-results"></div>
-        <details class="route-picker-help"><summary><span>如何新增路線？</span><span class="disclosure-icon" aria-hidden="true"></span></summary><div><p>可在<a href="https://pda5284.gov.taipei/MQS/routelist.jsp" target="_blank" rel="noopener">官方路線清單 ↗</a>選擇路線，複製 route.jsp 連結並貼上搜尋。</p><p>新增的路線只儲存在此瀏覽器；不同裝置不會自動同步。</p></div></details>
+        <div id="route-search-panel">
+          <p id="route-picker-status" role="status">輸入路線名稱或貼上官方連結後搜尋。</p>
+          <div id="route-results" class="route-results"></div>
+          <details class="route-picker-help"><summary><span>如何新增路線</span><span class="scope-help-toggle route-help-icon" aria-hidden="true"><span>?</span></span></summary><div><p>可在<a href="https://pda5284.gov.taipei/MQS/routelist.jsp" target="_blank" rel="noopener">官方路線清單 ↗</a>選擇路線，複製 route.jsp 連結並貼上搜尋。</p><p>新增的路線只儲存在此瀏覽器；不同裝置不會自動同步。</p></div></details>
+        </div>
+        <div id="stop-search-panel" hidden>
+          <div id="stop-search-suggestions" class="journey-suggestions" aria-live="polite"></div>
+          <p id="stop-search-status" role="status" aria-live="polite">輸入站牌名稱或相近拼法，查看經過此站的路線與方向。</p>
+          <div id="stop-search-results" class="route-results"></div>
+        </div>
       </div>
     </details>
     <div id="route-current-actions" class="route-current-actions requires-route" hidden><div id="route-remove-confirm" class="route-remove-confirm" role="group" aria-labelledby="route-remove-title" hidden><strong id="route-remove-title"></strong><p id="route-remove-description"></p><div><button id="route-remove-cancel" type="button">取消</button><button id="route-remove-accept" type="button">確認移除</button></div></div></div>
 
-    <details id="selection-card" class="selection-card requires-route" open>
-      <summary><span class="selection-card-title"><span class="eyebrow">TRIP & STOP</span><strong>路線與站牌</strong></span><span id="selection-summary">載入中…</span><span class="disclosure-icon" aria-hidden="true"></span></summary>
-      <div class="selection-card-body">
-      <section class="controls selection-fields" aria-label="選擇行程與來車範圍">
-      <div class="control"><label for="direction">行車方向</label><select id="direction"><option value="0">往捷運景安站</option><option value="1">往板橋</option></select></div>
-      <div class="control grow"><label for="stop">上車站牌</label><select id="stop"><option>載入站牌中…</option></select></div>
-      <div class="control scope-control"><div class="scope-label-row"><span class="field-label">納入反方向來車</span><button id="scope-help-toggle" class="scope-help-toggle" type="button" aria-label="顯示為什麼需要這個選項" title="為什麼需要這個選項？" aria-controls="arrival-scope" aria-expanded="false"><span aria-hidden="true">?</span></button></div><div class="scope-option-row"><label class="loop-control" for="closed-loop"><input id="closed-loop" type="checkbox" checked><span class="switch" aria-hidden="true"></span><span class="scope-option-text">估算折返車</span></label></div></div>
-      </section>
-      <p id="stop-selection-hint" class="stop-selection-hint" role="status" hidden>下一步：確認行車方向，再選擇上車站牌，即可查看下一班與後續來車。</p>
-      <details id="arrival-scope" class="arrival-scope">
-        <summary>為什麼需要這個選項？<span class="disclosure-icon" aria-hidden="true"></span></summary>
-        <div class="arrival-scope-content">
-          <p class="arrival-scope-why">反方向的公車要先抵達終點並折返，下一輪才可能經過本站。開啟後會納入這些車；它們可能在終點停駛，因此到站時間較不確定。</p>
-          <p id="scope-effect" role="status" aria-live="polite">正在載入所選站牌…</p>
-          <p class="arrival-scope-note">此設定只影響逐車推估、出發建議與定時語音。官方下一班時間不變；折返車不觸發到站提醒或手機通知。</p>
-        </div>
-      </details>
-      <div class="save-trip-row"><small id="save-trip-help" class="save-trip-help">儲存目前路線、行車方向與上車站牌，之後可從上方捷徑直接切換。</small><button id="save-trip" type="button" aria-label="儲存目前路線、方向與上車站牌為常用行程" aria-describedby="save-trip-help"><span class="save-trip-icon" aria-hidden="true">☆</span><span>儲存為常用行程</span></button></div>
-      </div>
-    </details>
-
     <section class="results requires-route" aria-labelledby="stop-title">
       <details id="arrival-summary" class="arrival-summary major-card" open>
-        <summary class="section-head"><div><div class="eyebrow">ARRIVAL INFORMATION</div><h2 id="stop-title">選擇站牌</h2></div><div class="summary-end"><div id="updated" class="updated">—</div><span class="disclosure-icon" aria-hidden="true"></span></div></summary>
+        <summary class="section-head"><div><div class="eyebrow">ARRIVAL INFORMATION</div><div class="arrival-title-row"><h2 id="stop-title">選擇站牌</h2><span id="stop-direction" class="stop-direction"></span></div></div><div class="summary-end"><div id="updated" class="updated">—</div><span class="disclosure-icon" aria-hidden="true"></span></div></summary>
         <p id="results-status" class="sr-only" role="status" aria-atomic="true"></p>
-        <div class="arrival-meta"><p id="data-freshness" class="data-freshness">正在讀取資料時間…</p><a href="technical-report.html">資料說明 ↗</a></div>
+        <div class="arrival-meta"><p id="data-freshness" class="data-freshness">正在讀取資料時間…</p><button id="trip-stop-toggle" class="trip-stop-toggle" type="button" aria-controls="selection-card" aria-expanded="false" aria-label="路線與站牌" title="路線與站牌"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5.5"/><path d="M9 8h6M9.5 6.5v3M14.5 6.5v3M12 13.5V21M8 21h8"/></svg></button><button id="arrival-voice-shortcut" class="arrival-voice-shortcut" type="button" aria-label="前往語音設定" title="前往語音設定"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6a8 8 0 0 1 0 12"/></svg></button><button id="save-trip" class="arrival-save-trip" type="button" aria-label="加入常用路線" title="加入常用路線" aria-pressed="false" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 8.2c0 4.2-8.8 10.5-8.8 10.5S3.2 12.4 3.2 8.2a4.8 4.8 0 0 1 8.8-2.6 4.8 4.8 0 0 1 8.8 2.6Z"/></svg></button></div>
+        <details id="selection-card" class="selection-card route-setup-menu requires-route">
+          <summary><span class="selection-card-title"><span class="eyebrow">TRIP & STOP</span><strong>路線與站牌</strong></span><span id="selection-summary">載入中…</span></summary>
+          <div class="selection-card-body">
+          <section class="controls selection-fields" aria-label="選擇行程與來車範圍">
+          <div class="control"><label for="direction">行車方向</label><select id="direction"><option value="0">往捷運景安站</option><option value="1">往板橋</option></select></div>
+          <div class="control grow"><label for="stop">上車站牌</label><select id="stop"><option>載入站牌中…</option></select></div>
+          <div class="control scope-control"><div class="scope-label-row"><span class="field-label">其他選項</span></div>
+          <div class="scope-option-row"><label class="loop-control" for="closed-loop"><input id="closed-loop" type="checkbox" checked><span class="switch" aria-hidden="true"></span><span class="scope-option-text">估算折返車</span></label><button id="scope-help-toggle" class="scope-help-toggle" type="button" aria-label="顯示為什麼需要這個選項" title="為什麼需要這個選項？" aria-controls="arrival-scope" aria-expanded="false"><span aria-hidden="true">?</span></button></div>
+          <details id="arrival-scope" class="arrival-scope">
+            <summary>為什麼需要這個選項？<span class="disclosure-icon" aria-hidden="true"></span></summary>
+            <div class="arrival-scope-content">
+              <p class="arrival-scope-why">反方向的公車要先抵達終點並折返，下一輪才可能經過本站。開啟後會納入這些車；它們可能在終點停駛，因此到站時間較不確定。</p>
+              <p class="arrival-scope-note">此設定影響沿線逐車清單與推估；官方下一班時間不變。已追蹤的車輛不分方向仍會納入建議，手機通知只在指定追蹤車輛時參考折返車。</p>
+            </div>
+          </details>
+          </div>
+          </section>
+          <p id="scope-effect" class="scope-effect" role="status" aria-live="polite">正在載入所選站牌…</p>
+          <p id="stop-selection-hint" class="stop-selection-hint" role="status" hidden>下一步：確認行車方向，再選擇上車站牌，即可查看下一班與後續來車。</p>
+          <p class="query-trip-hint">選好方向與站牌後，按查詢更新到站資訊。</p><button id="query-trip" class="setup-query-trip" type="button" disabled>查詢</button>
+          </div>
+        </details>
         <div id="message" class="message" role="status">正在取得公車資訊…</div>
-        <div id="eta-card" class="eta-card" hidden><div><div class="card-label">官方下一班預估</div><div id="eta" class="eta">—</div><div id="eta-detail" class="eta-detail"></div></div><div class="eta-icon">🚌</div></div>
+        <div id="eta-card" class="eta-card" role="button" tabindex="0" aria-controls="approach-panel" aria-expanded="false" aria-label="顯示所有來車" hidden><div><div class="card-label">官方下一班預估</div><div id="eta" class="eta">—</div><div id="eta-detail" class="eta-detail"></div></div></div>
         <div id="tracked-bus" class="tracked-bus" role="status" hidden><div class="tracked-bus-head"><div><span class="tracked-bus-label">TRACKED BUS · 追蹤車輛</span><strong id="tracked-bus-title"></strong></div><button id="tracked-bus-clear" type="button" aria-label="停止追蹤" title="停止追蹤"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5 5 19"/></svg><span>停止追蹤</span></button></div><p id="tracked-bus-detail"></p></div>
-      </details>
-      <details id="approach-board" class="approach-board major-card" aria-labelledby="approach-heading" open>
+      <div id="approach-panel" hidden>
+      <details id="approach-board" class="approach-board major-card" aria-labelledby="approach-heading">
         <summary class="list-head"><div><div class="eyebrow">ALL DETECTED BUSES</div><h3 id="approach-heading">本方向來車與後續車</h3></div><div class="summary-end"><span id="vehicle-count">—</span><span class="disclosure-icon" aria-hidden="true"></span></div></summary>
         <div class="approach-content">
         <p id="vehicle-summary" class="vehicle-summary">正在確認沿線公車…</p>
         <div id="vehicles" class="vehicles"></div>
-        <p class="caveat">官方只提供下一班預估；每輛車的到站範圍由沿線位置推估。另一方向的車須折返續行才會抵達所選站牌，可能在端點停駛；下一輪出發時間僅供參考，不觸發手機或語音到站提醒。</p>
+        <p class="caveat">官方只提供下一班預估；每輛車的到站範圍由沿線位置推估。另一方向的車須折返續行，可能在端點停駛；下一輪時間僅供參考。手機通知只有在指定追蹤車輛時才會參考折返車。</p>
         </div>
       </details>
-      <details class="leave-card major-card" id="departure-card">
+      </div>
+      </details>
+
+
+      <details class="leave-card major-card" id="departure-card" open>
         <summary class="leave-summary"><div class="leave-heading"><div><div class="eyebrow">DEPARTURE ADVICE</div><h3>建議出發時間</h3></div><div class="summary-end"><span id="leave-brief">等待到站預估</span><span class="disclosure-icon" aria-hidden="true"></span></div></div></summary>
-        <div class="leave-content"><div class="leave-guidance"><label class="track-advice-toggle" for="track-advice-only"><input id="track-advice-only" type="checkbox"><span class="switch" aria-hidden="true"></span><span>只按追蹤車輛計算</span></label><p id="track-advice-note" hidden>啟用手機通知後，同站只追這輛；換站不改已固定目標。車輛消失或未折返時，不改用其他車提醒。</p><p id="leave-advice">載入到站預估後顯示</p><small class="leave-note">預留步行時間與 2 分鐘緩衝；另一方向下一輪僅供參考，須確認仍繼續行駛。</small></div>
+        <div class="leave-content">
+          <details id="departure-more" class="departure-more">
+            <summary class="leave-advice-toggle"><p id="leave-advice">載入到站預估後顯示</p></summary>
+            <div class="departure-more-content">
+          <details id="departure-settings" class="departure-settings">
+            <summary><strong>出發估算設定</strong><span>步行時間、緩衝與來車範圍</span><span class="disclosure-icon" aria-hidden="true"></span></summary>
+            <div class="departure-settings-body">
+              <div class="departure-options"><div class="leave-choice-row"><label class="track-advice-toggle" for="track-advice-only"><input id="track-advice-only" type="checkbox"><span class="switch" aria-hidden="true"></span><span>只按追蹤車輛計算</span></label><label class="track-advice-toggle" for="travel-return-reference"><input id="travel-return-reference" type="checkbox"><span class="switch" aria-hidden="true"></span><span>參考反方向折返車</span></label></div><p id="track-advice-note" hidden>追蹤車輛不分方向都會納入推估；若須折返，仍可能在終點停駛。</p><small class="leave-note">建議依步行時間與下方緩衝設定計算；折返車推估僅供參考。</small></div>
         <div class="walk-settings">
-          <div class="location-field"><span class="walk-caption">步行估算方式</span><label class="location-toggle" for="use-location"><input id="use-location" type="checkbox" aria-describedby="location-help"><span class="switch" aria-hidden="true"></span><span>使用目前位置</span></label><small id="location-help" class="location-help">使用目前位置只取得一次座標來估算步行時間；換站時重新取得。座標留在瀏覽器，不會傳到伺服器。持續定位只在「前往站牌模式」啟用。</small></div>
-          <label class="walk-field" for="walk-minutes"><span>步行到站（分鐘）</span><span id="walk-source" class="walk-source">手動設定</span><input id="walk-minutes" type="number" min="0" max="60" step="1" value="5"></label>
-          <div class="location-status-row"><span id="location-state" class="location-state" role="status">目前以手動分鐘估算步行時間。</span><button id="location-refresh" type="button" hidden>重新定位</button></div>
+          <label class="walk-field" for="walk-minutes"><span>步行到站（分鐘）</span><input id="walk-minutes" type="number" min="0" max="60" step="1" value="5"></label>
+          <div class="location-field"><span class="walk-caption">步行估算方式</span><div class="location-option-row"><label class="location-toggle" for="use-location"><input id="use-location" type="checkbox"><span class="switch" aria-hidden="true"></span><span>使用目前位置</span></label></div></div>
+          <label class="walk-field plan-buffer-field" for="plan-buffer"><span>預留緩衝（分鐘）</span><input id="plan-buffer" type="number" min="0" max="30" step="1" value="2"></label>
+          <strong id="walk-source" class="walk-source">手動設定</strong>
+          <div class="location-status-row"><span id="location-state" class="location-state" role="status">選好站牌後會詢問定位；定位失敗時可手動輸入分鐘。</span></div>
         </div>
-        <details class="push-card" id="mobile-reminder" aria-label="手機出發提醒" hidden>
-          <summary><strong>手機出發提醒</strong><span id="mobile-mode-summary">計畫模式 · 出發建議</span><span class="disclosure-icon" aria-hidden="true"></span></summary>
+            </div>
+          </details>
+        <details class="push-card" id="mobile-reminder" aria-label="出發提醒">
+          <summary><strong>出發提醒</strong><span id="mobile-mode-summary">計畫模式 · 出發建議</span><span class="disclosure-icon" aria-hidden="true"></span></summary>
           <div class="push-content">
-          <div class="mobile-modes" role="group" aria-label="手機出發提醒模式"><button id="mobile-plan" type="button" aria-pressed="true">計畫模式</button><button id="mobile-travel" type="button" aria-pressed="false">前往站牌模式</button></div>
+          <div class="mobile-modes" role="group" aria-label="出發提醒模式"><button id="mobile-plan" type="button" aria-pressed="true">計畫模式</button><button id="mobile-travel" type="button" aria-pressed="false">前往站牌模式</button></div>
           <section id="plan-panel" class="mobile-mode-panel" aria-label="計畫模式">
-            <p>上方建議隨公車更新；移動後請按「重新定位」。</p>
+            <p>上方建議依步行時間與你設定的緩衝更新；位置每 30 秒重新取得。</p>
+            <div class="plan-departure">
+              <strong>規劃搭車時間</strong>
+              <div class="plan-purpose-modes" role="group" aria-label="規劃時間類型">
+                <button id="plan-purpose-leave" type="button" aria-pressed="true">離開時間</button>
+                <button id="plan-purpose-arrive" type="button" aria-pressed="false">到站時間</button>
+              </div>
+              <p id="plan-purpose-help" class="plan-purpose-help" role="status" aria-live="polite">離開時間會加上走路與緩衝，再尋找你到站後的下一班車。</p>
+              <div class="plan-time-modes" role="group" aria-label="出發時間輸入方式"><button type="button" data-plan-time-mode="datetime" aria-pressed="true">指定日期時間</button><button type="button" data-plan-time-mode="timer" aria-pressed="false">倒數計時</button></div>
+              <div id="plan-date-field" class="plan-date-fields"><label for="plan-departure-date"><span id="plan-date-label">離開日期</span><input id="plan-departure-date" type="date" required></label><label for="plan-departure-clock"><span id="plan-clock-label">離開時間</span><input id="plan-departure-clock" type="time" step="60" required></label></div>
+              <div id="plan-timer-field" class="plan-timer-fields" role="group" aria-label="倒數時間（HH:MM）" hidden>
+                <div class="plan-time-unit"><label for="plan-timer-hours">小時 / HH</label><div class="plan-time-stepper"><button type="button" data-plan-adjust="hours:-1" aria-label="減少小時">−</button><input id="plan-timer-hours" type="number" inputmode="numeric" min="0" max="99" step="1" value="00" aria-label="倒數小時"><button type="button" data-plan-adjust="hours:1" aria-label="增加小時">+</button></div></div>
+                <span class="plan-timer-colon" aria-hidden="true">:</span>
+                <div class="plan-time-unit"><label for="plan-timer-minutes">分鐘 / MM</label><div class="plan-time-stepper"><button type="button" data-plan-adjust="minutes:-1" aria-label="減少分鐘">−</button><input id="plan-timer-minutes" type="number" inputmode="numeric" min="0" max="59" step="1" value="30" aria-label="倒數分鐘"><button type="button" data-plan-adjust="minutes:1" aria-label="增加分鐘">+</button></div></div>
+              </div>
+              <div class="plan-time-actions"><button id="plan-time-set" type="button" aria-pressed="false"><svg class="plan-action-set-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M8 15l2.5 2.5L16 12"/></svg><svg class="plan-action-clear-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg><span class="plan-action-label">設定計畫時間</span></button></div>
+              <p id="plan-time-status" role="status" aria-live="polite">尚未設定出發時間。</p>
+              <div id="plan-match-result" class="travel-result plan-match-result" data-level="waiting" role="status" aria-live="polite" hidden><strong id="plan-match-head"></strong><p id="plan-match-status"></p></div>
+              <div id="plan-alternatives" class="plan-alternatives" hidden><strong>調整計畫建議</strong><p id="plan-alternatives-detail"></p><div id="plan-alternative-actions" class="plan-alternative-actions"><button id="plan-earlier-option" type="button" hidden></button><button id="plan-later-option" type="button" hidden></button></div></div>
+            </div>
           </section>
           <section id="travel-panel" class="mobile-mode-panel" aria-label="前往站牌模式" hidden>
-            <p>持續取得此手機位置，比對所選站牌與最新公車時間。請保持此頁開啟；關閉或背景執行時無法保證持續定位與即時警告。</p>
+            <p>持續比對位置與來車。請保持此頁開啟，才能收到即時趕車警告。</p>
             <div id="travel-result" class="travel-result" data-level="waiting"><strong id="travel-head">正在取得目前位置…</strong><p id="travel-detail" role="status" aria-live="polite">取得位置後顯示步行時間與可趕上公車的餘裕。</p></div>
-            <div class="travel-actions"><button id="travel-refresh" class="secondary-action" type="button">重新定位</button><button id="travel-action" class="secondary-action" type="button">停止前往模式</button></div>
+            <div id="travel-return-result" class="travel-return-result" role="status" hidden></div>
+            <div class="travel-actions"><button id="travel-action" class="secondary-action" type="button">停止前往模式</button></div>
             <p class="mobile-limit">前往警告只在此頁運作；下方背景通知仍可獨立使用。</p>
           </section>
-          <div class="phone-push-controls"><strong>關頁後的出發通知（選用）</strong><p>通知固定在所選站牌；開啟只追蹤車輛時另固定車牌。同站改選會更新，瀏覽其他站不變。iPhone／iPad 須先加入主畫面。</p>
+          <div class="phone-push-controls"><strong>關頁後的出發通知（選用）</strong><p>關頁後仍可收到文字通知，不會朗讀。通知固定在啟用時所選的站牌；iPhone／iPad 須先加入主畫面。</p>
             <div class="push-target-row"><span id="push-target">尚未設定提醒目標</span><button id="push-target-switch" type="button" hidden>改為提醒目前站牌</button></div>
             <span id="push-state" role="status">尚未啟用</span>
             <div class="push-actions"><button id="push-retry" type="button" hidden>重試同步</button><button id="push-toggle" type="button">啟用手機通知</button></div>
           </div>
           </div>
         </details>
+            </div>
+          </details>
         </div>
       </details>
       <button id="travel-float" class="travel-float" type="button" hidden></button>
+      <div id="plan-match-toast" class="plan-match-toast" role="alert" hidden><strong id="plan-match-toast-title">找到可搭乘來車</strong><p id="plan-match-toast-detail"></p><button id="plan-match-toast-close" type="button" aria-label="關閉提醒">關閉</button></div>
     </section>
 
     <details id="route-view" class="route-panel requires-route" aria-labelledby="route-heading">
@@ -141,6 +199,7 @@
     <details id="voice-card" class="notify major-card requires-route">
       <summary class="notify-heading"><div><div class="eyebrow">VOICE NOTIFIER</div><h2>語音提醒</h2></div><div class="summary-end"><span id="voice-state" class="voice-state" role="status">尚未啟用</span><span class="disclosure-icon" aria-hidden="true"></span></div></summary>
       <div class="notify-controls">
+        <details class="schedule-settings"><summary><strong>語音排程</strong><span class="disclosure-icon" aria-hidden="true"></span></summary><div class="schedule-settings-body"><div class="schedule-fields"><label for="schedule-time">每天啟動時間<input id="schedule-time" type="time" value="07:30"></label><label for="schedule-duration">持續播報（分鐘）<input id="schedule-duration" type="number" min="1" max="720" step="1" value="60"></label></div><label class="schedule-check"><input id="schedule-enabled" type="checkbox"><span class="switch" aria-hidden="true"></span><span>每天定時啟動</span></label><div class="schedule-action-row"><p id="schedule-state" role="status">尚未設定排程</p><button id="schedule-save" type="button">儲存排程</button></div><small>儲存時的站牌、模式、間隔或接近門檻、語言與語音會寫入此電腦的 cron。開始後依模式持續播報，即使關閉頁面也會繼續。選瀏覽器語音時，cron 使用對應語言的 eSpeak 標準語音。</small></div></details>
         <details id="voice-settings" class="voice-settings"><summary><strong>語音設定</strong><span class="voice-settings-info"><span id="voice-settings-label">到站提醒 5 分鐘 · 中文</span><span id="voice-settings-engine">簡短 · 本機 TTS</span></span><span class="disclosure-icon" aria-hidden="true"></span></summary>
         <div class="voice-settings-grid">
           <div class="voice-field"><label for="voice-mode">語音模式</label><select id="voice-mode"><option value="alert">到站提醒</option><option value="briefing">定時播報</option></select></div>
@@ -153,8 +212,9 @@
         <details id="api-voice-settings" class="advanced-settings"><summary><span>進階語音設定</span><span class="disclosure-icon" aria-hidden="true"></span></summary><label for="api-model">TTS 模型</label><input id="api-model" type="text" value="tts-1" maxlength="80"><label for="api-voice">聲音名稱</label><input id="api-voice" type="text" value="anne" maxlength="80"><small>連接 localhost:8001；已測試 anne，可輸入此伺服器支援的其他聲音名稱。</small></details>
         </details>
         <p id="voice-preview" class="voice-preview"></p>
-        <div class="voice-action-row"><p class="notify-help">到站提醒或定時播報須保持此頁開啟；鎖屏或切換 App 時語音可能暫停。手機背景通知不會朗讀；每日排程只在設定排程的電腦播放。</p><div class="voice-primary"><button id="voice-test" class="voice-test" type="button">試播目前資訊</button><button id="voice" type="button" aria-pressed="false" disabled>啟用語音</button></div></div>
-        <details class="schedule-settings"><summary><strong>每日語音排程</strong><span class="disclosure-icon" aria-hidden="true"></span></summary><div class="schedule-settings-body"><div class="schedule-fields"><label for="schedule-time">每天啟動時間<input id="schedule-time" type="time" value="07:30"></label><label for="schedule-duration">持續播報（分鐘）<input id="schedule-duration" type="number" min="1" max="720" step="1" value="60"></label></div><label class="schedule-check"><input id="schedule-enabled" type="checkbox"> 每天定時啟動</label><div class="schedule-action-row"><p id="schedule-state" role="status">尚未設定排程</p><button id="schedule-save" type="button">儲存排程</button></div><small>儲存時的站牌、模式、間隔或接近門檻、語言與語音會寫入此電腦的 cron。開始後依模式持續播報，即使關閉頁面也會繼續。選瀏覽器語音時，cron 使用對應語言的 eSpeak 標準語音。</small></div></details>
+        <div class="voice-action-row"><div class="voice-control-group"><div class="voice-primary"><button id="voice-test" class="voice-test" type="button">試播目前資訊</button><button id="voice" type="button" aria-pressed="false" disabled>啟用語音</button></div></div></div>
+        <p class="notify-help">到站提醒或定時播報須保持此頁開啟；鎖屏或切換 App 時語音可能暫停。手機背景通知不會朗讀；語音排程只在設定排程的電腦播放。</p>
+
       </div>
     </details>
     <figure class="brand-banner"><a href="BANNER.jpeg?v=411fed9d" target="_blank" rel="noopener noreferrer" aria-label="查看完整 AheadWay 形象橫幅"><img src="BANNER.jpeg?v=411fed9d" width="3584" height="1184" loading="lazy" decoding="async" alt="AheadWay 橫幅：臺北城市天際線、兩輛公車與不只下一班的標語"></a><figcaption><span>AheadWay · 形象視覺</span><span><a href="LOGO.jpeg?v=1fa489af" target="_blank" rel="noopener noreferrer">完整標誌 ↗</a> · <a href="BANNER.jpeg?v=411fed9d" target="_blank" rel="noopener noreferrer">完整橫幅 ↗</a></span></figcaption></figure>

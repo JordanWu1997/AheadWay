@@ -264,13 +264,15 @@ def alert_candidate(snapshot, walk, now=None, tracked_bus_id=""):
 
     candidates = [v for v in snapshot.get("vehicles", []) if (not tracked_bus_id or v.get("id") == tracked_bus_id) and
                   not v.get("atStop") and
-                  not v.get("crossDirection") and
+                  (tracked_bus_id or not v.get("crossDirection")) and
                   v.get("dataAgeSeconds", 999) <= 90 and v.get("confidence") != "low" and
                   remaining_window(v)[0] <= needed and remaining_window(v)[1] > walk * 60]
     if candidates:
         bus = min(candidates, key=lambda v: remaining_window(v)[0])
         late = remaining_window(bus)[0] <= walk * 60
         advice = "部分推估可能已來不及，請確認即時到站狀態。" if late else "建議現在出發。"
+        if bus.get("crossDirection"):
+            advice += "此車須在終點折返續行，可能停駛；請再次確認。"
         return bus["id"], f"{bus['id']} 推估接近 {snapshot['stop']['name']}，{advice}"
     if tracked_bus_id:
         return None  # Never substitute the official ETA or a different bus for a pinned vehicle.
@@ -290,7 +292,8 @@ def push_loop(service, snapshot_for):
         time.sleep(30)
         snapshots = {}
         for row in service.rows():
-            key = (row["route_id"], row["direction"], row["stop_id"], row["closed_loop"])
+            key = (row["route_id"], row["direction"], row["stop_id"],
+                   bool(row["closed_loop"] or row.get("tracked_bus_id")))
             try:
                 if key not in snapshots:
                     snapshots[key] = snapshot_for(*key)
